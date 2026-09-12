@@ -1,0 +1,107 @@
+import type { ChatMessage } from '@/types/llm'
+import { SEGMENT_KIND_HINT, SEGMENT_KIND_LABEL } from '@/types/segment'
+import type { NormalizedDoc } from '../stages/s0-normalize'
+
+const KIND_TABLE = (Object.keys(SEGMENT_KIND_LABEL) as Array<keyof typeof SEGMENT_KIND_LABEL>)
+  .map((kind) => `- ${kind}（${SEGMENT_KIND_LABEL[kind]}）：${SEGMENT_KIND_HINT[kind]}`)
+  .join('\n')
+
+export interface SegmenterPromptInput {
+  doc: NormalizedDoc
+  pcName: string
+  pcPersona: string
+  storyTitle: string
+  freedomLevel: 'low' | 'medium' | 'high'
+}
+
+const SYSTEM = `你是「幕间」的拆解器。你唯一的工作是把用户给的一段剧情素材，拆成带类型标签的最小片段，并标出涉及的实体与时间标记。
+
+【片段类型】
+${KIND_TABLE}
+
+【硬性要求】
+1. 只输出一个 JSON 对象，不要任何解释文字，不要 Markdown 代码围栏。
+2. 每个片段必须带 blockIndex，指向我给你的文本块编号。
+3. 允许把一个文本块拆成多个片段（例如一句话里既有动作又有台词），但每个片段的 text 必须是该块原文里**连续且一字不改**的子串。不要改写、不要润色、不要补标点。
+4. speech 必须给出 speaker。原文用「我」自称且指视角角色时，speaker 写「__PC_NAME__」。
+5. inner 必须给出 subject（谁的心理活动）。
+6. confidence 是你对这条判定的把握，0~1 的小数。
+7. 判断顺序：先看是不是"说出口的话"，再看是不是"心里想的"，再看是不是"环境/陈设"，剩下的才是动作与旁白。不要把心理活动混进动作。
+8. 场景描写（天气、光线、地点、气味、陈设）一律算 scene，不要算 narration。
+9. 提到但并未在本段演出的往事、别处发生的事，算 offscreen，并尽量在 reason 里写清时间。
+
+【关于时间顺序 —— 这一条极其重要】
+10. **用户是按时间顺序写的**。输出的 segments 必须保持原文顺序，不要按类型重排。
+    同一轮里的台词和动作是**依次发生**的，不是同时发生的。
+11. 一段话被括号里的心理或动作打断时，括号前后是**两次独立的发言**，要拆成两段。
+    例如：「我其实。。。。」+「（我有点犹豫）」+「也没那么想回家。。。。」
+    → speech「我其实。。。。」+ inner「我有点犹豫」+ speech「也没那么想回家。。。。」
+    不要把它们合并成一段，也不要因为中间插了括号就把整段都算成心理活动。
+12. **不要因为没有引号就判成心理或旁白**。视角角色明显说出口的话（带省略号、语气词、
+    被停顿切开、有「我说」「我开口」之类的提示）一律判成 speech。
+    心理活动只包括三种：括号里的情绪状态、明确的「心想/暗想/心中」，以及真正没说出口的念头。
+
+【输出格式】
+{
+  "segments": [
+    {
+      "blockIndex": 0,
+      "kind": "scene",
+      "text": "原文的连续子串",
+      "speaker": null,
+      "addressee": [],
+      "subject": [],
+      "location": "茶馆门口",
+      "confidence": 0.9,
+      "visibility": "public",
+      "reason": "简短说明为什么这么判"
+    }
+  ],
+  "entities": [
+    { "mention": "人物或地点的名字", "kind": "person", "role": "pc" }
+  ],
+  "timeMarkers": [
+    { "text": "三天后", "kind": "elapsed", "value": "P3D" }
+  ]
+}
+
+entities 的 role 取值：pc（视角角色本人）、present（本段在场）、mentioned（只是被提到）。
+timeMarkers 的 kind 取值：absolute（绝对时间）、relative（相对时间）、elapsed（过了一段时间）、unknown。
+visibility：只有 inner 用 "private"，其余用 "public"。`
+
+export function buildSegmenterMessages(input: SegmenterPromptInput): ChatMessage[] {
+  const { doc, pcName, pcPersona, storyTitle, freedomLevel } = input
+
+  const blockLines = doc.blocks
+    .map((block) => {
+      const guess = block.ruleKind === 'narration' ? '规则层未判定' : `规则层猜测：${SEGMENT_KIND_LABEL[block.ruleKind]}`
+      const speakerHint = block.ruleSpeaker ? `，疑似说话人：${block.ruleSpeaker}` : ''
+      const notes = block.ruleNotes.length ? `（${block.ruleNotes.join('；')}）` : ''
+      return `[${block.index}] ${guess}${speakerHint}${notes}\n${block.text}`
+    })
+    .join('\n\n')
+
+  const timeHints = doc.timeMarkerHits.length
+    ? `\n规则层扫到的时间标记：${doc.timeMarkerHits.map((hit) => `「${hit.text}」`).join('、')}`
+    : ''
+
+  const user = `故事：《${storyTitle}》
+视角角色（用户扮演）：「${pcName}」。原文里的「我」通常指这个角色，除非上下文明显不是。
+
+【用户填写的自我人设】
+${pcPersona.trim() || '（用户没有填写，请从素材里推断）'}
+
+演绎自由度：${freedomLevel}（只影响后续环节，不影响你的拆解）
+
+下面是素材，已切成编号文本块。请给每一块打标签，需要时把一块拆成多块。
+${timeHints}
+
+${blockLines}
+
+请严格按约定输出 JSON。`
+
+  return [
+    { role: 'system', content: SYSTEM.replaceAll('__PC_NAME__', pcName) },
+    { role: 'user', content: user },
+  ]
+}

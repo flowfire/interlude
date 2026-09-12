@@ -1,0 +1,286 @@
+import type { LlmClient } from '@/engine/llm/client'
+import { findInLibrary } from '@/engine/memory/library'
+import { lookupMany, type WikiLookup } from '@/engine/research/wiki'
+import type { ChatResult } from '@/types/llm'
+import {
+  RawCastResultSchema,
+  type CardSource,
+  type CastTier,
+  type CharacterCard,
+  type RawCastResult,
+} from '@/types/character'
+import type { ScenePresent } from '@/types/scene'
+import type { Segment } from '@/types/segment'
+import type { ProjectSettings } from '@/types/settings'
+import { buildCastMessages } from '../prompts/cast'
+import type { NormalizedDoc } from './s0-normalize'
+
+export interface CastStageInput {
+  doc: NormalizedDoc
+  segments: Segment[]
+  project: ProjectSettings
+  /** 由 S2 场景构建确定的在场名单 */
+  present: ScenePresent[]
+  /** 跨轮角色库：以前出场过的角色直接复用，不再重新生成 */
+  library?: Record<string, CharacterCard>
+  /** 是否联网给新角色查资料（维基百科，免 key） */
+  enableResearch?: boolean
+}
+
+export interface CastStageOutput {
+  characters: CharacterCard[]
+  usedModel: boolean
+  /** 其中有多少张卡是从角色库里直接复用的 */
+  reusedCount: number
+  /** 查到了多少份外部资料 */
+  researchedCount: number
+  fallbackReason?: string
+}
+
+/** 用名字派生稳定 id：同一个角色跨轮次都是同一个 id */
+export function stableCharacterId(name: string): string {
+  let hash = 0
+  for (let i = 0; i < name.length; i += 1) {
+    hash = (hash * 31 + name.charCodeAt(i)) | 0
+  }
+  return `char_${Math.abs(hash).toString(36)}`
+}
+
+function normalizeBool(input: unknown, fallback: boolean): boolean {
+  if (typeof input === 'boolean') return input
+  if (typeof input === 'number') return input !== 0
+  const text = String(input ?? '').trim().toLowerCase()
+  if (['true', 'yes', 'y', '1', '是', '出场', '在场'].includes(text)) return true
+  if (['false', 'no', 'n', '0', '否', '没出场', '不在场', '仅提及'].includes(text)) return false
+  return fallback
+}
+
+function normalizeTier(input: unknown, fallback: CastTier): CastTier {
+  const text = String(input ?? '').trim().toLowerCase()
+  if (['major', '主要', '主角', '重要'].includes(text)) return 'major'
+  if (['minor', '次要', '配角'].includes(text)) return 'minor'
+  if (['extra', '路人', '次抛', '龙套', '背景'].includes(text)) return 'extra'
+  return fallback
+}
+
+function normalizeStringArray(input: unknown): string[] {
+  if (Array.isArray(input)) {
+    return input.map((item) => String(item ?? '').trim()).filter(Boolean)
+  }
+  if (typeof input === 'string' && input.trim()) {
+    return input
+      .split(/[、,，/;；\n]+/)
+      .map((item) => item.trim())
+      .filter(Boolean)
+  }
+  return []
+}
+
+function isLikelyName(name: string): boolean {
+  const trimmed = name.trim()
+  if (!trimmed || trimmed.length > 8) return false
+  if (/[，。！？、；：「」“”（）()]/.test(trimmed)) return false
+  return /^[\u4e00-\u9fa5A-Za-z·\s]+$/.test(trimmed)
+}
+
+function pickSource(found: WikiLookup | undefined, canonical: boolean): CardSource {
+  if (found) return 'wiki'
+  return canonical ? 'model' : 'material'
+}
+
+export function normalizeCastResult(
+  raw: RawCastResult,
+  pcName: string,
+  research: Record<string, WikiLookup> = {},
+): CharacterCard[] {
+  const seen = new Set<string>()
+  const cards: CharacterCard[] = []
+
+  for (const item of raw.characters ?? []) {
+    const name = String(item.name ?? '').trim()
+    if (!name || !isLikelyName(name)) continue
+    if (name === pcName) continue
+    if (seen.has(name)) continue
+    seen.add(name)
+
+    const found = research[name]
+    const canonical = normalizeBool(item.canonical, Boolean(found))
+    const appears = normalizeBool(item.appearsInInput, true)
+
+    cards.push({
+      id: stableCharacterId(name),
+      name,
+      aliases: normalizeStringArray(item.aliases),
+      tier: normalizeTier(item.tier, appears ? 'major' : 'minor'),
+      origin: 'generated',
+      canonical,
+      franchise: String(item.franchise ?? '').trim(),
+      source: pickSource(found, canonical),
+      researchNote: found
+        ? `【${found.lang === 'zh' ? '中文' : '英文'}维基 · ${found.title}】${found.extract}`
+        : undefined,
+      persona: {
+        summary: String(item.summary ?? '').trim() || '（素材里没有更多说明）',
+        speechStyle: String(item.speechStyle ?? '').trim() || '（按性格自然发挥）',
+        temperament: normalizeStringArray(item.temperament),
+        habits: normalizeStringArray(item.habits),
+        background: String(item.background ?? '').trim() || '（素材里没有更多说明）',
+        signature: normalizeStringArray(item.signature),
+        voiceSamples: normalizeStringArray(item.voiceSamples),
+        canonAnchors: normalizeStringArray(item.canonAnchors),
+        boundaries: normalizeStringArray(item.boundaries),
+      },
+      state: {
+        mood: String(item.mood ?? '').trim() || '（未说明）',
+        location: String(item.location ?? '').trim() || '（未说明）',
+      },
+      appearsInInput: appears,
+      evidence: String(item.evidence ?? '').trim(),
+    })
+  }
+
+  return cards
+}
+
+function thinCard(item: ScenePresent): CharacterCard {
+  return {
+    id: stableCharacterId(item.name),
+    name: item.name,
+    aliases: [],
+    tier: item.kind === 'extra' ? 'extra' : 'major',
+    origin: 'generated',
+    canonical: false,
+    franchise: '',
+    source: 'material',
+    persona: {
+      summary: item.role || '（场景里出现的人）',
+      speechStyle: '（按性格自然发挥）',
+      temperament: [],
+      habits: [],
+      background: item.brief || '（素材里没有更多说明）',
+      signature: [],
+      voiceSamples: [],
+      canonAnchors: [],
+      boundaries: [],
+    },
+    state: { mood: '（未说明）', location: '' },
+    appearsInInput: true,
+    evidence: '场景构建判定为在场',
+  }
+}
+
+/**
+ * 以场景构建给出的在场名单为准：
+ * 名单里的人必须有卡（模型没给就补一张薄卡），名单外的人一律不要。
+ */
+export function mergeWithPresent(cards: CharacterCard[], present: ScenePresent[]): CharacterCard[] {
+  const byName = new Map(cards.map((card) => [card.name, card]))
+  const out: CharacterCard[] = []
+
+  for (const item of present) {
+    const existing = byName.get(item.name)
+    if (!existing) {
+      out.push(thinCard(item))
+      continue
+    }
+    const tier: CastTier = existing.tier === 'major' && item.kind === 'extra' ? 'minor' : existing.tier
+    out.push({ ...existing, tier, appearsInInput: true })
+  }
+
+  return out
+}
+
+/** 模型不可用时的降级：直接用名单建薄卡 */
+export function buildCastFromPresent(present: ScenePresent[]): CharacterCard[] {
+  return present.map(thinCard)
+}
+
+export async function runCastStage(
+  client: LlmClient,
+  input: CastStageInput,
+): Promise<{ output: CastStageOutput; result: ChatResult | null }> {
+  const { doc, segments, project, present, library = {}, enableResearch = true } = input
+  const activePresent = present.filter((item) => item.name !== project.pcName)
+
+  if (!activePresent.length) {
+    return {
+      output: {
+        characters: [],
+        usedModel: false,
+        reusedCount: 0,
+        researchedCount: 0,
+        fallbackReason: '这一轮没有其他人在场',
+      },
+      result: null,
+    }
+  }
+
+  // 以前出场过的角色：直接复用他的卡，保持人设一致，也省掉一次调用
+  const known: CharacterCard[] = []
+  const fresh: ScenePresent[] = []
+  for (const item of activePresent) {
+    const existing = findInLibrary(library, item.name)
+    if (existing) {
+      known.push({ ...existing, appearsInInput: true })
+    } else {
+      fresh.push(item)
+    }
+  }
+
+  if (!fresh.length) {
+    return {
+      output: { characters: known, usedModel: false, reusedCount: known.length, researchedCount: 0 },
+      result: null,
+    }
+  }
+
+  // 给新角色查资料。查不到（网络不通、没有条目）就静默跳过，让模型用自己的知识。
+  let research: Record<string, WikiLookup> = {}
+  if (enableResearch) {
+    try {
+      research = await lookupMany(fresh.map((item) => item.name))
+    } catch {
+      research = {}
+    }
+  }
+
+  const messages = buildCastMessages({
+    doc,
+    segments,
+    pcName: project.pcName,
+    storyTitle: project.storyTitle,
+    present: fresh,
+    research,
+  })
+
+  try {
+    const { data, result } = await client.chatJson<RawCastResult>(messages, {
+      temperature: client.settings.temperaturePrecise,
+      json: true,
+      label: 'cast',
+      parse: (raw) => RawCastResultSchema.parse(raw),
+    })
+
+    const created = mergeWithPresent(normalizeCastResult(data, project.pcName, research), fresh)
+    return {
+      output: {
+        characters: [...known, ...created],
+        usedModel: true,
+        reusedCount: known.length,
+        researchedCount: created.filter((card) => card.source === 'wiki').length,
+      },
+      result,
+    }
+  } catch (error) {
+    return {
+      output: {
+        characters: [...known, ...buildCastFromPresent(fresh)],
+        usedModel: false,
+        reusedCount: known.length,
+        researchedCount: 0,
+        fallbackReason: error instanceof Error ? error.message : String(error),
+      },
+      result: null,
+    }
+  }
+}

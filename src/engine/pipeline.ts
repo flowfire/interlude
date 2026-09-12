@@ -1,0 +1,541 @@
+import type { LlmClient } from './llm/client'
+import { createPool } from './llm/pool'
+import { createStep, planRerun, type StepIndex } from './graph/stepGraph'
+import { revokeBySteps, type LedgerIndex } from './graph/ledger'
+import { normalizeInput, type NormalizedDoc } from './stages/s0-normalize'
+import { runSegmentStage, type SegmentStageOutput } from './stages/s1-segment'
+import { runSceneStage } from './stages/s2-scene'
+import { runExposureStage } from './stages/s2b-exposure'
+import { runCastStage, type CastStageOutput } from './stages/s3-cast'
+import { buildContextBundle } from './stages/s4-context'
+import { runRoleplayStage } from './stages/s5-roleplay'
+import { composeScene } from './stages/s7-compose'
+import { buildRoundMemories, describeWhere, type MemoryBuildInput } from './stages/s8-memory'
+import { getCastLibrary, getMemories, recallFor } from './memory/library'
+import type { ContextBundle, RoleplayOutput } from '@/types/character'
+import type { ObservedCue, PcExposure } from '@/types/exposure'
+import type { SceneSetup } from '@/types/scene'
+import type { Round, Step, StepStage } from '@/types/step'
+import type { ProjectSettings } from '@/types/settings'
+import { nowIso } from '@/utils/time'
+
+export interface PipelineContext {
+  client: LlmClient
+  project: ProjectSettings
+  round: Round
+  /** 整个工作区的轮次。用来把角色库与记忆限定在当前这条对话内 */
+  rounds?: Round[]
+  steps: StepIndex
+  ledger: LedgerIndex
+  /** 每一步状态变化时回调，UI 用来实时刷新 */
+  onUpdate?: (steps: StepIndex, ledger: LedgerIndex) => void
+  signal?: AbortSignal
+}
+
+/**
+ * 当前对话包含哪些轮次。
+ * 角色库与记忆都按它隔离 —— 新开一条完全无关的故事线时，
+ * 不会凭空认出上一场戏里的角色，也不会记着上一场戏发生过什么。
+ *
+ * 没拿到完整轮次列表时返回 undefined（表示不做隔离），保持向后兼容。
+ */
+function sessionRoundIds(ctx: PipelineContext): Set<string> | undefined {
+  if (!ctx.rounds?.length) return undefined
+  const ids = ctx.rounds
+    .filter((round) => round.sessionId === ctx.round.sessionId)
+    .map((round) => round.id)
+  ids.push(ctx.round.id)
+  return new Set(ids)
+}
+
+/** 沿依赖向上找最近的某个阶段的步骤 */
+export function findUpstreamByStage(steps: StepIndex, stepId: string, stage: StepStage): Step | undefined {
+  const seen = new Set<string>()
+  const queue = [...(steps[stepId]?.deps ?? [])]
+  while (queue.length) {
+    const id = queue.shift()!
+    if (seen.has(id)) continue
+    seen.add(id)
+    const step = steps[id]
+    if (!step) continue
+    if (step.stage === stage) return step
+    queue.push(...step.deps)
+  }
+  return undefined
+}
+
+/** 直接上游中某个阶段的全部步骤（顺序与 deps 一致） */
+export function upstreamStepsByStage(steps: StepIndex, stepId: string, stage: StepStage): Step[] {
+  return (steps[stepId]?.deps ?? [])
+    .map((id) => steps[id])
+    .filter((step): step is Step => Boolean(step) && step!.stage === stage)
+}
+
+/** 找当前对话里上一轮已经完成的场景，用来给这一轮的场景构建提供连续性 */
+function findPreviousScene(ctx: PipelineContext): { place: string; situation: string; summary: string } | null {
+  const ids = sessionRoundIds(ctx)
+  const previous = Object.values(ctx.steps)
+    .filter((step) => step.stage === 'scene' && step.status === 'done')
+    .filter((step) => (!ids || ids.has(step.roundId)) && step.roundId !== ctx.round.id)
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+    .pop()
+
+  const setup = previous?.output as SceneSetup | undefined
+  if (!setup) return null
+  return {
+    place: setup.place || '（未说明）',
+    situation: setup.situation || '（未说明）',
+    summary: setup.opening.join(' '),
+  }
+}
+
+function emptyCost() {
+  return { calls: 0, tokensIn: 0, tokensOut: 0, ms: 0 }
+}
+
+function elapsed(startedAt: number) {
+  return { ...emptyCost(), ms: Math.round(performance.now() - startedAt) }
+}
+
+function done<TOut>(step: Step<TOut>, output: TOut, extra: Partial<Step<TOut>> = {}): Step<TOut> {
+  return { ...step, output, status: 'done', error: undefined, updatedAt: nowIso(), ...extra }
+}
+
+function costOf(result: { usage: { promptTokens: number; completionTokens: number }; ms: number } | null, startedAt: number) {
+  return result
+    ? { calls: 1, tokensIn: result.usage.promptTokens, tokensOut: result.usage.completionTokens, ms: result.ms }
+    : elapsed(startedAt)
+}
+
+/** 执行单个步骤（纯逻辑，不负责状态转移） */
+async function executeStep(ctx: PipelineContext, step: Step): Promise<Step> {
+  const startedAt = performance.now()
+
+  switch (step.stage) {
+    case 'normalize': {
+      return done(step, normalizeInput(ctx.round.userInput), { cost: elapsed(startedAt) })
+    }
+
+    case 'segment': {
+      const upstream = findUpstreamByStage(ctx.steps, step.id, 'normalize')
+      const doc = (upstream?.output as NormalizedDoc | undefined) ?? normalizeInput(ctx.round.userInput)
+      const { output, result } = await runSegmentStage(ctx.client, { doc, project: ctx.project })
+      return done(step, output, { model: result?.model, cost: costOf(result, startedAt) })
+    }
+
+    case 'scene': {
+      const doc = findUpstreamByStage(ctx.steps, step.id, 'normalize')?.output as NormalizedDoc | undefined
+      const segments = (findUpstreamByStage(ctx.steps, step.id, 'segment')?.output as SegmentStageOutput | undefined)?.segments ?? []
+      if (!doc) throw new Error('缺少上游的规范化结果')
+
+      const { output, result } = await runSceneStage(ctx.client, {
+        doc,
+        segments,
+        project: ctx.project,
+        previousScene: findPreviousScene(ctx),
+      })
+      return done(step, output, { model: result?.model, cost: costOf(result, startedAt) })
+    }
+
+    case 'exposure': {
+      const segments = (findUpstreamByStage(ctx.steps, step.id, 'segment')?.output as SegmentStageOutput | undefined)?.segments ?? []
+      const sceneSetup = findUpstreamByStage(ctx.steps, step.id, 'scene')?.output as SceneSetup | undefined
+      if (!sceneSetup) throw new Error('缺少上游的场景构建结果')
+
+      const { output, result } = await runExposureStage(ctx.client, { segments, sceneSetup, project: ctx.project })
+      return done(step, output, { model: result?.model, cost: costOf(result, startedAt) })
+    }
+
+    case 'cast': {
+      const doc = findUpstreamByStage(ctx.steps, step.id, 'normalize')?.output as NormalizedDoc | undefined
+      const segments = (findUpstreamByStage(ctx.steps, step.id, 'segment')?.output as SegmentStageOutput | undefined)?.segments ?? []
+      const sceneSetup = findUpstreamByStage(ctx.steps, step.id, 'scene')?.output as SceneSetup | undefined
+      if (!doc) throw new Error('缺少上游的规范化结果')
+      if (!segments.length) throw new Error('上游拆解没有产出任何片段')
+
+      const present = (sceneSetup?.present ?? []).filter((item) => item.active)
+      // 跨轮角色库：以前出场过的角色直接复用他的卡，保持人设一致，也省一次调用
+      // 但限定在当前对话内，并排除本轮自己和之前的产出（重跑时要能重新生成）
+      const library = getCastLibrary(ctx.steps, {
+        roundIds: sessionRoundIds(ctx),
+        excludeRoundId: ctx.round.id,
+      })
+      const { output, result } = await runCastStage(ctx.client, {
+        doc,
+        segments,
+        project: ctx.project,
+        present,
+        library,
+        enableResearch: ctx.project.researchEnabled,
+      })
+      return done(step, output, { model: result?.model, cost: costOf(result, startedAt) })
+    }
+
+    case 'context': {
+      const characterId = String(step.meta?.characterId ?? '')
+      const castOut = findUpstreamByStage(ctx.steps, step.id, 'cast')?.output as CastStageOutput | undefined
+      const sceneSetup = findUpstreamByStage(ctx.steps, step.id, 'scene')?.output as SceneSetup | undefined
+      const segments = (findUpstreamByStage(ctx.steps, step.id, 'segment')?.output as SegmentStageOutput | undefined)?.segments
+      const card = castOut?.characters.find((item) => item.id === characterId)
+      if (!castOut) throw new Error('缺少上游的阵容解析结果')
+      if (!sceneSetup) throw new Error('缺少上游的场景构建结果')
+      if (!card) throw new Error(`阵容里找不到角色 ${characterId}`)
+
+      // 他亲身记得的以前轮次（跨轮记忆从这里进来，同样限定在当前对话内）
+      const memories = recallFor(getMemories(ctx.steps, { roundIds: sessionRoundIds(ctx) }), card.id)
+      // 从「你」的内心外化出来的可见表现：只给现象，绝不带你的真实想法
+      const exposure = findUpstreamByStage(ctx.steps, step.id, 'exposure')?.output as PcExposure | undefined
+      const pcCues: ObservedCue[] = (exposure?.cues ?? []).map((cue) => ({
+        visible: cue.visible,
+        readability: cue.readability,
+        channel: cue.channel,
+        fromIndex: cue.fromIndex,
+      }))
+
+      const output = buildContextBundle({
+        card,
+        segments: segments ?? [],
+        cards: castOut.characters,
+        pcName: ctx.project.pcName,
+        sceneSetup,
+        memories,
+        pcCues,
+      })
+      return done(step, output, { cost: elapsed(startedAt) })
+    }
+
+    case 'roleplay': {
+      const bundle = findUpstreamByStage(ctx.steps, step.id, 'context')?.output as ContextBundle | undefined
+      if (!bundle) throw new Error('缺少上游的上下文包')
+
+      const { output, result } = await runRoleplayStage(ctx.client, { bundle, project: ctx.project })
+      return done(step, output, { model: result?.model, cost: costOf(result, startedAt) })
+    }
+
+    case 'compose': {
+      const segments = (findUpstreamByStage(ctx.steps, step.id, 'segment')?.output as SegmentStageOutput | undefined)?.segments
+      const cards = (findUpstreamByStage(ctx.steps, step.id, 'cast')?.output as CastStageOutput | undefined)?.characters ?? []
+      const sceneSetup = findUpstreamByStage(ctx.steps, step.id, 'scene')?.output as SceneSetup | undefined
+      if (!sceneSetup) throw new Error('缺少上游的场景构建结果')
+
+      const roleplays = upstreamStepsByStage(ctx.steps, step.id, 'roleplay')
+        .map((item) => item.output as RoleplayOutput)
+        .filter(Boolean)
+      const exposure = findUpstreamByStage(ctx.steps, step.id, 'exposure')?.output as PcExposure | undefined
+
+      const output = composeScene({
+        sceneSetup,
+        segments: segments ?? [],
+        cards,
+        roleplays,
+        pcName: ctx.project.pcName,
+        exposure,
+      })
+      return done(step, output, { cost: elapsed(startedAt) })
+    }
+
+    case 'commit': {
+      const roleplaySteps = upstreamStepsByStage(ctx.steps, step.id, 'roleplay')
+      const inputs: MemoryBuildInput[] = []
+
+      for (const roleplayStep of roleplaySteps) {
+        const roleplay = roleplayStep.output as RoleplayOutput | undefined
+        const bundle = findUpstreamByStage(ctx.steps, roleplayStep.id, 'context')?.output as ContextBundle | undefined
+        if (!roleplay || !bundle) continue
+        inputs.push({ round: ctx.round, bundle, roleplay, where: describeWhere(bundle) })
+      }
+
+      // 记忆是「他自己经历的版本」，不是全知剧本
+      return done(step, { entries: buildRoundMemories(inputs) }, { cost: elapsed(startedAt) })
+    }
+
+    default:
+      throw new Error(`阶段「${step.stage}」还没有实现`)
+  }
+}
+
+/**
+ * 按依赖关系分层并发执行。
+ * 同一个批次里互不依赖的步骤（例如给不同角色组上下文、不同角色的反应）会真并发跑。
+ */
+export async function runSteps(
+  ctx: PipelineContext,
+  orderedIds: string[],
+): Promise<{ steps: StepIndex; ledger: LedgerIndex }> {
+  let steps: StepIndex = { ...ctx.steps }
+  const ledger: LedgerIndex = ctx.ledger
+  const remaining = new Set(orderedIds)
+  const concurrency = Math.max(1, Math.floor(ctx.client.settings.maxConcurrency) || 4)
+  const pool = createPool(concurrency)
+
+  const emit = () => ctx.onUpdate?.(steps, ledger)
+
+  while (remaining.size) {
+    const ready = [...remaining].filter((id) => (steps[id]?.deps ?? []).every((dep) => !remaining.has(dep)))
+    if (!ready.length) {
+      for (const id of remaining) {
+        const step = steps[id]
+        if (step) steps = { ...steps, [id]: { ...step, status: 'error', error: '依赖无法满足（可能存在循环依赖）' } }
+      }
+      break
+    }
+    for (const id of ready) remaining.delete(id)
+
+    // 已锁定且已完成：直接复用，不重算
+    const toExecute = ready.filter((id) => !(steps[id]?.lockedByUser && steps[id]?.status === 'done'))
+
+    for (const id of toExecute) {
+      const step = steps[id]
+      if (step) steps = { ...steps, [id]: { ...step, status: 'running', updatedAt: nowIso() } }
+    }
+    emit()
+
+    await Promise.all(
+      toExecute.map((id) =>
+        pool(async () => {
+          const step = steps[id]
+          if (!step) return
+          try {
+            const next = await executeStep({ ...ctx, steps, ledger }, step)
+            steps = { ...steps, [id]: next }
+          } catch (error) {
+            const message = error instanceof Error ? error.message : String(error)
+            const current = steps[id]
+            if (current) steps = { ...steps, [id]: { ...current, status: 'error', error: message, updatedAt: nowIso() } }
+          } finally {
+            emit()
+          }
+        }),
+      ),
+    )
+  }
+
+  return { steps, ledger }
+}
+
+/* ------------------------------ 整轮执行 ------------------------------ */
+
+export interface FullRoundResult {
+  steps: StepIndex
+  ledger: LedgerIndex
+  rootStepIds: string[]
+  composeStepId: string | null
+  castStepId: string | null
+  sceneStepId: string | null
+  error?: string
+}
+
+/**
+ * 一键跑完整轮：
+ *   S0 规范化 → S1 拆解 → S2 场景构建 → S3 阵容 → 每角色各自的上下文与反应 → S7 编排。
+ * 每个角色一条独立分支，重跑时可以只重算受影响的那条。
+ */
+export async function runFullRound(ctx: PipelineContext): Promise<FullRoundResult> {
+  let steps: StepIndex = { ...ctx.steps }
+  const ledger = ctx.ledger
+  const emit = () => ctx.onUpdate?.(steps, ledger)
+
+  // S0 + S1
+  const normalizeStep = createStep<NormalizedDoc>({
+    roundId: ctx.round.id,
+    stage: 'normalize',
+    label: '规范化',
+    inputSnapshot: { userInput: ctx.round.userInput },
+  })
+  const segmentStep = createStep<SegmentStageOutput>({
+    roundId: ctx.round.id,
+    stage: 'segment',
+    label: '拆解',
+    deps: [normalizeStep.id],
+  })
+  steps = { ...steps, [normalizeStep.id]: normalizeStep, [segmentStep.id]: segmentStep }
+
+  let result = await runSteps({ ...ctx, steps, ledger }, [normalizeStep.id, segmentStep.id])
+  steps = result.steps
+  emit()
+
+  const segmentOutput = steps[segmentStep.id]?.output as SegmentStageOutput | undefined
+  if (!segmentOutput?.segments?.length) {
+    return {
+      steps,
+      ledger,
+      rootStepIds: [normalizeStep.id, segmentStep.id],
+      composeStepId: null,
+      castStepId: null,
+      sceneStepId: null,
+      error: '拆解没有产出任何片段，无法继续',
+    }
+  }
+
+  // S2 场景构建：把概要展开成可以开演的场面
+  const sceneStep = createStep<SceneSetup>({
+    roundId: ctx.round.id,
+    stage: 'scene',
+    label: '场景构建',
+    deps: [segmentStep.id],
+  })
+  steps = { ...steps, [sceneStep.id]: sceneStep }
+  result = await runSteps({ ...ctx, steps, ledger }, [sceneStep.id])
+  steps = result.steps
+  emit()
+
+  // S2b 你的外化：把你的内心变成别人看得见的表现
+  const exposureStep = createStep<PcExposure>({
+    roundId: ctx.round.id,
+    stage: 'exposure',
+    label: '你的外化',
+    deps: [segmentStep.id, sceneStep.id],
+  })
+  steps = { ...steps, [exposureStep.id]: exposureStep }
+  result = await runSteps({ ...ctx, steps, ledger }, [exposureStep.id])
+  steps = result.steps
+  emit()
+
+  // S3 阵容
+  const castStep = createStep<CastStageOutput>({
+    roundId: ctx.round.id,
+    stage: 'cast',
+    label: '阵容解析',
+    deps: [segmentStep.id, sceneStep.id],
+  })
+  steps = { ...steps, [castStep.id]: castStep }
+  result = await runSteps({ ...ctx, steps, ledger }, [castStep.id])
+  steps = result.steps
+  emit()
+
+  const castOutput = steps[castStep.id]?.output as CastStageOutput | undefined
+  const actors = castOutput?.characters ?? []
+
+  // 每个在场角色：一条「上下文 → 反应」分支
+  const contextSteps: Step[] = []
+  const roleplaySteps: Step[] = []
+  for (const card of actors) {
+    const contextStep = createStep<ContextBundle>({
+      roundId: ctx.round.id,
+      stage: 'context',
+      label: `给「${card.name}」的上下文`,
+      deps: [castStep.id, exposureStep.id],
+      meta: { characterId: card.id, characterName: card.name },
+    })
+    const roleplayStep = createStep<RoleplayOutput>({
+      roundId: ctx.round.id,
+      stage: 'roleplay',
+      label: `「${card.name}」的反应`,
+      deps: [contextStep.id],
+      meta: { characterId: card.id, characterName: card.name },
+    })
+    contextSteps.push(contextStep)
+    roleplaySteps.push(roleplayStep)
+  }
+
+  for (const step of [...contextSteps, ...roleplaySteps]) steps = { ...steps, [step.id]: step }
+
+  if (roleplaySteps.length) {
+    result = await runSteps(
+      { ...ctx, steps, ledger },
+      [...contextSteps.map((step) => step.id), ...roleplaySteps.map((step) => step.id)],
+    )
+    steps = result.steps
+    emit()
+  }
+
+  // S7 编排
+  const composeStep = createStep({
+    roundId: ctx.round.id,
+    stage: 'compose',
+    label: '编排',
+    deps: [segmentStep.id, sceneStep.id, exposureStep.id, castStep.id, ...roleplaySteps.map((step) => step.id)],
+  })
+  steps = { ...steps, [composeStep.id]: composeStep }
+  result = await runSteps({ ...ctx, steps, ledger }, [composeStep.id])
+  steps = result.steps
+  emit()
+
+  // S8 记忆回写：把这一轮变成每个参与角色各自的一段记忆
+  // 依赖编排，这样从「编排」重跑时也会连带重算记忆
+  const commitStep = createStep({
+    roundId: ctx.round.id,
+    stage: 'commit',
+    label: '记忆回写',
+    deps: [composeStep.id, ...roleplaySteps.map((step) => step.id)],
+  })
+  steps = { ...steps, [commitStep.id]: commitStep }
+  result = await runSteps({ ...ctx, steps, ledger }, [commitStep.id])
+  steps = result.steps
+  emit()
+
+  return {
+    steps,
+    ledger,
+    rootStepIds: [normalizeStep.id, composeStep.id],
+    composeStepId: composeStep.id,
+    castStepId: castStep.id,
+    sceneStepId: sceneStep.id,
+  }
+}
+
+/* ------------------------------ 只跑拆解 ------------------------------ */
+
+export interface SegmentationPreviewResult {
+  steps: StepIndex
+  ledger: LedgerIndex
+  normalizeStepId: string
+  segmentStepId: string
+}
+
+/** 只跑 S0 + S1，用于单独查看拆解 */
+export async function runSegmentationPreview(ctx: PipelineContext): Promise<SegmentationPreviewResult> {
+  const normalizeStep = createStep<NormalizedDoc>({
+    roundId: ctx.round.id,
+    stage: 'normalize',
+    label: '规范化',
+    inputSnapshot: { userInput: ctx.round.userInput },
+  })
+  const segmentStep = createStep<SegmentStageOutput>({
+    roundId: ctx.round.id,
+    stage: 'segment',
+    label: '拆解',
+    deps: [normalizeStep.id],
+  })
+
+  const steps: StepIndex = {
+    ...ctx.steps,
+    [normalizeStep.id]: normalizeStep,
+    [segmentStep.id]: segmentStep,
+  }
+
+  const result = await runSteps({ ...ctx, steps }, [normalizeStep.id, segmentStep.id])
+
+  return { ...result, normalizeStepId: normalizeStep.id, segmentStepId: segmentStep.id }
+}
+
+/* ------------------------------ 重跑 ------------------------------ */
+
+export interface RerunResult {
+  steps: StepIndex
+  ledger: LedgerIndex
+  toRun: string[]
+  reused: string[]
+}
+
+/**
+ * 从某一步重跑：
+ * 1. 计算受影响的下游；
+ * 2. 按账本撤销这些步骤产生的副作用；
+ * 3. 只重算受影响的步骤，未受影响的分支直接复用。
+ */
+export async function rerunFrom(ctx: PipelineContext, rootStepId: string): Promise<RerunResult> {
+  const plan = planRerun(ctx.steps, ctx.ledger, rootStepId)
+  const { kept } = revokeBySteps(ctx.ledger, plan.toRun)
+
+  let steps: StepIndex = { ...ctx.steps }
+  for (const id of plan.toRun) {
+    const step = steps[id]
+    if (!step) continue
+    steps[id] = { ...step, status: 'pending', error: undefined, updatedAt: nowIso() }
+  }
+
+  const result = await runSteps({ ...ctx, steps, ledger: kept }, plan.toRun)
+
+  return { ...result, toRun: plan.toRun, reused: plan.reused }
+}

@@ -1,0 +1,1053 @@
+# 幕间 Interlude · 设计方案与项目结构（v2）
+
+> 一句话定位：**你扮演一个角色说话，引擎把你输入的东西自动拆开、分发给场上每个角色 AI，让他们各自（且互不知情地）产生反应；你还能点开任意一个角色，看"它到底收到了什么、于是它才这么反应"。**
+
+参考酒馆（SillyTavern）的角色扮演内核，砍掉全部复杂设置，把"该谁说话、该让谁知道什么、什么时候发生"交给引擎自动判断。
+
+---
+
+## 0. 已确认决策
+
+| 项 | 决定 |
+|---|---|
+| 架构 | 纯前端 SPA（Vite + React + TS），API Key 存浏览器本地 |
+| 接口 | OpenAI 兼容（自填 baseURL / apiKey / model） |
+| 角色资料 | 内置卡优先 → 维基补充 → LLM 生成兜底 |
+| **用户位置** | **你扮演其中一个角色（`pc`）**，其余角色由 AI 扮演 |
+| **台词忠实度** | **你说的话 AI 不能改**；你携带的设定/剧情描述/世界观 → AI 可以改写以贴合人设 |
+| **输出形态** | **一个主看板**：显示你的输入 + 各角色对它的反应（按时间顺序）；**点击某个角色的反应，可临时查看**：你的原文被拆成了什么、给了这个角色哪些上下文、它私下的心理是什么 |
+| **回退能力** | **每一步都可编辑，编辑后该步之后的所有内容作废并重新生成** |
+| 不做 | 不导入酒馆角色卡、不做中途干预、不做图片生成 |
+| 界面语言 | 中文 UI + 中文提示词 |
+| 心理描写 | 默认不外传，只转成「可见线索」给别人（可能被误读） |
+| 时间线 | 自动推算 + 手动校正；幕间空白默认自动补全 |
+| 单场并发上限 | 6 个 AI 角色（超出者只做背景交代） |
+| 「一轮」定义 | 你发言一次后，**所有在场且该说话的角色都至少说了一句**（或给出明确的沉默判定） |
+
+---
+
+## 1. 与酒馆的核心差异
+
+| | 酒馆 SillyTavern | 幕间 Interlude |
+|---|---|---|
+| 交互单元 | 一条消息 = 一次生成 | 你的一句话 = 一整轮（全场上限 6 个角色并发生成） |
+| 谁在说话 | 你和单个 AI 角色轮替 | 引擎判定在场者，**每个角色各自**生成反应 |
+| 场景描写 | 混在角色输出里 | 独立「环境 Agent」负责 |
+| 心理活动 | 直接写出来，人人可见 | 先**外化**成微表情/微动作/语气线索，再被别人（可能错误地）理解 |
+| 信息可见性 | 全局共享上下文 | 每个角色一份**私有知识状态**，含"他确定不知道的事" |
+| 透明度 | 只能看最终输出 | **点开任意角色，能看到它收到的完整上下文**（这是本项目最独特的地方） |
+| 时间 | 只看聊天顺序 | 显式时间轴，支持"三天后"、倒叙、幕间空白补全 |
+| 配角 | 用户手动建卡 | 路人自动生成薄卡，反复出现则**自动提升**为常驻角色 |
+| 可回退性 | 只能删消息重来 | **任意一步可编辑，只重跑受影响的下游**（DAG） |
+| 设置 | 一大堆 sampler/预设/正则 | 只有三个开关（§13） |
+
+---
+
+## 2. 关键概念
+
+- **素材（Material）**：你这一轮输入的文字。
+- **片段（Segment）**：拆解后的最小单元，带类型标签（场景/动作/台词/心理/旁白/世界事实/场外事件/群像）。
+- **pc 台词 vs 可演绎内容**（这是本项目最重要的规则）：
+  - `speaker === pc` 的台词 → **锁定**，AI 一字不能改，必须原样出现在舞台上；
+  - 其余一切（你的场景描写、旁白、设定、世界观、剧情描述，甚至你代笔写的别人的台词）→ `isFact: false`，AI **可以改写**成更贴合各角色人设的版本。
+  - 任何片段都可以手动点"锁定"，覆盖上述默认。
+- **外化线索（Cue）**：心理活动经"外化器"变成的可见信号，例如"指尖在杯沿上停了半秒"。带两个数值：
+  - `leakage` 泄漏度：0 = 完全看不出，1 = 几乎写在脸上；
+  - `readability` 可读性：旁观者能读出真实含义的概率。
+- **感知（Perception）**：某角色对某条信息的接收记录，分**客观层**（他确实看到/听到了什么）与**主观层**（他理解成什么，**允许错**）。
+- **上下文包（ContextBundle）**：派发给某个角色 AI 的完整输入。**它是可查看的**——点开角色反应就能看到。
+- **知识状态（Knowledge）**：每角色维护 `known / believed / suspected / unawareOf` 四张清单，`unawareOf` 作为硬性负面约束注入，防止角色全知。
+- **轮（Round）**：你发言一次 → 全场的反应。完成标准是覆盖率——所有在场且"该发言"的角色都至少产出一个台词节拍（或带理由的沉默判定）。
+- **幕间空白（Interlude Gap）**：两个场景之间的时间跳跃区间，引擎抽取其中发生的事并判定谁该知情。
+- **步骤（Step）**：流水线的一次可编辑、可重跑的中间产物。**一切皆步骤**，这是回退能力的底座。
+
+---
+
+## 3. 端到端流水线（8 个 Stage，每个 Stage = 若干可编辑 Step）
+
+```
+你的输入
+  │
+  ├─ S0 规范化 ─────────── 纯代码：分段、标号、引号结构识别
+  ├─ S1 拆解 ───────────── LLM#1：→ Segment[]（类型、说话人、接收人、能否改写）
+  ├─ S2 场景构建 ───────── LLM#2：判断「具体演出」还是「概要」；把概要展开成可开演的场面；确定在场者（含路人）
+  ├─ S3 阵容解析 ───────── 代码 + LLM#3：实体 → 角色卡（匹配/新建/路人薄卡）
+  ├─ S4 上下文分配 ─────── 代码（可选 LLM）：为每个角色组装私有上下文包  ★可查看
+  ├─ S5 分角色反应 ─────── LLM×N 并发：每个角色独立生成节拍 + 感知
+  ├─ S6 外化与失真 ─────── LLM×少量：心理→线索；线索→（可能错的）理解
+  ├─ S7 编排 ───────────── LLM#1：按时间顺序排列反应 + 覆盖率检查/补白
+  └─ S8 状态回写 ───────── 纯代码：时间线、记忆、关系、路人提升
+```
+
+### S0 规范化（无 LLM）
+- 按空行/换行切块，保留原文偏移 `sourceRange`（用于在"点开角色"时高亮你原文的哪一段）。
+- 规则预标注（省 LLM 成本）：引号内 → 候选 `speech`；`XX 说/道/问` → speaker；`心想|暗想|心道` → 候选 `inner`；`三天后|翌日|当晚` → 时间标记。
+- 预标注只是提示，S1 可覆盖。
+
+### S1 拆解（LLM #1）
+输出严格 JSON（zod 校验）：
+
+```jsonc
+{
+  "segments": [
+    { "id": "s1", "kind": "scene",  "text": "雨停了，青石板上还积着水洼。", "location": "茶馆门口",
+      "speaker": null, "isFact": false, "visibility": "public", "confidence": 0.95 },
+    { "id": "s2", "kind": "speech", "text": "你来得比我预想的早。", "speaker": "沈栖", "addressee": ["林砚"],
+      "isFact": true, "visibility": "public", "confidence": 0.97,
+      "lockReason": "pc 台词，锁定" },
+    { "id": "s3", "kind": "inner",  "text": "她果然还是来了。", "subject": ["林砚"],
+      "isFact": false, "visibility": "private", "confidence": 0.8 }
+  ],
+  "entities": [
+    { "mention": "沈栖", "kind": "person", "role": "pc" },
+    { "mention": "林砚", "kind": "person", "role": "present" }
+  ],
+  "timeMarkers": [{ "text": "三天后", "kind": "elapsed", "value": "P3D" }]
+}
+```
+
+- `isFact` 的**自动判定规则**：`speaker === pc` → `true`；其余 → `false`（可演绎）。UI 上每段有个锁图标可手动翻转。
+- `visibility: private` 的片段（心理）不进公共舞台，只进拥有者与"你能看的私密层"。
+- 低置信片段在拆解预览里高亮，等你一键改标签，改动会回存为你的**个人标注偏好**。
+
+### S2 场景构建（LLM #2）
+职责：把你写的东西变成**一个可以立刻开演的场面**。
+
+先判断你写的是哪一种：
+- `dialogue`：已经有实际演出（有人说话、有具体动作）→ 只补舞台，不改内容
+- `outline`：只是一句概括（「我遇到了金刚狼」「三天后我们打了一架」）→ 展开成场面
+- `mixed`：两者都有
+
+```jsonc
+{
+  "inputMode": "outline",
+  "time": "三天后的傍晚",
+  "place": "城郊废弃的汽车旅馆门口",
+  "atmosphere": "雨刚停，路灯坏了一半",
+  "situation": "你推门出来，正好和蹲在台阶上擦爪子的人打了个照面。",
+  "opening": [
+    "雨刚停，柏油路面上积着一层薄水，把歪掉的霓虹招牌映成模糊的一片红。",
+    "旅馆门口只有一盏灯还亮着，灯下的台阶上坐着一个人，正低着头擦什么东西。"
+  ],
+  "pcProfile": "二十出头，外套肩膀湿了一片，站在门口没动——看起来不像常来这种地方的人。",
+  "present": [
+    { "name": "金刚狼", "role": "坐在台阶上的人", "brief": "正低头擦爪子", "kind": "character", "active": true },
+    { "name": "前台老头", "role": "旅馆前台", "brief": "隔着玻璃打瞌睡", "kind": "extra", "active": false }
+  ],
+  "establishedBeats": [
+    { "kind": "action", "character": "我", "text": "推门出来，站在台阶上" }
+  ]
+}
+```
+
+两条关键规则：
+
+1. **被提到的人一律算在场。**「我遇到了金刚狼」意味着金刚狼就在场，哪怕素材里他一句话都没说。绝不因为"没有台词"就判定他不出场。
+2. **`pcProfile` 只写看得见的。** 它是派发给其他角色的「对面站着的这个人」——性别年龄感、穿着、状态、姿态、别人第一眼会注意到什么。用户填写的自我人设属于内心层面，不会被派发。
+
+还有一条**保险丝**（`ensurePresentHasActors`）：如果模型判定「没有需要反应的角色」，但素材里明明有人名，引擎会强制把他们拉回在场名单并标记为需要反应。这是为了兜住概要式输入最容易踩的坑。
+
+### S3 阵容解析（代码 + LLM #3）
+每个实体走资料阶梯：
+
+```
+① 已有角色卡（名字/别名精确匹配）       → 命中
+② 内置资料库 src/data/cards/*.json    → 命中，实例化
+③ 维基摘要（REST API，免 key，CORS 可用）→ 生成卡，source=wiki
+④ LLM 凭空生成                        → source=generated，UI 标「推测」
+```
+
+| tier | 含义 | 处理 |
+|---|---|---|
+| `pc` | 你（唯一） | 台词锁定，引擎不替你决定关键选择 |
+| `major` | 主要角色 | 完整卡 + 长期记忆 + 每轮参与生成 |
+| `minor` | 次要角色 | 精简卡 + 场景级记忆 |
+| `extra` | 次抛路人 | **薄卡**（名字/身份/一个特征/说话风格），只在需要的场景出现 |
+
+**路人提升**：出现或提及累计 ≥3 次、或与主要角色建立关系边、或你手动点"提升" → 升为 `minor`，用 LLM 基于他**已有表现**补全完整卡（一致性约束："他此前表现为……请保持一致"）。
+
+### S4 上下文分配（代码为主）★ 这是"点开能看"的核心内容
+为每个角色组装一份**私有上下文包**，并同时存档（供你在 UI 里查看）：
+
+```jsonc
+{
+  "characterId": "lin-yan",
+  "self": { /* 角色卡：人设 / 说话风格 / 习惯小动作 */ },
+  "state": { "mood": "戒备", "location": "城南茶馆", "physical": "袖口湿了" },
+  "sceneSet": [ /* 只给他看的环境信息 */ ],
+  "heard": [ { "kind": "speech", "text": "你来得比我预想的早。", "from": "沈栖", "channel": "亲耳听到" } ],
+  "recalled": [ /* 检索回来的历史记忆，带时间与来源 */ ],
+  "toldDuringGap": [ /* 幕间空白里他得知的事 + 他是怎么知道的 */ ],
+  "youDoNotKnow": [ "沈栖父亲入狱的隐情", "沈栖今天为什么来" ],   // ← 硬约束
+  "mustSpeak": true,
+  "beatBudget": { "speech": 1, "action": 1, "cue": 2 }
+}
+```
+
+- `youDoNotKnow` 是硬约束；S7 后还有一次**出戏检测**（角色是否说出了他不可能知道的事）。
+- `recalled` 走本地检索（§7），不是把全部历史塞进去。
+
+### S5 分角色反应（LLM × N，并发）
+每个角色一次调用，**互不可见对方的即兴发挥**（保证独立性）：
+
+```jsonc
+{
+  "characterId": "lin-yan",
+  "beats": [
+    { "kind": "cue",    "text": "右手在门框上顿了一下", "timing": "immediate" },
+    { "kind": "speech", "text": "你来得比我预想的早。", "addressee": ["沈栖"], "timing": "after:user" },
+    { "kind": "action", "text": "把湿伞靠在门边，坐到靠里的位置", "timing": "immediate" },
+    { "kind": "speech", "text": "坐吧，靠窗那桌别坐。", "addressee": ["沈栖"], "timing": "after:other-reacts" },
+    { "kind": "inner",  "text": "她手上没有戴那枚戒指。", "timing": "immediate" }
+  ],
+  "perceptions": [
+    { "sourceId": "s2", "observed": "她说这句话时没有看我",
+      "interpretation": "她不想让我看出她在意", "accuracy": 0.6,
+      "emotionalImpact": "轻微被刺到", "reactionIntent": "用玩笑挡回去" }
+  ],
+  "newMemory": [ /* kind: witnessed/told/inferred/did/rumor */ ],
+  "stateDelta": { "mood": "收起了玩世不恭", "intent": "试探沈栖是否知情" },
+  "knowledgeDelta": { "learned": ["沈栖今天没戴订婚戒指"] }
+}
+```
+
+- **顺序语义**：`timing` 用标签而非序号（`immediate` / `after:user` / `after:other-reacts` / `after:<id>` / `later`），由 S7 翻译成真实顺序，避免并发时的因果冲突。
+- 超过 6 个在场角色时，第 7 个起只生成一句话的背景交代，不参与完整往返。
+- `minor` / `extra` 用廉价模型 + 更小的 `beatBudget`。
+
+### S6 外化与感知失真
+1. **外化**：每个 `inner` 节拍 → 0..n 条 `Cue`：
+   ```jsonc
+   { "characterId": "lin-yan", "channel": "face", "visible": "嘴角的笑维持了半秒就收住了",
+     "leakage": 0.4, "readability": 0.3 }
+   ```
+   `leakage = f(自制力, 情绪强度, 场合公开度)`；完全藏得住 → `channel: "none"`（什么也没露）。
+2. **感知**：旁观者只拿到 `Cue.visible` 这一句客观描述，各自经过"性格 + 关系 + 偏见"过滤，产出**可能不符真实含义**的 `interpretation`：
+   ```
+   accuracy = clamp(base(关系亲密度) + readability + familiarity(了解程度) − bias(偏见/情绪), 0.05, 0.95)
+   ```
+3. **禁止越权**：任何角色不得复查他人 `inner`；S7 前有校验器拦截越权输出。
+
+**只有"你"能看全**：舞台上其他人只看到线索，但私密层（点开角色卡的"心理"页签）会告诉你：真实内心是什么、外化成了什么线索、别人读成了什么、读错了多少。这是这套系统最有趣的地方。
+
+### S7 编排（LLM #1）
+把全场节拍按时间顺序排好，产出**主看板的展示结构**：
+
+```jsonc
+{
+  "blocks": [
+    { "order": 1, "kind": "scene",  "text": "雨停了，青石板上还积着水洼。" },
+    { "order": 2, "kind": "speech", "characterId": "pc",     "text": "你来得比我预想的早。", "locked": true },
+    { "order": 3, "kind": "action", "characterId": "lin-yan","text": "推门进来，袖子湿了半截。" },
+    { "order": 4, "kind": "cue",    "characterId": "lin-yan","text": "他的笑维持了半秒就收住了。" },
+    { "order": 5, "kind": "speech", "characterId": "lin-yan","text": "坐吧，靠窗那桌别坐。" }
+  ],
+  "remarks": [ { "kind": "simultaneous", "orders": [3, 6], "note": "两人几乎同时开口" } ]
+}
+```
+
+编排约束（按优先级）：
+1. **锁定的 pc 台词一字不改**，必须出现；
+2. 因果先后：`after:other-reacts` 必须排在触发它的节拍之后；
+3. 同一时刻的动作可并列；
+4. 环境节拍穿插在节拍转换处，像舞台指示；
+5. **覆盖率保证**：扫描在场角色，缺台词者 → 触发一次"补白"轻量调用（"你必须说一句话，或者给出明确沉默的理由"），最多 2 轮；
+6. 无法裁决的冲突 → UI 标黄，交给你决定，不静默编造。
+
+### S8 状态回写（无 LLM）
+推进时间轴、写入每角色记忆、更新关系边与心境、判定路人提升、统计 token 与调用次数。
+**所有写入都带 `producedByStepId`**，以便回退时精确撤销（§9）。
+
+---
+
+## 4. 可回退的步骤图（StepGraph）——架构底座
+
+你要的"每一步都能编辑，然后这一步之后的所有内容作废并重新生成"，本质是**一个可编辑、可选择性重跑的 DAG**。
+
+```ts
+export type StepStage =
+  | 'normalize' | 'segment' | 'scene' | 'cast'
+  | 'context' | 'roleplay' | 'exteriorize' | 'compose' | 'commit';
+
+export interface Step<TOut = unknown> {
+  id: string;
+  roundId: string;
+  stage: StepStage;
+  label: string;                     // "林砚 的反应" / "拆解" / "给林砚的上下文"
+  deps: string[];                    // 直接上游 stepId（DAG 边）
+  inputSnapshot: unknown;            // 当时的完整输入（含注入 LLM 的上下文），可回看
+  output: TOut;                      // 产物，**可编辑**
+  status: 'pending' | 'done' | 'stale' | 'error';
+  lockedByUser: boolean;             // 锁定后重跑时跳过
+  editedByUser: boolean;             // 是否被人手改过（重跑会覆盖，需提示）
+  model?: string;
+  cost?: { calls: number; tokensIn: number; tokensOut: number; ms: number };
+}
+
+export interface Round {
+  id: string;
+  userInput: string;
+  steps: Record<string, Step>;
+  rootStepIds: string[];
+  status: 'draft' | 'running' | 'done' | 'error';
+  createdAt: string;
+}
+
+// 副作用账本：所有写入状态的东西都记录来源步骤，便于撤销
+export interface LedgerEntry {
+  id: string;
+  producedByStepId: string;
+  kind: 'memory' | 'relation' | 'timeline' | 'card' | 'state';
+  targetId: string;
+  payload: unknown;
+}
+```
+
+行为规则：
+
+| 操作 | 结果 |
+|---|---|
+| 编辑某个 Step 的 `output` | 该 Step 标 `editedByUser`，**递归把所有下游 Step 标 `stale`** |
+| 点「从这一步重跑」 | 只重算 `stale` 的 Step；未 stale 的复用缓存（省钱、省时间） |
+| 点某 Step 的「锁定」 | 重跑时跳过它，并用它的产物作为下游输入 |
+| 点某 Step 的「查看」 | 显示 `inputSnapshot`（"它当时收到了什么"）与 `output` |
+| 重跑前 | 先按 `LedgerEntry.producedByStepId` 撤销该 Step 及其下游产生的记忆/关系/时间线写入 |
+| 角色之间无依赖 | 改「林砚的反应」**不会**让「阿七的反应」重跑（DAG 分支隔离） |
+
+**为什么这条设计值钱**：拆解错了某个标签，只需重跑受影响的那条分支；某个角色的反应不满意，其他五个角色的反应可以直接复用，不必重抽（否则每次重来都在烧钱且角色表现会变）。
+
+---
+
+## 5. 数据模型（核心类型）
+
+```ts
+// ---------- 片段 ----------
+export type SegmentKind =
+  | 'scene' | 'action' | 'speech' | 'inner'
+  | 'narration' | 'worldfact' | 'offscreen' | 'ambient';
+
+export interface Segment {
+  id: string;
+  kind: SegmentKind;
+  text: string;
+  speaker?: string;                 // speech 的说话人（pc 名字表示是你）
+  addressee?: string[];
+  subject?: string[];
+  location?: string;
+  isFact: boolean;                  // true=锁定，AI 不可改写（默认仅 pc 台词为 true）
+  lockedByUser: boolean;
+  visibility: 'public' | 'private';
+  confidence: number;               // 0..1，低置信在 UI 高亮
+  sourceRange: [number, number];    // 你原文的偏移，用于高亮
+}
+
+// ---------- 时间 ----------
+export interface TimeDelta {
+  kind: 'absolute' | 'relative' | 'elapsed' | 'unknown';
+  value: string;                    // ISO8601 duration 或日期字面量
+  resolvedAt?: string;
+  anchorSceneId?: string;
+  assumed?: boolean;                // 引擎猜的（UI 提示可校正）
+  note?: string;
+}
+
+// ---------- 角色 ----------
+export type CastTier = 'pc' | 'major' | 'minor' | 'extra';
+export type CardOrigin = 'user' | 'builtin' | 'wiki' | 'generated';
+
+export interface CharacterCard {
+  id: string;
+  name: string;
+  aliases: string[];
+  tier: CastTier;
+  origin: CardOrigin;
+  reality: 'real' | 'fictional' | 'original';
+  verified: boolean;                // 是否经外部资料校验
+  persona: {
+    summary: string;
+    speechStyle: string;            // 句长、用词、口头禅
+    temperament: string[];
+    values: string[];
+    taboo: string[];
+    habits: string[];               // 习惯小动作/微表情
+    background: string;
+  };
+  relations: { targetId: string; label: string; attitude: number; trust: number; bias: number }[];
+  state: { mood: string; physical: string; location: string; intent?: string };
+  ephemeral: boolean;
+  appearances: number;              // 出场 + 被提及次数（提升判定用）
+  createdAt: string;
+  lastSeenSceneId?: string;
+}
+
+// ---------- 记忆与知识 ----------
+export interface MemoryEntry {
+  id: string;
+  characterId: string;
+  at: string;
+  sceneId?: string;
+  kind: 'witnessed' | 'told' | 'inferred' | 'did' | 'rumor';
+  summary: string;
+  participants: string[];
+  location?: string;
+  salience: number;                 // 0..1
+  emotion: { label: string; intensity: number };
+  source?: string;                  // 谁说的 / 哪一幕
+  producedByStepId: string;         // 回退用
+}
+
+export interface KnowledgeState {
+  known: string[];
+  believed: string[];               // 他"以为"的（可能错）
+  suspected: string[];
+  unawareOf: string[];              // 硬约束，禁止全知
+}
+
+// ---------- 外化与感知 ----------
+export interface Cue {
+  id: string;
+  characterId: string;
+  fromBeatId: string;
+  channel: 'face' | 'voice' | 'body' | 'breath' | 'pause' | 'gaze' | 'object' | 'none';
+  visible: string;                  // 客观可见描述，不含心理解释
+  leakage: number;                  // 0..1
+  readability: number;              // 0..1
+}
+
+export interface Perception {
+  observerId: string;
+  sourceId: string;
+  observed: string;                 // 客观层
+  interpretation: string;           // 主观层（允许错）
+  accuracy: number;
+  emotionalImpact: string;
+  reactionIntent: string;
+}
+
+// ---------- 生成与展示 ----------
+export interface Beat {
+  id: string;
+  characterId: string;
+  kind: 'speech' | 'action' | 'inner' | 'cue' | 'silence';
+  text: string;
+  addressee?: string[];
+  timing: 'immediate' | 'later' | `after:${string}`;
+  condition?: string;
+  sourceSegmentId?: string;
+}
+
+export interface Block {
+  order: number;
+  kind: 'scene' | 'action' | 'speech' | 'cue' | 'aside' | 'narration';
+  characterId?: string;
+  text: string;
+  sourceId?: string;
+  locked?: boolean;                 // pc 台词
+  needsReview?: boolean;
+}
+
+export interface ReactionPanel {          // 主看板上的一张"角色反应卡"
+  characterId: string;
+  blocks: Block[];                        // 该角色在这一轮里的所有出镜
+  cueIds: string[];
+  perceptionIds: string[];
+  silent?: { decided: true; reason: string };
+  stepId: string;                         // 点开看上下文时定位到哪一步
+}
+
+export interface RoundView {              // 主看板的一轮
+  roundId: string;
+  userInput: string;
+  inputSegments: Segment[];               // 你的原文被拆成了什么
+  ordered: Block[];                       // 全场按时间顺序
+  reactions: ReactionPanel[];             // 各角色反应卡
+  timeLabel: string;
+  location: string;
+}
+```
+
+---
+
+## 6. 提示词体系
+
+`src/engine/prompts/` 每类 Agent 一个模板，统一由 `buildPrompt(stage, ctx)` 组装：
+
+| 文件 | 职责 | 关键约束 |
+|---|---|---|
+| `segmenter.ts` | 拆解素材 | 只输出 JSON；台词必须归属到人；**pc 台词标 isFact=true**；不确定标 narration |
+| `scene.ts` | 判断演出/概要、展开场面、确定在场者 | 被提到的人一律算在场；pcProfile 只写看得见的 |
+| `castResolver.ts` | 从资料生成角色卡 | 有资料**不许编造**；无资料必须标注"虚构" |
+| `roleplay.ts` | 单角色反应 | 严格第一人称视角；只用上下文包里的信息；不得复述他人内心 |
+| `exteriorizer.ts` | 心理→可见线索 | 只描述"看得见/听得见"的，禁止解释含义 |
+| `perceiver.ts` | 线索→理解（允许错） | 必须体现该角色的偏见与关系，并给出理由 |
+| `composer.ts` | 时序编排 | pc 台词一字不改；先因果后文采 |
+| `coverage.ts` | 补白 | 只允许一句话 + 一个动作，或明确沉默 |
+
+通用约定：
+- 强制 JSON：优先 `response_format: { type: 'json_object' }`，不支持则提示词内约定 ```json 块 + 解析兜底。
+- 输出一律 zod 校验；失败 → 附带错误重试 1 次 → 再失败降级（规则结果或跳过并标记）。
+- `temperature`：拆解/编排 0.2；角色反应 0.85；外化 0.6。
+
+---
+
+## 7. 信息传递模型（"真实世界不会百分百传递信息"）
+
+```
+真实意图 (inner)
+   │ 外化：leakage = f(自制力, 情绪强度, 场合公开度)
+   ▼
+可见线索 (cue.visible)      ← 客观、不含解释
+   │ 传输：只有在场者、注意力在对方身上的人能收到
+   ▼
+观察者接收 (observed)
+   │ 解码：accuracy = f(关系亲密度, readability, 熟悉度, −偏见)
+   ▼
+观察者理解 (interpretation) ← 允许错，且错得符合人设
+   │
+   ▼
+观察者的反应 (beat) ──→ 又成为别人眼中的新线索 → 循环
+```
+
+三条硬规则：
+1. **不越权**：任何人不得读取他人 `inner`；出戏检测器拦截。
+2. **可错但不可乱**：误读必须由该角色的 `bias / 关系 / 当下情绪` 解释得通，不能随机错。
+3. **传播衰减**：信息每转述一次，准确性打折并可能变形，记为 `kind: 'rumor'` 并带上来源。
+
+---
+
+## 8. 时间线与"向前追溯"
+
+### 时间推算
+- 素材含相对时间词 → 相对上一轮锚点推算（`P3D`、`PT30M`）。
+- 无时间词 → 默认承接上一轮（+5 分钟），标 `assumed: true`，UI 顶部提示"时间：假定为 5 分钟后，可改"。
+- 倒叙/回忆 → `flashback: true`，写入时间轴但**不推进主线时钟**。
+
+### 幕间空白补全（对应"三天后提到这三天发生的事"）
+1. 计算锚点到当前之间的 gap；
+2. 从你的素材抽取落在 gap 内的 `offscreenEvents`；
+3. 对每个角色判定知情与渠道：亲历 → `witnessed`；被明确告知 → `told`（记录告知者）；只闻风声 → `rumor`（打折）；**不在场也没人告诉他 → 进 `unawareOf`**；
+4. **幕间补全**（默认开）：每个角色各生成 1–3 条"这段时间我在做什么 / 我是怎么知道的"，写入记忆，供本轮动机使用；
+5. UI 上时间轴用一个可展开的"空白区段"展示：点开能看到"这三天每个人各自经历了什么"。
+
+### 向前追溯（检索）
+本地检索，不依赖向量库（可选 embedding 增强）：
+
+```
+score = 0.35·实体重叠 + 0.2·关键词重叠 + 0.25·近因(时间衰减) + 0.2·显著性(salience)
+        + 加成：同场景 / 同一关系边 / 你标为"伏笔"
+```
+
+- 每角色取 Top-K（默认 K=8）注入 `recalled`；
+- S2 的 `retrievalQueries` 发起检索；
+- 长剧情下每 20 轮做一次**分层摘要**（轮摘要 → 篇章摘要），检索优先命中摘要再展开原文。
+
+---
+
+## 9. 角色资料阶梯（纯前端的现实约束）
+
+| 阶梯 | 实现 | 需要 key | CORS |
+|---|---|---|---|
+| 你手写的角色 | 本地 | 否 | — |
+| 内置资料库 | `src/data/cards/*.json`（示例 5–10 张） | 否 | — |
+| 维基摘要 | `zh.wikipedia.org/api/rest_v1/page/summary/{title}` | 否 | 支持 |
+| 搜索 provider（可选扩展） | Tavily / Brave / Serper，可插拔 | 是 | 视厂商 |
+| LLM 兜底 | 直接生成 | 否 | — |
+
+- 外部结果缓存进 IndexedDB，按实体名 + 30 天有效期，标 `verified: true/false`。
+- UI 明确区分"已查证"与"引擎虚构"，虚构人设带一个醒目的 `推测` 徽标。
+- **不做酒馆卡导入**（已确认）。
+
+---
+
+## 10. 记忆系统
+
+- 每角色一条**记忆流**（append-only），含绝对时间、渠道、情绪、显著性、`producedByStepId`。
+- 三层：`原始记忆条` → `轮摘要` → `篇章摘要`。
+- 写入时机：S5 角色自报 `newMemory` + S8 引擎补写"他旁观到的事"。
+- 检索：§8 的加权打分；注入时按预算裁剪（默认 ≤1200 tokens/角色）。
+- **印象漂移**：关系边上的 `attitude / trust / bias` 由每次互动小幅更新（规则驱动，避免 LLM 乱改数字）。
+
+---
+
+## 11. UI 设计
+
+### 主界面
+
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ 幕间 Interlude     场景 03 · 三天后 · 傍晚      [历史/回退] [设置] [导出]      │
+├──────────────────────────────────────────┬───────────────────────────────────┤
+│ 主看板（按时间顺序）                       │ 场上角色                           │
+│                                          │                                   │
+│  ── 城南茶馆门口 · 傍晚 ──                 │ ● 沈栖（你）  pc                   │
+│  雨停了，青石板上还积着水洼。      ← 场景   │ ○ 林砚       major  [反应卡↗]      │
+│                                          │ ○ 阿七       extra  [反应卡↗]      │
+│  ▎你                                     │                                   │
+│  🔒「你来得比我预想的早。」                │ 点开任意一张反应卡，                │
+│                                          │ 就能看到这个 AI 到底收到了什么：      │
+│  ┌ 林砚 的反应 ─────────────────┐ 点击查看 │  · 你的原文被拆成了哪些片段          │
+│  │ 他推门进来，袖子湿了半截。      │        │  · 哪些片段给了它、哪些没给          │
+│  │ 「坐吧，靠窗那桌别坐。」        │        │  · 它拿到的完整上下文包              │
+│  │ ▸ 他的笑维持了半秒就收住了      │        │  · 它返回的原始 JSON（可编辑）       │
+│  └──────────────────────────────┘        │                                   │
+│  ┌ 阿七 的反应 ─────────────────┐        │                                   │
+│  │ （明确沉默：他退到柜台后面擦杯子）│        │                                   │
+│  └──────────────────────────────┘        │                                   │
+├──────────────────────────────────────────┴───────────────────────────────────┤
+│ 你发言： [________________________________________]  [拆解预览] [▶ 开演一轮]   │
+└──────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 点开一个角色反应 → 「它到底收到了什么」浮层
+
+主看板只呈现「你的输入 + 每个 AI 的输出」，不把 AI 的内心摊在台面上。
+但点开任意一张反应卡，就能看到这个 AI 究竟收到了什么——这是本项目最有辨识度的交互，含三个页签：
+
+| 页签 | 内容 |
+|---|---|
+| **上下文包** | S4 给他的完整 `ContextBundle`：人设、心境、他听到的、他回忆起的、幕间得知的、**他确定不知道的** |
+| **拆解对照** | 你的原文被拆成了哪些片段，用两种颜色高亮：**给了他** / **没给他**（以及为什么没给） |
+| **原始输出** | 该角色 LLM 返回的原始 JSON（含它自己产出的内心活动），**可直接编辑**（编辑后该步之后全部作废） |
+
+你自己扮演角色的内心只存在于你的输入里，**不会被派发给任何其他角色 AI**。
+
+### 历史 / 回退面板
+
+- 以树形展示本轮所有 Step（拆解 → 上下文 → 各角色反应 → 外化 → 编排）。
+- 每个 Step：`查看` / `编辑` / `锁定` / `从这一步重跑`。
+- 编辑后下游渐变灰（stale），顶部提示"将从这一步重跑 N 个下游步骤"。
+- 跨轮的历史同样可回退。
+
+### 交互原则
+- 默认零设置，只有三个开关（§13）。
+- 所有 AI 的判断都可见、可改：改标签、改时间、改 tier、删角色、改台词归属，改动沉淀为偏好。
+- 「拆解预览」先只跑 S0–S3（便宜），把拆解结果和阵容摊开让你确认，再点「开演一轮」跑 S4–S8。**这是主要的成本闸门。**
+
+---
+
+## 12. 技术选型与项目结构
+
+| 层 | 选择 | 理由 |
+|---|---|---|
+| 构建 | Vite 6 + React 19 + TypeScript | 纯前端、启动快 |
+| 状态 | Zustand（persist） | 轻，适合引擎状态机 |
+| 存储 | localStorage（设置）+ IndexedDB（角色/记忆/轮次/步骤图） | 长期剧情数据量大 |
+| 样式 | 手写 CSS（`src/index.css`，CSS 变量 + 语义类名） | 少一个构建依赖；面板密集时反而更可控 |
+| 校验 | zod | LLM JSON 兜底 |
+| LLM | 自写 fetch 封装（`/chat/completions`，SSE 流式） | 不引 SDK，规避体积与 CORS 差异 |
+| 并发 | 自写并发池（默认 4） | 控制速率 |
+| 测试 | Vitest | 时间推算、检索打分、DAG 失效传播、编排排序 |
+
+```
+interlude/
+├─ docs/DESIGN.md                 ← 本文档
+├─ index.html
+├─ package.json
+├─ vite.config.ts
+├─ tsconfig.json
+├─ src/
+│  ├─ main.tsx
+│  ├─ App.tsx
+│  ├─ types/                      # §5 全部类型 + zod schema
+│  │  ├─ segment.ts
+│  │  ├─ character.ts
+│  │  ├─ memory.ts
+│  │  ├─ step.ts                  # StepGraph / Round / Ledger
+│  │  └─ llm.ts
+│  ├─ engine/                     # 核心引擎：纯逻辑，零 React 依赖
+│  │  ├─ pipeline.ts              # 8 段流水线编排
+│  │  ├─ graph/
+│  │  │  ├─ stepGraph.ts          # DAG 构建 / 失效传播 / 拓扑重跑
+│  │  │  └─ ledger.ts             # 副作用账本与撤销
+│  │  ├─ stages/
+│  │  │  ├─ s0-normalize.ts
+│  │  │  ├─ s1-segment.ts
+│  │  │  ├─ s2-scene.ts
+│  │  │  ├─ s3-cast.ts
+│  │  │  ├─ s4-context.ts
+│  │  │  ├─ s5-roleplay.ts
+│  │  │  ├─ s6-exteriorize.ts
+│  │  │  ├─ s7-compose.ts
+│  │  │  └─ s8-commit.ts
+│  │  ├─ prompts/                 # §6 提示词模板
+│  │  ├─ llm/                     # client / json 解析 / 并发池 / 重试 / 计费
+│  │  ├─ memory/                  # 记忆流 / 检索打分 / 分层摘要
+│  │  ├─ time/                    # 时间推算 / 幕间空白 / 倒叙
+│  │  └─ research/                # 资料阶梯：内置卡 / 维基 / 搜索 provider
+│  ├─ store/                      # zustand slices: settings, cast, rounds, ui
+│  ├─ db/                         # IndexedDB 封装 + 导入导出
+│  ├─ ui/
+│  │  ├─ BoardView.tsx            # 主看板
+│  │  ├─ ReactionCard.tsx         # 角色反应卡
+│  │  ├─ InspectorDrawer.tsx      # 「它到底收到了什么」四页签浮层
+│  │  ├─ StepHistoryPanel.tsx     # 历史/回退树
+│  │  ├─ CastPanel.tsx
+│  │  ├─ InputBar.tsx             # 输入 + 拆解预览 + 开演
+│  │  ├─ DebugPanel.tsx           # 各 stage 中间产物
+│  │  └─ SettingsDialog.tsx       # 三个开关 + API 配置
+│  └─ data/
+│     ├─ cards/                   # 内置资料卡
+│     └─ samples/                 # 示例素材，一键试用
+└─ tests/
+   ├─ stepGraph.spec.ts           # 失效传播 / 选择性重跑
+   ├─ time.spec.ts
+   ├─ retrieval.spec.ts
+   └─ compose.spec.ts
+```
+
+---
+
+## 13. 只需要三个开关
+
+1. **演绎自由度**（默认：中 —— 角色可以加新台词和动作，但不得改变你设定的剧情走向）
+2. **幕间补全**（默认：开 —— 时间跳跃时自动补全各角色在空白期做了什么）
+3. **误读强度**（默认：中 —— 角色之间的理解会有偏差但大体靠谱；调高则更"鸡同鸭讲"）
+
+其余全部自动。设置面板只有这三个 + API 配置。
+
+> 注：原先的"台词是否可改写"不再是开关，而是**规则**——你的台词锁定，其余可演绎，任何片段都能单独上锁。
+
+---
+
+## 14. 里程碑（每期都能单独验收）
+
+| 期 | 目标 | 交付物 | 验收标准 |
+|---|---|---|---|
+| M0 | 骨架跑通 | Vite 项目、设置面板、LLM 客户端 | 能发一句话收到回复并显示；CORS 结论明确 |
+| M1 | **步骤图底座** | StepGraph + Ledger + IndexedDB + 历史面板 | 用一个假 Stage 验证：编辑上游 → 下游自动失效 → 选择性重跑 → 副作用正确撤销 |
+| M2 | 拆解 | S0+S1、拆解预览、标签可改、pc 台词自动锁定 | 粘贴一段含场景/动作/台词/心理的文本，标签肉眼可接受；你的台词被锁 |
+| M3 | 时间与世界 | S2、时间线面板、幕间空白区段 | "三天后"正确推算；空白区段列出事件与知情者 |
+| M4 | 阵容与资料 | S3、角色面板、内置卡 + 维基 + 生成兜底 | 真实人物得到带来源标注的卡；虚构角色标 `推测` |
+| M5 | 上下文与单角色 | S4+S5+Inspector 的「上下文包」「拆解对照」页签 | 点开角色能看到它收到了什么；心理不外泄 |
+| M6 | 多角色一轮 | 并发 S5 + S7 + 覆盖率补白 + 主看板 | 场上 4 个角色各自反应，按时间顺序显示；该说话的都说了 |
+| M7 | 外化与失真 | S6 + Inspector 的「心理层」页签 | 能看到"真实内心→线索→别人读成什么→错了多少" |
+| M8 | 记忆与回写 | 记忆流、检索、S8、印象漂移 | 第二轮能引用第一轮细节；角色不会说出不知道的事 |
+| M9 | 打磨 | 路人提升、导出、成本统计、示例素材 | 路人出场 3 次自动升级；一键导出全部数据 |
+
+---
+
+## 15. 风险与对策
+
+| 风险 | 对策 |
+|---|---|
+| 厂商 CORS / 接口差异 | 设置里给"直连 / 代理"开关（代理地址用户自填）；M0 先实测 |
+| 模型 JSON 不稳定 | zod 校验 + 带错误重试 1 次 + 规则降级；提示词给 JSON 骨架 |
+| 成本失控 | 拆解预览闸门 + 并发上限 + 缓存 + 每轮预算警告；角色级 DAG 隔离避免无谓重抽 |
+| 角色全知（串味） | `unawareOf` 硬约束 + 出戏检测器 + 感知层隔离 |
+| 并发导致因果矛盾 | 语义化 `timing` 而非序号；S7 统一裁决；无法裁决标黄 |
+| 误读变成胡乱编造 | 误读必须由关系/偏见/情绪解释，提示词要求理由字段并校验 |
+| 回退后状态不一致 | 所有写入带 `producedByStepId`；重跑前先按账本撤销 |
+| 长篇上下文膨胀 | 分层摘要 + Top-K 检索 + 每角色 token 预算 |
+| 内置资料库版权/体积 | 只放少量公有领域/常识性示例，其余靠维基 |
+
+---
+
+## 16. 已确认（第二轮）
+
+1. **主看板形态**：只要按时间顺序排列的「你的输入 + 各角色反应卡」，不做交织成整幕剧本的视图。
+2. **AI 的内心**：主看板不展示。真正的内心只有你自己角色的（来自你的输入），且**不会派发给任何其他角色 AI**。点开一个角色反应，要看的是「它收到了什么」（上下文包 / 拆解对照 / 原始输出）。
+3. **场上角色判定**：引擎从你的素材里自动推断（你提到了谁、谁在那个地点），零操作。
+4. **不做**：酒馆角色卡导入、中途干预、图片生成。
+
+---
+
+## 17. 实现进度
+
+| 里程碑 | 状态 | 说明 |
+|---|---|---|
+| M0 骨架 | ✅ | Vite + React 19 + TS，设置面板，OpenAI 兼容客户端（超时、退避重试、`response_format` 不支持时自动降级） |
+| M1 步骤图底座 | ✅ | `StepGraph`（DAG / 失效传播 / 拓扑重跑 / 锁定跳过）+ `Ledger`（副作用账本）+ IndexedDB 持久化 + 步骤历史与回退面板 |
+| M2 拆解 | ✅ | S0 切块与规则预标注 → S1 模型拆解（zod 校验 + 归一化 + 原文对齐 + pc 台词自动锁定）；拆解预览可改标签 / 文本 / 锁定 |
+| M3 时间与世界状态 | 🟡 部分 | S2 场景构建已实现（概要展开、在场者判定、保险丝）；真正的时间轴推进与幕间空白补全未做 |
+| M4 阵容与资料 | 🟡 部分 | 资料阶梯已实现：**维基检索 → 模型知识 → 仅素材**三档，卡上标明来源；内置卡库 / 搜索 provider 未做 |
+| M5 上下文与单角色反应 | ✅ | S4 私有上下文包（含「他确定不知道的」硬约束、对面的人只给外在形象）+ S5 单角色反应 |
+| M6 多角色一轮 + 主看板 | ✅ | 并发分层调度 + S7 编排 + 主看板（场面 → 你的输入 → 各角色反应卡） |
+| M7 外化与失真 | 🟡 部分 | **你的**内心外化（S2b：结合人设判定泄漏度与可读性）已实现；对方角色的内心仍靠它自己写在 `cue` 节拍里；逐观察者的误读计算未做 |
+| M8 记忆与回写 | 🟡 部分 | 角色库跨轮复用 + 每轮记忆回写 + 注入最近若干段已实现（且是步骤派生物，随回退自动撤销）；分层摘要、关系漂移、向量检索未做 |
+
+### 交互变更（按第三轮反馈）
+
+原来是「拆解预览 → 确认 → 再开演」两步。你要求一步到位，于是改成：
+
+- 按钮叫 **「发送」**，点下去后台一次跑完：规范化 → 拆解 → 阵容解析 → 每角色上下文 → 每角色反应 → 编排。
+- 拆解不再是一个前置步骤，而是**事后可查可改的详情**：点主看板里「你的输入」那一块即可展开/收起。
+- 每张角色反应卡上有 **「它收到了什么」**，点开就是那个角色这一轮实际拿到的完整上下文，外加「拆解对照」：你的原文哪些片段给了他、哪些没给。
+- 生成过程中顶部实时显示哪个步骤在跑。
+
+步骤图从线性变成按角色分叉：
+
+```
+规范化 → 拆解 → 阵容解析 ─┬─ 给A的上下文 → A的反应 ─┐
+                          ├─ 给B的上下文 → B的反应 ─┼→ 编排
+                          └─ 给C的上下文 → C的反应 ─┘
+```
+
+改「给B的上下文」，只有 B 的反应和编排重跑，A 和 C 原样复用。`runSteps` 按依赖分层并发执行，互不依赖的角色反应会真并发。
+
+### 第四轮变更：场面展开与「我自己的人设」
+
+三个问题：
+
+1. **布局反了**：输入框应该在底下，主看板在上面展示整轮交互流程。已改。
+2. **缺「我自己的人设」**：新增可实时编辑的输入（默认折叠在输入框上方）。它注入 S1 拆解、S2 场景构建、S3 阵容、S5 反应的提示词；但派发给角色 AI 的只有 S2 归纳出的 `pcProfile`（看得见的样子），人设本身不派发。
+3. **概要输入被判成「无需交互」**：`（我遇到了金刚狼）` 之前会走进"素材里没有其他出场人物"的死路。根因是阵容解析把"没说话"当成了"不在场"。修法是插入 S2 场景构建并加保险丝：
+   - S2 判断 `inputMode`，概要就走"展开成场面"的分支：补时间、地点、氛围、开场画面、在场者、开场已发生的节拍；
+   - 阵容解析不再自己判断谁在场，改为**以 S2 的在场名单为准**（名单里的人必有卡，名单外的人丢掉）；
+   - `ensurePresentHasActors()` 作为保险丝：模型说没人需要反应、但素材里有人名时，强制拉回在场名单。
+
+流水线因此变成：
+
+```
+规范化 → 拆解 → 场景构建 → 阵容解析 ─┬─ 给A的上下文 → A的反应 ─┐
+                                     ├─ 给B的上下文 → B的反应 ─┼→ 编排
+                                     └─ 给C的上下文 → C的反应 ─┘
+```
+
+`composeScene` 也改为以 S2 的 `opening` 和 `establishedBeats` 为骨架，并保留一条保险丝：如果 S2 漏抄了你写的台词，编排会把素材里属于你的台词动作补回来并锁定。
+
+### 第五轮变更：连续剧情流与跨轮记忆
+
+两个根子上的问题：
+
+**1. 轮次被切开了。** 原来点某一轮就只显示那一轮，看不到剧情全貌。现在主看板是**一条连续的剧情流**：所有轮次从上到下排下来，新的一轮追加在末尾并自动滑过去；左栏的轮次列表退化为**目录锚点**（点击 `scrollIntoView`），不再切换视图。长剧情用 `content-visibility: auto` 让浏览器跳过屏幕外轮次的渲染。
+
+**2. 角色没有跨轮记忆。** 现在补上了三层：
+
+- **角色库跨轮复用**：S3 阵容解析先查库，以前出场过的角色直接复用他的卡（`usedModel: false`，零调用），只给新角色调模型。同名同 `stableCharacterId`，所以跨轮身份稳定。
+- **S8 记忆回写**：一轮结束多跑一个 `commit` 步骤，为每个参与角色写一条**他自己视角**的记忆 —— 「他听到的 + 他说的 + 他做的 + 他当时想的」，外加场面定位。特别注意：记忆不是全知剧本，他没在场的事不会进他的记忆。
+- **注入下一轮**：S4 组装上下文时 `recallFor()` 取该角色最近 N 段记忆放进 `ContextBundle.recalled`，角色提示词里渲染成「你还记得的事（按时间顺序）」，并附一句"可以自然引用，但不要像复述档案"。
+
+**关键设计：角色库和记忆都不单独存储，而是从步骤图派生**（`engine/memory/library.ts`）：
+
+```ts
+getCastLibrary(steps)  // 合并所有 cast 步骤的产物，后者覆盖前者
+getMemories(steps)     // 汇总所有 commit 步骤的 entries
+```
+
+好处是回退零成本：删掉某一轮的「记忆回写」步骤，那一段记忆就随之消失；重跑某条分支，记忆跟着重算。不需要维护任何"撤销记忆"的补偿逻辑，也不会出现"步骤回退了但记忆还留着"的不一致 —— 有测试专门守这条。
+
+流水线因此变成：
+
+```
+规范化 → 拆解 → 场景构建 → 阵容解析 ─┬─ 给A的上下文 → A的反应 ─┐
+                                     ├─ 给B的上下文 → B的反应 ─┼→ 编排 → 记忆回写
+                                     └─ 给C的上下文 → C的反应 ─┘
+```
+
+### 第六轮变更：你的外化（S2b）
+
+反馈是：`（我有一点尴尬）` 判成"不该给对面"，原则上对；但**结合人设可以推断出外在表现，那个表现本来就该给对方看**。
+
+在这之前机制只做了一半：心理不外传 ✅，外化 ❌。补上 S2b `exposure`：
+
+- 输入：你写的内心片段 + 你的自我人设 + 场面 + 在场者
+- 输出：0~3 条 `PcCue`，每条含 `visible`（别人眼里的现象）、`channel`、`leakage`（你这个人有多藏不住事）、`readability`（别人读出真实心情的概率）
+- 提示词写死两条：**只写现象不写解释**；**泄漏程度必须符合人设**（城府深的人 leakage 0.1~0.3，藏不住事的人 0.7~0.9）。并且明确允许「一点都不露」——返回空数组比硬编一个表情好。
+- 素材里没有内心活动时直接跳过，不调模型。
+
+**安全边界在类型上就分开**：
+
+```ts
+interface PcCue { hidden: string; visible: string; leakage: number; readability: number }  // 引擎侧，给你看
+interface ObservedCue { visible: string; readability: number; channel: CueChannel }        // 给角色 AI 的，没有 hidden
+```
+
+`ContextBundle.pcCues` 的类型是 `ObservedCue[]`，所以 `hidden` 在类型层面就进不去角色的上下文。有一条测试直接 `JSON.stringify(bundle)` 断言搜不到你的真实内心。
+
+S0 规则层同步补齐：`（…）` 括号里带情绪词的（尴尬 / 紧张 / 心虚 / 后悔…）判为 `inner`；带动作的仍判动作。
+
+舞台（S7）上多一类 `pc-cue` 块，排在「你说了 / 做了什么」之后、角色反应之前；角色提示词里对应出现一节「你注意到的「你」的样子」，并附一句"这些只是现象，你很可能猜错"。
+
+流水线变成：
+
+```
+规范化 → 拆解 ─┬→ 场景构建 ─┬→ 你的外化 ─┐
+               │            └→ 阵容解析 ─┴┬─ 给A的上下文 → A的反应 ─┐
+               │                          ├─ 给B的上下文 → B的反应 ─┼→ 编排 → 记忆回写
+               │                          └─ 给C的上下文 → C的反应 ─┘
+```
+
+### 第七轮变更：一轮之内的时序
+
+反馈：用户是**按时间顺序**写的，但引擎把同一轮里依次发生的事当成了并列归类。例子：
+
+```
+我其实。。。。 （我有点犹豫） 。。。。 也没那么想回家。。。。
+（我看着他）我可以。。。。跟你待一会吗。
+```
+
+被读成"4 段心理/动作 + 1 段台词"，实际是"说一句 → 犹豫 → 再说一句 → 看他一眼 → 又问一句"。
+
+三处根因，逐条修：
+
+1. **拆解没有保留时序语义。** 提示词新增三条硬规则：输出必须保持原文顺序、不得按类型重排；一段话被括号打断时括号前后是**两次独立发言**；**不得因为没有引号就判成心理或旁白**（带省略号、被停顿切开的明显是台词）。见 `prompts/segmenter.ts` 第 10~12 条。
+
+2. **编排把顺序打乱了。** 原来的 `composeScene` 按类型分组重排（先所有 scene、再所有 pc-action、再所有 pc-speech……），直接抹掉了"句 → 停顿 → 句"的节奏。现在改为**按 `sourceRange` 严格重建时间线**：遍历原文顺序，逐条翻译成舞台块。场景文本用 `seenScene` 去重，但**台词一律不去重**（否则两个人各说一句「嗯。」会丢掉一句）。
+
+3. **角色感知也是分组的。** `ContextBundle` 原来的 `heard / seen / ownPriorLines` 是三个分类数组，角色看到的是"他听到的（若干）+ 他看到的（若干）"，而不是"先发生什么、后发生什么"。现在新增 `perceived: PerceivedEvent[]`（`kind` + `from` + `text` + `self`），**按原文顺序**，角色提示词用它渲染成带编号的事件序列：
+
+```
+【刚才按时间顺序发生的事】
+1. 你说：「我其实。。。。」
+2. 你注意到「我」：指尖在裤缝上蹭了一下
+3. 你说：「也没那么想回家。。。。」
+（这些是依次发生的，不是同时发生的。标着「你说」的都是你已经说过的，不要重复。）
+```
+
+两处配套改动：
+
+- **切块按括号切开。** `splitIntoBlocks` 先把 `A（B）C` 拆成 `A` / `（B）` / `C` 三块，让规则层就能分别标注，也让模型更容易看出"括号把台词切开了"。
+- **外化线索带 `fromIndex`。** 外化器输出的每条线索标明来自第几条内心（提示词里给内心编号），编排时据此把线索**插回它原本的时间位置**。概要模式下没有对应内心片段时，线索会在你的内容之后兜底补上，不会丢。
+
+### 第八轮变更：知名角色的资料阶梯
+
+反馈：知名角色（金刚狼）的人设写得太简陋，容易出戏。
+
+根因是 §9 那张资料阶梯表一直只实现了最底下一档（LLM 凭空生成）。现在把上面几档补上：
+
+**① 维基检索（新增）** `engine/research/wiki.ts`
+
+- 对**这一轮新出场**的角色并发查中英文维基摘要，取信息量更大的那份
+- `zh.wikipedia.org` / `en.wikipedia.org` 的 REST summary 接口：免 key、允许跨域
+- 3 秒超时，网络不通或没有词条一律静默返回 `null`（不报错、不阻塞）
+- 消歧义页直接丢弃（信息量还不如模型自己的知识）
+- 查到的摘要存档进卡片的 `researchNote`，重跑时不必再查
+
+**② 三档写法写进提示词** `prompts/cast.ts`
+
+| 档位 | 触发条件 | 提示词要求 |
+|---|---|---|
+| A | 有参考资料 | 资料权威、不得矛盾，把卡写厚 |
+| B | 无资料但模型认识 | 用自身知识，**唯一要求是具体**，必须填满 signature / voiceSamples / canonAnchors / boundaries |
+| C | 完全不认识 | 只按素材写薄卡，不得编造身世 |
+
+B 档的提示词里直接给了反例清单（「沉默寡言，性格坚毅」「外表冷酷内心温柔」「实力强大深藏不露」）并注明"放在一百个角色身上都成立，等于没写"，要求改写成可辨认的具体行为。
+
+**③ 角色卡加四个字段**
+
+```ts
+persona: {
+  signature: string[]      // 标志性特征：具体到熟悉原作的人一眼认出
+  voiceSamples: string[]   // 符合他说话方式的示例台词 —— 把握语气用，不是必须说的
+  canonAnchors: string[]   // 原作确定的事实，包含能力及其限制
+  boundaries: string[]     // 绝不会做的事/说的话（防出戏）
+}
+canonical: boolean         // 是否知名角色
+franchise: string          // 出处
+source: 'wiki' | 'model' | 'material' | 'manual'   // 资料依据，UI 上标出来
+```
+
+角色提示词里把这四项展开成四节，并明确 `voiceSamples` 是"语气示例，不是你必须说的台词"——否则模型会机械照抄。
+
+**④ 一条红线**：不确定的细节宁可不写。写错一个知名角色的关键设定，比写得少更让人出戏。
+
+**⑤ 顺带修了测试**：加上维基检索后，测试里的 `runFullRound` 会真的去请求维基百科并等满 3 秒超时，整套测试从 0.4 秒涨到 16 秒。现在测试统一用 `researchEnabled: false` 绕过网络，耗时回到 0.43 秒。
+
+### 第九轮变更：对话（局）与线性时间线
+
+反馈有两条，合起来其实是同一个判断：
+
+1. 左栏不该是「轮次目录 + 新建轮次」，应该是**整个对话的目录**——切换和新建的是**完全无关的另一条故事线**。
+2. 删除轮次没必要：「我直接在我想删除的那一轮的上一轮重跑就行了」。
+
+也就是：**轮次是线性的，不该被当作可独立增删的对象；可切换的是「局」。**
+
+改动：
+
+**① 引入 `Session`**
+
+```ts
+interface Session { id: string; title: string; createdAt: string; updatedAt: string }
+interface Round { ...; sessionId: string; index: number }   // index 在 session 内从 1 开始
+```
+
+- 第一次发送会**自动创建**一条对话，不需要先点「新建」
+- 左栏换成 `SessionList`：新建 / 切换 / 改名 / 删除整个对话
+- `BoardView` 只渲染当前对话的轮次
+
+**② 对话自动命名**：第一轮跑完后，用场景构建给出的 `place` 命名（「城南茶馆」），没有就用情境或输入前 14 字。`autoTitleSession` 只在标题还是默认值时才生效，你手改过就不会被覆盖。
+
+**③ 轮级重演取代「删除轮次」**：每一轮的分隔线上有「从这一轮重演」——
+
+```
+replayFromRound(roundId):
+  1. 确认（如果后面还有轮次）
+  2. truncateAfterRound(roundId)   // 同对话内 index 更大的轮次、步骤、账本一起清掉
+  3. rerunFrom(该轮的第一个步骤)
+```
+
+这样「删掉第 3 轮」的操作就是「在第 2 轮点重演」，和用户脑子里的时间线一致。`truncateAfterRound` 只清理同一条故事线内、序号更大的轮次，不会误伤另一条对话。
+
+**③-b 整段原文可编辑**：光能改拆解后的片段不够 —— 用户想的是"我把这句话重写一遍"，而不是"我把这条 speech 改成 action"。
+
+「你的输入」块右上角加了 **「编辑原文」**：整段重写 → 「保存并重新生成」：
+
+```ts
+regenerateRoundFromInput(roundId, newInput):
+  1. truncateAfterRound(roundId)      // 丢弃这一轮之后的轮次
+  2. updateRoundInput(roundId, text)  // 换上新写的原文
+  3. clearRoundSteps(roundId)         // 清掉这一轮已有的步骤
+  4. runRoundFor(roundId)             // 整轮重跑
+```
+
+**第 3 步是关键，也是它和「重演」的区别**：改了原文，出场角色可能就变了；如果只做 `rerunFrom`，步骤树还是旧的那一套（`context` / `roleplay` 步骤的数量是按旧角色建的），新角色根本不会有反应。所以必须清掉整棵步骤树重来。
+
+三种改法的粒度：
+
+| 操作 | 影响范围 | 代价 |
+|---|---|---|
+| 改拆解里的单个片段 | 只让下游步骤过期 | 最轻，其余分支复用 |
+| 「从这一轮重演」（原文不变） | 该轮全部步骤 | 中 |
+| 「编辑原文」+ 重新生成 | 该轮全部步骤 + **丢弃后续所有轮次** | 最重 |
+
+**③-c 去掉确认弹窗，改成可撤销**：这几个操作会被反复用（调一句话、重演一段），每次弹窗很烦。现在全部直接执行，代价是必须在顶栏给一个后悔药：
+
+```ts
+saveUndo(label)   // 破坏性操作前调用，记下当时的 sessions / rounds / steps / ledger
+undoLast()        // 整份恢复，恢复后快照失效
+```
+
+覆盖三处：`replayFromRound`、`regenerateRoundFromInput`、删除对话。快照只在内存里、不持久化——刷新页面后自然失效，不会攒下一堆历史状态。
+
+**④ 记忆与角色库跟着一起回退**：因为它们本来就是从步骤图派生的（`getMemories` / `getCastLibrary`），被 truncate 掉的轮次连同它们的记忆一起消失，不需要额外补偿逻辑。
+
+**⑤ 补充：对话之间必须完全隔离。**
+
+第一版漏了这一点 —— `getCastLibrary(steps)` 与 `getMemories(steps)` 是**从整个工作区的步骤派生**的，新开的对话会直接认领上一场戏的角色卡、并且继承它的记忆。这跟"完全无关的另一条故事线"是矛盾的。
+
+修法是给这两个函数加 `roundIds` 过滤，调用时传入**当前对话的轮次集合**：
+
+```ts
+function sessionRoundIds(ctx: PipelineContext): Set<string> | undefined {
+  if (!ctx.rounds?.length) return undefined          // 拿不到列表就不隔离（向后兼容）
+  return new Set(ctx.rounds.filter(r => r.sessionId === ctx.round.sessionId).map(r => r.id))
+}
+```
+
+三处都要挂上：
+
+| 位置 | 作用 |
+|---|---|
+| S3 阵容解析的 `library` | 新对话不会复用旧对话的角色卡，会重新建卡并重新查资料 |
+| S4 上下文分配的 `memories` | 新对话的角色不会记得旧对话的事 |
+| `findPreviousScene` | 新对话的场面构建不会接上旧对话的「上一幕」 |
+
+右栏的「角色与记忆」「步骤历史」同样只显示当前对话。
+
+**⑥ 旧数据迁移**：`store/migrate.ts` 在启动时把没有 `sessionId` 的旧轮次收拢进一条「早先的对话」，一次性写回。
+
+### 实现中偏离设计的两处
+
+1. **不用 Tailwind，改手写 CSS**（`src/index.css`）：少一个构建依赖、少一处版本兼容风险，面板密集的界面用 CSS 变量 + 语义类名同样可控。
+2. **包管理器用 npm 而非 pnpm**：本机 `pnpm` 是 corepack 代理，需要写 `~/.cache/node/corepack`，在当前沙箱下被拒绝；且 `pnpm init` 写入的 `packageManager: pnpm@12.4.1` 会让 npm 直接拒绝执行。用 npm + 工作区内的 cache 目录可正常运行。
+
+### 测试覆盖
+
+`npm test` 共 33 个用例：
+
+- `tests/stepGraph.spec.ts`：下游收集、拓扑序、失效传播的**分支隔离**（改一个角色的上下文不会重跑另一个角色）、锁定跳过、账本精确撤销。
+- `tests/normalize.spec.ts`：切块与原文偏移、说话人识别（前置 / 后置 / 冒号）、心理 / 动作 / 时间标记判定、标签别名归一、pc 台词锁定、区间对齐回原文。
+- `tests/character.spec.ts`：阵容卡归一化与稳定 id、规则降级抓人名、**上下文信息隔离**（别人的内心绝不进入上下文）、节拍类型归一与 inner 不混入 beats、编排顺序与锁定。
+- `tests/fullRound.spec.ts`：整轮一键跑通、模型不可用时降级不崩、单角色失败不阻断编排、上下文包里不含他人内心。
+- `tests/pipeline.spec.ts`：模型不可用时自动降级到规则结果、重跑计划正确、换输入后重跑确实用到新文本。
+- `tests/render.spec.ts`：空状态下界面可完整渲染。
