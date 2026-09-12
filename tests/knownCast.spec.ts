@@ -20,7 +20,7 @@ function card(name: string, aliases: string[] = []): CharacterCard {
     canonical: false,
     franchise: '',
     source: 'material',
-    canReadMind: false,
+    mindReading: '',
     persona: {
       summary: '一句话简介',
       speechStyle: '',

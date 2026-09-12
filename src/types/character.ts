@@ -39,12 +39,14 @@ export interface CharacterCard {
   /** 查到的资料摘要（可追溯，也避免重跑时再查一次） */
   researchNote?: string
   /**
-   * 他能不能直接读到别人的内心（读心、共感、心灵链接之类）。
+   * 他读取他人内心的能力描述（没有就留空字符串）。
    *
-   * 这一项会打破「心理不外传」的硬规则 —— 有读心能力的角色，
-   * 会被直接授予对方的内心活动。
+   * 刻意不做成布尔开关 —— 读心有无数种：
+   * 「只能感觉出对方情绪」「能听到没说出口的碎片」「能像读剧本一样看到全部」。
+   * 强度与限制由模型自由描述，**具体能读到多少也交给模型**结合
+   * 「对方的隐藏程度」自行判断，而不是引擎硬编一个阈值。
    */
-  canReadMind: boolean
+  mindReading: string
   persona: {
     summary: string
     speechStyle: string
@@ -128,10 +130,20 @@ export interface ContextBundle {
   /** 素材里已经属于他的表现：他刚才说过什么、做过什么 */
   ownPriorLines: string[]
   /**
-   * 通过特殊能力读到的别人内心。
-   * 只有 canReadMind 的角色才会有内容 —— 这是「心理不外传」唯一的例外。
+   * 他能读到的「候选」内心。
+   *
+   * 注意这只代表**引擎允许他知道这个信息存在**，不代表他一定读到了 ——
+   * 能读到多少，由他自己结合能力强度与对方的隐藏程度判断。
    */
-  mindRead: { from: string; text: string }[]
+  mindRead: {
+    from: string
+    /** 对方的原始内心活动 */
+    text: string
+    /** 他自己的读取能力描述 */
+    ability: string
+    /** 对方这一轮的外在泄漏程度 0~1，越低越藏得住事 */
+    leakage: number
+  }[]
   /** 他注意到的、从「你」的内心外化出来的可见表现 —— 只有现象，没有你的真实想法 */
   pcCues: ObservedCue[]
   /** 他记得的、以前轮次发生过的事（按时间顺序，最近的排在最后） */

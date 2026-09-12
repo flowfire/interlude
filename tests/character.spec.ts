@@ -50,7 +50,7 @@ function card(name: string, appears = true): CharacterCard {
     state: { mood: '戒备', location: '茶馆' },
     appearsInInput: appears,
     evidence: '素材里的某一句',
-    canReadMind: false,
+    mindReading: '',
   }
 }
 

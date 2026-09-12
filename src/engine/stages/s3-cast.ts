@@ -142,8 +142,8 @@ export function normalizeCastResult(
         perception: asTextArray(item.perception),
         hooks: asTextArray(item.hooks),
       },
-      // 读心是打破「心理不外传」的开关，默认关；只有模型明确给了 true 才开
-      canReadMind: normalizeBool(item.canReadMind, false),
+      // 读心是一段谱系而不是开关，所以这里存的是描述文本，空字符串表示没有这种能力
+      mindReading: asText(item.mindReading),
       state: {
         mood: asText(item.mood) || '（未说明）',
         location: asText(item.location) || '（未说明）',
@@ -166,7 +166,7 @@ function thinCard(item: ScenePresent): CharacterCard {
     canonical: false,
     franchise: '',
     source: 'material',
-    canReadMind: false,
+    mindReading: '',
     persona: {
       summary: item.role || '（场景里出现的人）',
       speechStyle: '（按性格自然发挥）',

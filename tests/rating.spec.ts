@@ -21,7 +21,7 @@ function card(): CharacterCard {
     canonical: false,
     franchise: '',
     source: 'material',
-    canReadMind: false,
+    mindReading: '',
     persona: {
       summary: '话少的人',
       speechStyle: '句子很短',

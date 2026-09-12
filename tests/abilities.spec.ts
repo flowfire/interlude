@@ -49,7 +49,7 @@ function card(overrides: Partial<CharacterCard> & { name: string }): CharacterCa
     canonical: false,
     franchise: '',
     source: 'material',
-    canReadMind: false,
+    mindReading: '',
     persona: {
       summary: '一句话简介',
       speechStyle: '',
@@ -72,44 +72,53 @@ function card(overrides: Partial<CharacterCard> & { name: string }): CharacterCa
 }
 
 const PC_INNER = '他果然还是不想让我看出什么'
+const READER_ABILITY = '能读到对方此刻具体的念头，但读不到动机和来历'
 
-describe('能力决定「能知道什么」：读心是心理不外传的唯一例外', () => {
-  it('没有读心能力的角色，你的内心依然不外传', () => {
-    const bundle = buildContextBundle({
-      card: card({ name: '林砚' }),
-      segments: [segment('s1', 'inner', PC_INNER, { subject: ['我'] })],
-      cards: [card({ name: '林砚' })],
-      pcName: '我',
-      sceneSetup: setup(),
-    })
+function bundleFor(reader: CharacterCard, pcCues: ContextBundle['pcCues'] = []): ContextBundle {
+  return buildContextBundle({
+    card: reader,
+    segments: [segment('s1', 'inner', PC_INNER, { subject: ['我'] })],
+    cards: [reader],
+    pcName: '我',
+    sceneSetup: setup(),
+    pcCues,
+  })
+}
 
+describe('读心是一段谱系，不是开关', () => {
+  it('没有这种能力的角色，你的内心依然不外传', () => {
+    const bundle = bundleFor(card({ name: '林砚' }))
     expect(bundle.mindRead).toEqual([])
     expect(JSON.stringify(bundle)).not.toContain(PC_INNER)
     expect(bundle.doesNotKnow.join('|')).toContain('心里在想什么')
   })
 
-  it('有读心能力的角色，会直接拿到你的内心', () => {
-    const reader = card({ name: '读心者', canReadMind: true })
-    const bundle = buildContextBundle({
-      card: reader,
-      segments: [segment('s1', 'inner', PC_INNER, { subject: ['我'] })],
-      cards: [reader],
-      pcName: '我',
-      sceneSetup: setup(),
-    })
+  it('有读取能力的角色拿到的是「候选」，并附带能力描述与对方的隐藏程度', () => {
+    const bundle = bundleFor(card({ name: '读心者', mindReading: READER_ABILITY }), [
+      { visible: '视线挪开了半秒', readability: 0.3, channel: 'gaze', fromIndex: 0, leakage: 0.2 },
+    ])
 
     expect(bundle.mindRead).toHaveLength(1)
-    expect(bundle.mindRead[0].from).toBe('我')
     expect(bundle.mindRead[0].text).toBe(PC_INNER)
-
-    // 那条「你不知道别人心里在想什么」对他不适用
-    expect(bundle.doesNotKnow.join('|')).not.toContain('心里在想什么')
-    // 但来历和底牌依然读不到
-    expect(bundle.doesNotKnow.join('|')).toContain('来历')
+    // 引擎不替他判断读到多少，只把「能力」和「对方藏得多深」一起交给他
+    expect(bundle.mindRead[0].ability).toBe(READER_ABILITY)
+    expect(bundle.mindRead[0].leakage).toBeCloseTo(0.2)
   })
 
-  it('读心者只读到你的内心，读不到别人的', () => {
-    const reader = card({ name: '读心者', canReadMind: true })
+  it('对方藏得深，泄漏度就低 —— 这是模型判断「能不能读到」的依据', () => {
+    const reader = card({ name: '读心者', mindReading: READER_ABILITY })
+    const hidden = bundleFor(reader, [
+      { visible: '几乎没有变化', readability: 0.05, channel: 'breath', fromIndex: 0, leakage: 0.05 },
+    ])
+    const leaking = bundleFor(reader, [
+      { visible: '手抖了一下', readability: 0.8, channel: 'body', fromIndex: 0, leakage: 0.9 },
+    ])
+
+    expect(hidden.mindRead[0].leakage).toBeLessThan(leaking.mindRead[0].leakage)
+  })
+
+  it('只拿得到你的内心，拿不到其他角色的', () => {
+    const reader = card({ name: '读心者', mindReading: READER_ABILITY })
     const bundle = buildContextBundle({
       card: reader,
       segments: [
@@ -125,21 +134,28 @@ describe('能力决定「能知道什么」：读心是心理不外传的唯一�
     expect(bundle.doesNotKnow.join('|')).toContain('林砚')
   })
 
-  it('读到的念头会写进角色提示词，并说明「这是读到的，不是猜的」', () => {
-    const reader = card({ name: '读心者', canReadMind: true })
-    const bundle = buildContextBundle({
-      card: reader,
-      segments: [segment('s1', 'inner', PC_INNER, { subject: ['我'] })],
-      cards: [reader],
-      pcName: '我',
-      sceneSetup: setup(),
-    })
+  it('提示词里明确说「你未必都能读到」，把判断权交回给模型', () => {
+    const bundle = bundleFor(card({ name: '读心者', mindReading: READER_ABILITY }), [
+      { visible: '视线挪开了半秒', readability: 0.3, channel: 'gaze', fromIndex: 0, leakage: 0.3 },
+    ])
 
-    const messages = buildRoleplayMessages({ bundle, project: DEFAULT_PROJECT_SETTINGS })
-    const user = messages[1].content
-    expect(user).toContain('你读到的念头')
+    const user = buildRoleplayMessages({ bundle, project: DEFAULT_PROJECT_SETTINGS })[1].content
+
+    expect(user).toContain('你「可能」读到的念头')
     expect(user).toContain(PC_INNER)
-    expect(user).toContain('不是猜的')
+    expect(user).toContain(READER_ABILITY)
+    // 关键：不是「你读到了」，而是「你未必都能读到」
+    expect(user).toContain('未必都能读到')
+    expect(user).toContain('由你自己结合两件事判断')
+    expect(user).toContain('读不到的部分就当它不存在')
+  })
+
+  it('藏得越深，提示词里那个数字越难看懂', () => {
+    const bundle = bundleFor(card({ name: '读心者', mindReading: READER_ABILITY }), [
+      { visible: '几乎没有变化', readability: 0.05, channel: 'breath', fromIndex: 0, leakage: 0.1 },
+    ])
+    const user = buildRoleplayMessages({ bundle, project: DEFAULT_PROJECT_SETTINGS })[1].content
+    expect(user).toContain('藏得有多深：约 90%')
   })
 })
 
@@ -179,41 +195,52 @@ describe('剧情钩子会让设定自己长出来', () => {
   })
 
   it('场景构建的提示词里带上了钩子，并要求自然地出现', () => {
-    const messages = buildSceneMessages({
+    const user = buildSceneMessages({
       doc: normalizeInput('我推门进来'),
       segments: [],
       pcName: '我',
       pcPersona: '',
       storyTitle: '测试',
       knownCast: [{ name: '林砚', aliases: [], brief: '', hooks: ['天生招祸'] }],
-    })
-    const user = messages[1].content
+    })[1].content
+
     expect(user).toContain('天生招祸')
     expect(user).toContain('自然地')
   })
 
   it('没有钩子时不会硬塞这一段', () => {
-    const messages = buildSceneMessages({
+    const user = buildSceneMessages({
       doc: normalizeInput('我推门进来'),
       segments: [],
       pcName: '我',
       pcPersona: '',
       storyTitle: '测试',
       knownCast: [{ name: '林砚', aliases: [], brief: '' }],
-    })
-    expect(messages[1].content).not.toContain('会牵引')
+    })[1].content
+
+    expect(user).not.toContain('会牵引')
   })
 })
 
-describe('canReadMind 的取值很保守', () => {
-  it('模型没给这一项时，默认按「读不到」处理', () => {
+describe('mindReading 的解析', () => {
+  it('模型没给这一项时是空字符串，等于没有这种能力', () => {
     const raw = { characters: [{ name: '林砚', summary: '话少' }] } as unknown as RawCastResult
-    expect(normalizeCastResult(raw, '我')[0].canReadMind).toBe(false)
+    expect(normalizeCastResult(raw, '我')[0].mindReading).toBe('')
   })
 
-  it('模型给了字符串形式的 true 才开启', () => {
-    const raw = { characters: [{ name: '读心者', canReadMind: 'true' }] } as unknown as RawCastResult
-    expect(normalizeCastResult(raw, '我')[0].canReadMind).toBe(true)
+  it('给了描述就原样保留 —— 强弱和限制是模型写的，引擎不加工', () => {
+    const raw = {
+      characters: [
+        { name: '甲', mindReading: '只能感觉出对方的情绪，对方善于隐藏时会失准' },
+        { name: '乙', mindReading: '能听到没说出口的碎片，只在对方情绪波动时' },
+        { name: '丙', mindReading: '能像读剧本一样看到对方此刻的全部想法' },
+      ],
+    } as unknown as RawCastResult
+
+    const parsed = normalizeCastResult(raw, '我')
+    expect(parsed[0].mindReading).toContain('善于隐藏时会失准')
+    expect(parsed[1].mindReading).toContain('碎片')
+    expect(parsed[2].mindReading).toContain('读剧本')
   })
 
   it('能力和感知会被解析出来', () => {

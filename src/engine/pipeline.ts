@@ -288,6 +288,7 @@ async function executeStep(ctx: PipelineContext, step: Step): Promise<Step> {
         readability: cue.readability,
         channel: cue.channel,
         fromIndex: cue.fromIndex,
+        leakage: cue.leakage,
       }))
 
       const output = buildContextBundle({

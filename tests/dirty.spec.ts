@@ -21,7 +21,7 @@ function bundleOf(name: string): ContextBundle {
       canonical: false,
       franchise: '',
       source: 'material',
-      canReadMind: false,
+      mindReading: '',
       persona: {
         summary: '',
         speechStyle: '',

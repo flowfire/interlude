@@ -43,6 +43,8 @@ export interface ObservedCue {
   channel: CueChannel
   /** 来自第几条内心（按原文顺序），用于把它插回正确的时间位置 */
   fromIndex: number
+  /** 泄漏程度 —— 观察者能感觉到「这人藏得深不深」 */
+  leakage: number
 }
 
 export interface PcExposure {
