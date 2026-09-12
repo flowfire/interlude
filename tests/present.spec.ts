@@ -25,19 +25,55 @@ function segment(id: string, kind: SegmentKind, text: string, extra: Partial<Seg
 }
 
 describe('谁在场：不能因为「我没说话」就判定不需要交互', () => {
+  it('正文里的「我看到了金刚狼」也能抓出来（名字既不是说话人也不是动作主体）', () => {
+    const segments = [
+      segment(
+        's1',
+        'narration',
+        '（我在一座小镇旅游，小镇附近的树林很美，我在里面逛着忘记了时间，天快黑了，我迷路了，这个时候我看到了金刚狼）',
+      ),
+    ]
+
+    // 说话人、动作主体、实体表全是空的 —— 只有正文里有名字
+    expect(extractNamesFromSegments(segments, '我', [])).toEqual(['金刚狼'])
+  })
+
+  it('「遇到 / 撞见 / 发现」这些说法同样能抓到', () => {
+    const cases: [string, string][] = [
+      ['我遇到了金刚狼', '金刚狼'],
+      ['在门口撞见了林砚', '林砚'],
+      ['这时才发现阿七站在后面', '阿七'],
+    ]
+    for (const [text, expected] of cases) {
+      expect(extractNamesFromSegments([segment('s1', 'narration', text)], '我', [])).toContain(expected)
+    }
+  })
+
   it('概要式输入只在实体表里留下人名时，也能把人抓出来', () => {
     const segments = [segment('s1', 'narration', '（我遇到了金刚狼）')]
     const entities: EntityMention[] = [{ mention: '金刚狼', kind: 'person', role: 'present' }]
 
-    // 旧逻辑只看说话人和动作主体，这里两者都没有
-    expect(extractNamesFromSegments(segments, '我', [])).toEqual([])
-    // 补上实体表之后能抓到
+    // 正文里的「遇到了」现在也能抓到
+    expect(extractNamesFromSegments(segments, '我', [])).toEqual(['金刚狼'])
+    // 实体表同样能抓到
     expect(extractNamesFromSegments(segments, '我', entities)).toEqual(['金刚狼'])
   })
 
-  it('「只是被提到」的人不会被硬拉进在场名单', () => {
+  it('「只是被提到」的人默认不进在场名单', () => {
     const entities: EntityMention[] = [{ mention: '林砚', kind: 'person', role: 'mentioned' }]
     expect(extractNamesFromSegments([], '我', entities)).toEqual([])
+  })
+
+  it('但一个人都抓不到时，会退让到把「被提到」的人也拉进来兜底', () => {
+    const segments = [segment('s1', 'narration', '我想起了三年前离开的林砚')]
+    const entities: EntityMention[] = [{ mention: '林砚', kind: 'person', role: 'mentioned' }]
+
+    // 严格标准下不算在场
+    expect(extractNamesFromSegments(segments, '我', entities)).toEqual([])
+
+    // 整轮一个人都没有时，宁可多给一个反应机会
+    const fixed = ensurePresentHasActors([], segments, '我', entities)
+    expect(fixed.map((item) => item.name)).toEqual(['林砚'])
   })
 
   it('模型说「没人需要反应」时，保险丝会把人补回来', () => {

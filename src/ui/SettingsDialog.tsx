@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { explainLlmError, formatAdvice } from '@/engine/llm/errors'
 import { llmClient } from '@/engine/llm/instance'
 import { useAppStore } from '@/store/appStore'
 
@@ -23,7 +24,8 @@ export default function SettingsDialog() {
       })
       setTestResult(`✅ 连接成功（${result.model}，${result.ms}ms）：${result.content.trim().slice(0, 80)}`)
     } catch (error) {
-      setTestResult(`❌ ${error instanceof Error ? error.message : String(error)}`)
+      const advice = explainLlmError(error)
+      setTestResult(`❌ ${formatAdvice(advice)}`)
     } finally {
       setTesting(false)
     }

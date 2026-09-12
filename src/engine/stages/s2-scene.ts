@@ -58,18 +58,36 @@ function toStringArray(input: unknown): string[] {
 }
 
 /**
+ * 「我看到了金刚狼」这类句式。
+ * 名字既不是说话人也不是动作主体，只出现在正文里 —— 概要式输入几乎都是这个样子。
+ */
+const ENCOUNTER_RE =
+  /(?:看到|看见|遇到|撞见|碰上|见到|发现|注意到|望向|盯着|走近)\s*(?:了|着)?\s*([\u4e00-\u9fa5A-Za-z·]{2,6})/g
+
+/** 正则贪心会把「阿七站在后面」整个吃进来，这里把跟在名字后面的动词短语砍掉 */
+const NAME_STOP_RE =
+  /(站在|坐在|正站|正坐|已经|还是|就是|也在|走了|说话|开口|抬头|低头|看着|望着|似乎|好像|显然|一直|没有|不动|朝我|向我|正在).*$/
+
+function cleanNameCandidate(input: unknown): string {
+  const text = asText(input)
+  if (!text) return ''
+  return text.replace(NAME_STOP_RE, '').trim()
+}
+
+/**
  * 从拆解结果里用规则抓人名，作为「绝不允许漏掉在场者」的保险。
  *
- * 三个来源都要看：
+ * 四个来源都要看：
  * - 说话人
  * - 动作主体
- * - 拆解阶段标出来的实体表 —— 「我遇到了金刚狼」这种概要式输入
- *   往往既没有说话人也没有动作主体，名字只留在实体表里
+ * - 拆解阶段标出来的实体表
+ * - **正文里的「看到 / 遇到 XX」** —— 只说「我看到了谁」时，前三个来源可能全是空的
  */
 export function extractNamesFromSegments(
   segments: Segment[],
   pcName: string,
   entities: EntityMention[] = [],
+  options: { includeMentioned?: boolean } = {},
 ): string[] {
   const names = new Set<string>()
 
@@ -78,13 +96,18 @@ export function extractNamesFromSegments(
     for (const subject of segment.subject ?? []) {
       if (subject && subject !== pcName) names.add(subject.trim())
     }
+    for (const match of segment.text.matchAll(ENCOUNTER_RE)) {
+      const candidate = cleanNameCandidate(match[1])
+      if (candidate && candidate !== pcName) names.add(candidate)
+    }
   }
 
   for (const entity of entities) {
     if (entity.kind !== 'person') continue
     if (entity.mention === pcName) continue
-    // 「只是被提到」的人不进在场名单，否则会把不在场的人硬拉进来
-    if (entity.role === 'mentioned') continue
+    // 「只是被提到」的人默认不进在场名单，否则会把不在场的人硬拉进来；
+    // 但一个都抓不到时会退让（见 ensurePresentHasActors）
+    if (entity.role === 'mentioned' && !options.includeMentioned) continue
     names.add(entity.mention.trim())
   }
 
@@ -112,7 +135,14 @@ export function ensurePresentHasActors(
     .filter((item) => item.name !== pcName)
     .map((item) => (item.kind === 'character' ? { ...item, active: true } : item))
 
-  for (const name of extractNamesFromSegments(segments, pcName, entities)) {
+  // 先按严格标准抓人；一个都抓不到时，把「只是被提到」的也拉进来当最后兜底 ——
+  // 宁可多给一个反应机会，也好过整轮被判成「场上没人」
+  let names = extractNamesFromSegments(segments, pcName, entities)
+  if (!names.length) {
+    names = extractNamesFromSegments(segments, pcName, entities, { includeMentioned: true })
+  }
+
+  for (const name of names) {
     const existing = merged.find((item) => item.name === name)
     if (existing) {
       existing.active = true

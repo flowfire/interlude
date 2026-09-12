@@ -5,6 +5,7 @@ import {
   runSegmentationPreview,
   type PipelineContext,
 } from '@/engine/pipeline'
+import { explainLlmError, formatAdvice } from '@/engine/llm/errors'
 import { llmClient } from '@/engine/llm/instance'
 import { useAppStore } from '@/store/appStore'
 import type { NormalizedDoc } from '@/engine/stages/s0-normalize'
@@ -77,12 +78,12 @@ export async function runRoundFor(roundId: string): Promise<void> {
     if (!scene?.reactions.length) {
       const presentNames = (sceneSetup?.present ?? []).map((item) => item.name)
       if (!presentNames.length) {
-        useAppStore
-          .getState()
-          .setError(
-            '这一轮场上只有你一个人 —— 素材里没有提到其他在场的人，所以没有人需要反应。' +
-              '想让他们有反应，就在素材里提到他们，哪怕只是一句「我看见了谁」。',
-          )
+        // 场景构建降级是「在场 0 人」最常见的病根，直接点出来，别让人去猜
+        const degraded = sceneSetup && sceneSetup.usedModel === false
+        const diagnose = degraded
+          ? `\n\n⚠️ 但场景构建这次没有成功调用模型，退回成了规则推断。\n${formatAdvice(explainLlmError(sceneSetup?.fallbackReason))}`
+          : '\n\n（素材里可以写得更明确些，比如「我看到了金刚狼」。）'
+        useAppStore.getState().setError(`这一轮场上只有你一个人，所以没有人需要反应。${diagnose}`)
       } else {
         const reason =
           cast?.usedModel === false
