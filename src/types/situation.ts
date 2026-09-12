@@ -28,6 +28,14 @@ export interface SituationNudge {
    * 只在僵局时给。它到「剧情」这一层为止：做了什么，而不是怎么演、说什么。
    */
   act?: string
+  /**
+   * 这一轮**不要跟用户交互**。
+   *
+   * 角色不知道用户在等，所以会本能地每轮都回头找他。当眼前有必须处理的事时，
+   * 导演要明确把这条说出来：你的首要任务是眼前这个情形，别回头跟他说话、
+   * 别指挥他、别确认他的状态。
+   */
+  noInteract?: boolean
 }
 
 export const SITUATION_EVENT_LABEL: Record<SituationEventKind, string> = {

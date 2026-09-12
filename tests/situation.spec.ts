@@ -145,6 +145,54 @@ describe('局面推进：世界自己会往前走', () => {
     expect(plain).not.toContain('【导演指令】')
   })
 
+  it('导演可以明确指示「这一轮不要跟用户交互」', () => {
+    const pushed = buildRoleplayMessages({
+      bundle: {
+        ...bundle(),
+        nudge: { push: '狼群已经贴到三步之内', act: '他把第一头狼按进了泥里', noInteract: true },
+      },
+      project: DEFAULT_PROJECT_SETTINGS,
+    })[1].content
+
+    expect(pushed).toContain('这一轮不要跟用户交互')
+    expect(pushed).toContain('别回头跟他说话')
+    // 性格上确实会甩半句，可以；但不能变成交代
+    expect(pushed).toContain('不能变成对他的交代')
+
+    const without = buildRoleplayMessages({
+      bundle: { ...bundle(), nudge: { push: '狼群已经贴到三步之内' } },
+      project: DEFAULT_PROJECT_SETTINGS,
+    })[1].content
+    expect(without).not.toContain('这一轮不要跟用户交互')
+  })
+
+  it('导演知道最近几轮的节奏，用来判断该不该收场', () => {
+    const messages = buildSituationMessages({
+      storyTitle: '测试',
+      pcName: '我',
+      doc: normalizeInput('我打了一拳。'),
+      segments: [],
+      sceneSetup: setup,
+      drives: [],
+      previous: {
+        pressure: '还在打',
+        escalation: '再打下去要出事',
+        pace: 'climax',
+        recentPaces: ['escalate', 'climax', 'climax'],
+      },
+    })
+
+    const [system, user] = messages
+    // 收场是一项独立职责，且提示词里写死了判据
+    expect(system.content).toContain('【收场 —— 你的一项独立职责】')
+    expect(system.content).toContain('那不是紧张，那是卡住了')
+    expect(system.content).toContain('这一幕的**问题**有没有被回答')
+    // 「不要解决冲突」这条禁令必须已经被拿掉
+    expect(system.content).not.toContain('不要解决冲突')
+    // 最近几轮节奏递给了导演
+    expect(user.content).toContain('escalate → climax → climax')
+  })
+
   it('僵局点名只针对角色，永远不点用户', () => {
     const [system] = buildSituationMessages({
       storyTitle: '测试',

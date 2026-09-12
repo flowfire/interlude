@@ -163,17 +163,24 @@ function buildRecap(ctx: PipelineContext): string {
  *
  * 「压力」是跨轮累积的东西：上一轮埋下的隐患，这一轮该兑现一部分。
  */
-function previousSituation(ctx: PipelineContext): { pressure: string; escalation: string; pace: SituationPace } | null {
+function previousSituation(
+  ctx: PipelineContext,
+): { pressure: string; escalation: string; pace: SituationPace; recentPaces: SituationPace[] } | null {
   const ids = sessionRoundIds(ctx)
-  const step = Object.values(ctx.steps)
+  const steps = Object.values(ctx.steps)
     .filter((item) => item.stage === 'situation' && item.status === 'done')
     .filter((item) => (!ids || ids.has(item.roundId)) && item.roundId !== ctx.round.id)
     .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
-    .pop()
 
-  const state = step?.output as SituationState | undefined
+  const state = steps[steps.length - 1]?.output as SituationState | undefined
   if (!state) return null
-  return { pressure: state.pressure, escalation: state.escalation, pace: state.pace ?? 'build' }
+
+  // 最近几轮的节奏 —— 导演靠它判断「这一幕是不是拖太久了，该收了」
+  const recentPaces = steps
+    .slice(-3)
+    .map((step) => (step.output as SituationState | undefined)?.pace ?? 'build')
+
+  return { pressure: state.pressure, escalation: state.escalation, pace: state.pace ?? 'build', recentPaces }
 }
 
 /**

@@ -231,7 +231,7 @@ export interface ContextBundle {
    * `push` 是为什么现在必须动；`act` 是导演指定的剧情动作（「他动手了」）。
    * 到「做了什么」为止 —— 怎么说、什么表情、什么节奏，仍然是这个角色自己的事。
    */
-  nudge?: { push: string; act?: string }
+  nudge?: { push: string; act?: string; noInteract?: boolean }
   /**
    * 时间跳跃期间发生了什么。
    *

@@ -46,7 +46,9 @@ And if it still deadlocks — your persona simply is not someone who acts, and e
 
 There is also no rule anywhere that says every character must speak every round. When a fight breaks out, their main channel is action, not dialogue.
 
-And **a character's reaction does not have to be aimed at you**. What the situation does — the wolves closing in, the fire collapsing — sits on the **same timeline** as what you wrote, not in the background scenery. So when Wolverine needs to fight, he fights, and he can go a whole round without saying a word to you. He is not going to turn around and start directing you, because what he is responding to is the situation, not you.
+And **a character's reaction does not have to be aimed at you**. What the situation does — the wolves closing in, the fire collapsing — sits on the **same timeline** as what you wrote, not in the background scenery. So when Wolverine needs to fight, he fights, and he can go a whole round without saying a word to you. He is not going to turn around and start directing you, because what he is responding to is the situation, not you. When it is needed, the director will also **stop him outright**: "do not interact with the user this round."
+
+**And a fight does not hang forever.** Four rounds of "another punch" is not tension, it is a stuck scene — so the director carries a separate **closing** duty: when several rounds in a row have been escalations, it has to land the scene (someone goes down, someone runs, something interrupts, the price gets paid). What is already over does not get dug back up.
 
 **SillyTavern is the better fit if** you want fine control over every generation, you rely on lorebooks and regex, and you like tuning prompts yourself.
 **Interlude is the better fit if** you would rather not manage any of that and just want to write a story and watch a group of people move on their own.

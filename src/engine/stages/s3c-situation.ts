@@ -64,7 +64,9 @@ function normalizeNudges(raw: unknown, cards: CharacterCard[], pcName: string, i
     const who = byName.get(asText(record?.who).trim())
     if (!who || !push || out.some((entry) => entry.who === who)) continue
     const act = asText(record?.act).trim()
-    out.push({ who, push, act: act || undefined })
+    const noInteract =
+      record?.noInteract === true || asText(record?.noInteract).toLowerCase() === 'true'
+    out.push({ who, push, act: act || undefined, noInteract: noInteract || undefined })
     // 交棒轮里用户不推，导演可以多点几个人把这一轮撑起来
     if (out.length >= (idle ? 3 : 2)) break
   }

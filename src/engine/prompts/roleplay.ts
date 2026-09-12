@@ -270,7 +270,7 @@ function renderRoundSettings(bundle: ContextBundle, project: ProjectSettings, ra
 
   const lines = ['【本轮设定】']
   const nudge = bundle.nudge
-  if (nudge?.push?.trim() || nudge?.act?.trim()) {
+  if (nudge?.push?.trim() || nudge?.act?.trim() || nudge?.noInteract) {
     const body = [
       nudge.act?.trim() ? `导演要你在这一轮里做到这个：\n${nudge.act.trim()}` : '',
       nudge.push?.trim() ? `他的理由：${nudge.push.trim()}` : '',
@@ -280,6 +280,12 @@ function renderRoundSettings(bundle: ContextBundle, project: ProjectSettings, ra
           '这件事多半和用户没有关系，那就直接去做，不需要先跟他说一声。'
         : '现在不是等的时候。这一轮你必须做出**实质性的动作** —— 说话、动手、走开都行，' +
           '但不能只给表情和姿态。做什么由你自己决定。',
+      nudge.noInteract
+        ? '**这一轮不要跟用户交互。** 你眼前有更要紧的事 —— 别回头跟他说话、别指挥他、' +
+          '别确认他的状态。你的首要任务是眼前这个情形。\n' +
+          '（如果你的人设在这种时候确实会顺带甩半句给他，那可以；但那就只能是顺带的，' +
+          '不能变成对他的交代。）'
+        : '',
     ]
       .filter(Boolean)
       .join('\n\n')
