@@ -1,6 +1,7 @@
 import type {
   CharacterCard,
   ContextBundle,
+  HistoryRound,
   PerceiveCandidateRecord,
   PerceiveChannel,
   PerceivedEvent,
@@ -20,12 +21,16 @@ export interface Reception {
 
 export interface ContextBuildInput {
   card: CharacterCard
+  /** 这是第几轮 */
+  roundIndex?: number
   segments: Segment[]
   cards: CharacterCard[]
   pcName: string
   sceneSetup: SceneSetup
-  /** 前几轮已经演过的内容（跨角色共享，放在提示词最前面以利缓存命中） */
+  /** 前几轮已经演过的内容（跨角色共享，给拆解 / 场面 / 阵容三个阶段的消歧用） */
   recap?: string
+  /** 这个角色亲身经历过的往事，一轮一段，按时间顺序累加 */
+  history?: HistoryRound[]
   /** 这一轮被分发出去的信息（带编号） */
   candidates?: PerceiveCandidateRecord[]
   /** 这个角色对上面这些信息的接收情况 */
@@ -34,6 +39,20 @@ export interface ContextBuildInput {
   pcCues?: ObservedCue[]
   /** 这个角色以前轮次留下的记忆（按时间顺序） */
   memories?: MemoryEntry[]
+}
+
+/**
+ * 候选池里的文本是给「信息分发」那个模型看的，pc 那一侧被套上了「你：」的壳；
+ * 而舞台上本来就是第一人称在说话。直接拿去渲染会变成「我：「你：「…」」」，
+ * 所以这里把壳剥掉。
+ */
+function stripPcWrapper(text: string, kind: string): string {
+  if (kind !== 'speech' && kind !== 'action') return text
+  const quoted = text.match(/^你：「([\s\S]*)」$/)
+  if (quoted) return quoted[1]
+  const plain = text.match(/^你：([\s\S]*)$/)
+  if (plain) return plain[1]
+  return text
 }
 
 function mentionsSelf(segment: Segment, name: string): boolean {
@@ -64,7 +83,8 @@ function buildPerceived(input: {
 
   for (const item of candidates) {
     if (missed.has(item.ref)) continue
-    const text = distorted.get(item.ref) ?? item.text
+    const raw = distorted.get(item.ref) ?? item.text
+    const text = item.from === pcName ? stripPcWrapper(raw, item.kind) : raw
 
     switch (item.kind) {
       case 'scene':
@@ -105,6 +125,7 @@ function buildPerceived(input: {
 export function buildContextBundle(input: ContextBuildInput): ContextBundle {
   const {
     card,
+    roundIndex = 0,
     segments,
     cards,
     pcName,
@@ -114,6 +135,7 @@ export function buildContextBundle(input: ContextBuildInput): ContextBundle {
     candidates = [],
     reception,
     recap = '',
+    history = [],
   } = input
   void cards
 
@@ -173,10 +195,12 @@ export function buildContextBundle(input: ContextBuildInput): ContextBundle {
     characterId: card.id,
     name: card.name,
     card,
+    roundIndex,
     pcName,
     counterpartProfile: sceneSetup.pcProfile || '（没有额外描写，你只能看到眼前这个人本身）',
     presentNames,
     recap,
+    history,
     scene: {
       time: sceneSetup.time,
       place: sceneSetup.place,

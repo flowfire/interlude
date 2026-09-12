@@ -193,6 +193,8 @@ describe('资料会进入提示词', () => {
       doesNotKnow: [],
       recalled: [],
       recap: '',
+    roundIndex: 2,
+    history: [],
     }
 
     const messages = buildRoleplayMessages({ bundle, project: DEFAULT_PROJECT_SETTINGS })

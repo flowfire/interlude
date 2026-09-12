@@ -91,6 +91,8 @@ function bundleOf(name: string): ContextBundle {
     doesNotKnow: [],
     recalled: [],
     recap: '',
+    roundIndex: 2,
+    history: [],
   }
 }
 

@@ -151,22 +151,57 @@ export interface PerceivedEvent {
   self: boolean
 }
 
+/**
+ * 往事里的一轮。
+ *
+ * 只有「他当时实际接收到的」东西：pc 那一侧经信息分发层筛过，
+ * 被判定为漏看 / 听岔的已经在这里被剔掉或改写了；他自己和其他角色
+ * 当时在舞台上的言行也在里面（同一轮的 AI 之间是并发演出的，互相看不见，
+ * 下一轮才成为既成事实，所以按「默认所有人都收到了」的协议一律给他）。
+ */
+export interface HistoryRound {
+  index: number
+  time: string
+  place: string
+  /** 当时的场面信息（与当前轮用同一套写法，才能逐字节对齐） */
+  atmosphere: string
+  /** 当时「你对面的人」呈现出来的样子 */
+  pcProfile: string
+  /** 当时在场的人 */
+  presentNames: string[]
+  /** 他当时感知到的环境（场景、氛围、场外） */
+  sceneLines: string[]
+  /** 他当时感知到的事，按时间顺序 */
+  events: PerceivedEvent[]
+  /** 他当时心里在想什么（只有他知道） */
+  inner: string
+}
+
 /** 派发给某一个角色 AI 的完整上下文。这是「点开看它收到了什么」的内容 */
 export interface ContextBundle {
   characterId: string
   name: string
   card: CharacterCard
+  /** 这是第几轮（往事里也用它编号，两边必须一致才能对上） */
+  roundIndex: number
   pcName: string
   /** 对面的人（用户扮演的角色）呈现给你的样子 —— 只有看得见的部分 */
   counterpartProfile: string
   presentNames: string[]
   /**
-   * 前几轮已经演过的内容。
-   *
-   * 放在提示词的最前面（所有角色共享的那一段）—— 它既是最长的，
-   * 也是跨角色完全一致的，缓存命中收益最大。
+   * 前几轮已经演过的内容（纯文本，给拆解 / 场面 / 阵容三个阶段消歧用，
+   * 它们不区分视角，所以这里不按角色过滤）。
    */
   recap: string
+  /**
+   * 他亲身经历的往事，**一轮一段，按时间顺序无限累加**。
+   *
+   * 这是「同一个角色跨轮次命中前缀缓存」的关键：第 K 轮的提示词里
+   * 第 1..K-1 轮的段落，与第 K+1 轮一模一样，只是末尾多了一段。
+   * 所以这里必须是结构化、且只依赖**那一轮已经固定的步骤**——
+   * 重放时逐字节可复现，绝不因为后来发生的事而改写。
+   */
+  history: HistoryRound[]
   /**
    * 这一轮的场面。
    * 只保留客观环境（时间地点氛围）—— 「此刻正在发生什么」和开场画面都走信息分发，

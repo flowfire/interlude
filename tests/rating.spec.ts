@@ -63,6 +63,8 @@ function bundle(): ContextBundle {
     doesNotKnow: [],
     recalled: [],
     recap: '',
+    roundIndex: 2,
+    history: [],
   }
 }
 

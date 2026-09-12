@@ -119,8 +119,8 @@ describe('信息分发：默认全收到，只报偏差', () => {
     const bundle = bundleWith({ reception: { missed: [], distorted: [], extras: [] } })
 
     expect(bundle.perceived.map((event) => event.text)).toEqual([
-      '你：绕到他背后',
-      '你：「你来了。」',
+      '绕到他背后',
+      '你来了。',
     ])
     // 场景类进 sceneLines
     expect(bundle.sceneLines).toEqual(['屋里只有一盏灯'])
@@ -132,7 +132,7 @@ describe('信息分发：默认全收到，只报偏差', () => {
       reception: { missed: [{ ref: 1, why: '他背对着你' }], distorted: [], extras: [] },
     })
 
-    expect(bundle.perceived.map((event) => event.text)).toEqual(['你：「你来了。」'])
+    expect(bundle.perceived.map((event) => event.text)).toEqual(['你来了。'])
   })
 
   it('distorted 里的那一条用「他实际听成的样子」替换，而不是原文', () => {
@@ -147,7 +147,7 @@ describe('信息分发：默认全收到，只报偏差', () => {
   it('没被点名的信息一律按原文给他 —— 台词不会被转述走样', () => {
     const bundle = bundleWith({ reception: { missed: [], distorted: [], extras: [] } })
     const speech = bundle.perceived.find((event) => event.kind === 'speech')
-    expect(speech?.text).toBe('你：「你来了。」')
+    expect(speech?.text).toBe('你来了。')
   })
 
   it('自己的台词与动作会被标成 self，用来提醒他别重复演', () => {

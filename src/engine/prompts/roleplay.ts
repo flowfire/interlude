@@ -3,6 +3,7 @@ import type { ContextBundle } from '@/types/character'
 import { PERCEIVE_CHANNEL_LABEL } from '@/types/character'
 import type { ContentRating } from '@/types/step'
 import type { ProjectSettings } from '@/types/settings'
+import { renderHistoryRound, renderRoundBody } from '@/engine/history'
 
 export interface RoleplayPromptInput {
   bundle: ContextBundle
@@ -44,16 +45,20 @@ const FREEDOM_HINT: Record<ProjectSettings['freedomLevel'], string> = {
 const SYSTEM = `你正在一部互动剧里扮演其中一个角色。你只演这一个角色，用这一个角色的眼睛看世界。
 
 【你会收到的内容】
-用户消息分成两段：
-· 前半段是**所有在场角色共享的背景**：故事、客观环境、前几轮已经演过的内容。
-· 后半段是**只属于你的部分**：你扮演谁、你记得什么、你此刻实际接收到了什么。
-两段之间有一条分隔线。
+用户消息按顺序排成三段：
+· 第一段是**你的长期设定**：你是谁、你会什么、你的底线。这一段每轮都一样。
+· 第二段是**从过去到此刻的一条时间线**：一轮一段，编号从第 1 轮排到**最后一轮**。
+  越靠后离现在越近。**最后一轮就是此刻** —— 前面那些是往事（包括你当时
+  说过做过什么、你当时在想什么），你要接着最后一轮往下演。
+· 第三段是**本轮设定**与你的任务。
 
 【你不能做什么】
-1. 你只能使用「只属于你的部分」和共享背景里给你的信息。
-   你**不知道任何人的内心想法** —— 除非那一段里明确写了你读到了。
-2. 不要替别人说话、不要写别人的反应、不要描写环境。
-3. 不要用旁白腔，不要写"仿佛""似乎预示着"这类小说腔的句子。
+1. 你只能用上面给你的信息。你**不知道任何人的内心想法** ——
+   除非那一段里明确写了你读到了。
+2. 往事里如果有你当时**没接收到**的东西（漏看、听岔、不在场），
+   那你就一直不知道，不要因为现在看到了就当成你早就知道。
+3. 不要替别人说话、不要写别人的反应、不要描写环境。
+4. 不要用旁白腔，不要写"仿佛""似乎预示着"这类小说腔的句子。
 
 【你要怎么演】
 把你这一轮的反应拆成若干个节拍（beats），每个节拍只能是三类之一：
@@ -86,8 +91,6 @@ const SYSTEM = `你正在一部互动剧里扮演其中一个角色。你只演�
 
 只输出这一个 JSON 对象，不要任何解释文字、不要 Markdown 围栏。`
 
-export const SEPARATOR = '━━━━━━━━━━━━━━━ 以下只属于「你」━━━━━━━━━━━━━━━'
-
 function listOrNone(values: string[], empty = '（没有特别说明）'): string {
   return values.length ? values.join('、') : empty
 }
@@ -97,40 +100,14 @@ function bullets(values: string[], empty = '（没有特别说明）'): string {
 }
 
 /**
- * 共享背景段 —— 同一轮里**所有角色收到的一模一样**。
+ * 长期设定 —— 同一个角色的这一段**不随轮次变化**。
  *
- * 放在提示词最前面，是为了让这部分（往往是最长的：前文回顾 + 环境）
- * 能够命中 prompt 前缀缓存。
+ * 它是整条提示词里最稳定的部分（只随角色卡变），所以排在最前面：
+ * 第 2 轮、第 3 轮…… 直到第 N 轮，这一段永远逐字节相同。
  */
-function renderShared(bundle: ContextBundle, project: ProjectSettings): string {
-  const sceneHead = [bundle.scene.time, bundle.scene.place, bundle.scene.atmosphere]
-    .filter(Boolean)
-    .join(' · ')
-
-  const parts: string[] = ['【共享背景】', `故事：《${project.storyTitle}》`]
-
-  if (sceneHead) parts.push(`时间地点：${sceneHead}`)
-  parts.push(`对面站着的人：「${bundle.pcName}」—— ${bundle.counterpartProfile}`)
-
-  // 注意：这里不能按「除了我以外还有谁」来写，否则每个角色的这一段都不一样，
-  // 共享前缀就断了。在场名单本身是公开信息，直接把所有人都列出来即可。
-  if (bundle.presentNames.length) parts.push(`在场的人：${bundle.presentNames.join('、')}`)
-
-  // 老工作区里存的 ContextBundle 可能没有 recap，容错处理
-  const recap = (bundle.recap ?? '').trim()
-  if (recap) {
-    parts.push(`【前面已经演过的内容】\n${recap}`)
-  }
-
-  return parts.join('\n\n')
-}
-
-/**
- * 角色专属段 —— 从这里开始每个角色各不相同，缓存不再共享。
- */
-function renderPersonal(bundle: ContextBundle): string {
+function renderIdentity(bundle: ContextBundle, project: ProjectSettings): string {
   const { card } = bundle
-  const parts: string[] = []
+  const parts: string[] = [`故事：《${project.storyTitle}》`]
 
   parts.push(
     [
@@ -141,51 +118,80 @@ function renderPersonal(bundle: ContextBundle): string {
       `性格：${listOrNone(card.persona.temperament ?? [], '（素材里没有明说）')}`,
       `习惯性的小动作与微表情：${listOrNone(card.persona.habits ?? [], '（素材里没有明说）')}`,
       `背景：${card.persona.background || '（素材里没有明说）'}`,
-      `此刻心境：${card.state.mood || '（未说明）'}`,
-      `此刻所在：${card.state.location || '（未说明）'}`,
     ].join('\n'),
   )
 
-  const abilities = bullets(card.persona.abilities ?? [], '（没有特别说明，按常理判断）')
-  parts.push(`【你能做的事 —— 超出这个范围的事，你做不到】\n${abilities}`)
+  parts.push(`【你能做的事 —— 超出这个范围的事，你做不到】\n${bullets(card.persona.abilities ?? [], '（没有特别说明，按常理判断）')}`)
+  parts.push(`【你察觉得到、而别人察觉不到的东西】\n${bullets(card.persona.perception ?? [], '（没有超出常人的感知）')}`)
 
-  const perception = bullets(card.persona.perception ?? [], '（没有超出常人的感知）')
-  parts.push(`【你察觉得到、而别人察觉不到的东西】\n${perception}`)
-
-  const signature = bullets(card.persona.signature ?? [])
   if (card.persona.signature?.length) {
-    parts.push(`【你的标志性特征 —— 要让熟悉你的人一眼认出你】\n${signature}`)
+    parts.push(`【你的标志性特征 —— 要让熟悉你的人一眼认出你】\n${bullets(card.persona.signature)}`)
   }
-
   if (card.persona.voiceSamples?.length) {
     parts.push(
       `【你的说话方式参考】\n下面这些是**语气示例**，用来帮你找准用词习惯和句长，不是你必须说的台词：\n` +
         bullets(card.persona.voiceSamples),
     )
   }
-
   if (card.persona.canonAnchors?.length) {
     parts.push(`【原作里确定的事实 —— 不要与之矛盾】\n${bullets(card.persona.canonAnchors)}`)
   }
-
   if (card.persona.boundaries?.length) {
     parts.push(`【你绝对不会做的事、不会说的话】\n${bullets(card.persona.boundaries)}`)
   }
 
-  if (bundle.recalled.length) {
-    const lines = bundle.recalled.map((memory) => {
-      const head = `第 ${memory.roundIndex} 轮 · ${memory.where || '某处'}：${memory.summary}`
-      const inner = memory.inner ? `\n    （你当时在想：${memory.inner}）` : ''
-      return `· ${head}${inner}`
-    })
-    parts.push(
-      `【你还记得的事（按时间顺序，越靠后越近）】\n${lines.join('\n')}\n` +
-        '这些是你亲身经历的过去。可以自然地引用、联想、记仇、叙旧，但不要像复述档案一样把它们念出来。',
-    )
-  }
+  return parts.join('\n\n')
+}
 
-  if (bundle.sceneLines.length) {
-    parts.push(`【你眼前的环境】\n${bundle.sceneLines.join('\n')}`)
+/**
+ * 往事 —— **一轮一段，按时间顺序一路累加，永不重写**。
+ *
+ * 这是「同一个角色跨轮命中前缀缓存」的关键：第 K+1 轮的这一段，
+ * 前 K-1 段与第 K 轮逐字节相同，只在末尾多出一段。
+ * 所以这里绝不做「只看最近 N 轮」的滑动窗口 —— 那会让角色忘掉
+ * 他三天前说过的话，一致性先坏在这里。
+ *
+ * 标题和说明文字**永远都在**（哪怕还没有往事），当前这一轮也接在
+ * 同一串编号后面：这样第 K 轮发出去的整段「往事 + 这一轮」，就是
+ * 第 K+1 轮同一位置的逐字节前缀。
+ */
+function renderHistory(bundle: ContextBundle): string {
+  const rounds = bundle.history ?? []
+
+  return (
+    '【往事 —— 按时间顺序，越靠后越近】\n\n' +
+    '（这些是你亲身经历过的过去。可以自然地引用、联想、记仇、叙旧，' +
+    '但不要像复述档案一样把它们念出来。）' +
+    (rounds.length ? '\n\n' + rounds.map((round) => renderHistoryRound(round, bundle.pcName)).join('\n\n') : '')
+  )
+}
+
+/** 这一轮 —— 会变的东西全部放在这里，也就是提示词的最后一段 */
+function renderCurrentRound(bundle: ContextBundle): string {
+  const parts: string[] = []
+
+  parts.push(
+    renderRoundBody({
+      index: bundle.roundIndex ?? 0,
+      time: bundle.scene.time,
+      place: bundle.scene.place,
+      atmosphere: bundle.scene.atmosphere,
+      pcProfile: bundle.counterpartProfile,
+      presentNames: bundle.presentNames,
+      pcName: bundle.pcName,
+      sceneLines: bundle.sceneLines,
+      events: bundle.perceived,
+    }),
+  )
+
+  if (bundle.pcCues.length) {
+    const cues = bundle.pcCues
+      .map((cue) => `· ${cue.visible}${cue.readability < 0.5 ? '（看不太真切）' : ''}`)
+      .join('\n')
+    parts.push(
+      `【你从他的样子上看出来的】\n${cues}\n\n` +
+        '这只是外在表现，他真正在想什么你并不知道，也可能理解错。',
+    )
   }
 
   if (bundle.ownThoughts.length) {
@@ -205,25 +211,6 @@ function renderPersonal(bundle: ContextBundle): string {
     )
   }
 
-  if (bundle.perceived.length) {
-    const lines = bundle.perceived.map((event, index) => {
-      const n = index + 1
-      if (event.kind === 'speech') {
-        return `${n}. ${event.self ? '你说' : `${event.from}说`}：「${event.text}」`
-      }
-      if (event.kind === 'action') {
-        return `${n}. ${event.self ? '你' : event.from}：${event.text}`
-      }
-      return `${n}. 你注意到「${event.from}」：${event.text}`
-    })
-
-    parts.push(
-      `【你实际接收到的事（按时间顺序）】\n${lines.join('\n')}\n\n` +
-        '这些是**依次发生**的，不是同时发生的 —— 没轮到你的时候你只是看着、听着。\n' +
-        '凡是标着「你说」的，都是你已经说过的，不要重复。',
-    )
-  }
-
   parts.push(
     `【你确定不知道的事 —— 不要表现出你知道】\n${bundle.doesNotKnow.map((line) => `· ${line}`).join('\n')}`,
   )
@@ -232,20 +219,25 @@ function renderPersonal(bundle: ContextBundle): string {
     parts.push(`【你知道的背景】\n${bullets(bundle.knownFacts)}`)
   }
 
-  parts.push('【你的任务】\n对眼前这一幕做出你的反应。拆成若干节拍，用约定的 JSON 输出。')
-
   return parts.join('\n\n')
 }
 
 /**
- * 这一轮的设定（自由度 + 分级）—— 放在最末尾。
+ * 这一轮的设定：他此刻的状态 + 自由度 + 成人向。
  *
- * 它们会随项目设置或用户每轮勾选的复选框变化，属于「会变的东西」，
- * 所以刻意不给它们靠前的位置：改这两项不会让前面的缓存全部作废。
- * 同时放在最后也正好是人设之后，R18 段落里「不违背上面人设」指向明确。
+ * 全部是「会变的东西」，所以一起排在提示词末尾 —— 改它们不会让
+ * 前面那些已经缓存好的内容作废。R18 段落里说的「上面人设」，
+ * 指的也正是排在它前面的角色卡。
  */
-function renderRoundSettings(project: ProjectSettings, rating: ContentRating): string {
-  const lines = [`【本轮设定】`, FREEDOM_HINT[project.freedomLevel]]
+function renderRoundSettings(bundle: ContextBundle, project: ProjectSettings, rating: ContentRating): string {
+  const { card } = bundle
+  const state = [card.state.mood ? `心境：${card.state.mood}` : '', card.state.location ? `所在：${card.state.location}` : '']
+    .filter(Boolean)
+    .join(' · ')
+
+  const lines = ['【本轮设定】']
+  if (state) lines.push(`你此刻的状态 —— ${state}`)
+  lines.push(FREEDOM_HINT[project.freedomLevel])
   if (rating === 'r18') lines.push(R18_HINT.trim())
   return lines.join('\n\n')
 }
@@ -253,15 +245,12 @@ function renderRoundSettings(project: ProjectSettings, rating: ContentRating): s
 export function buildRoleplayMessages(input: RoleplayPromptInput): ChatMessage[] {
   const { bundle, project, rating = 'general' } = input
 
-  const user = [
-    renderShared(bundle, project),
-    SEPARATOR,
-    renderPersonal(bundle),
-    renderRoundSettings(project, rating),
-  ].join('\n\n')
+  const sections = [renderIdentity(bundle, project), renderHistory(bundle), renderCurrentRound(bundle)]
+  sections.push(renderRoundSettings(bundle, project, rating))
+  sections.push('【你的任务】\n对眼前这一幕做出你的反应。拆成若干节拍，用约定的 JSON 输出。')
 
   return [
     { role: 'system', content: SYSTEM },
-    { role: 'user', content: user },
+    { role: 'user', content: sections.join('\n\n') },
   ]
 }

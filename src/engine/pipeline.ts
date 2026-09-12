@@ -13,6 +13,7 @@ import { runRoleplayStage } from './stages/s5-roleplay'
 import { composeScene } from './stages/s7-compose'
 import { buildRoundMemories, describeWhere, type MemoryBuildInput } from './stages/s8-memory'
 import { getCastLibrary, getMemories, recallFor, toKnownCast } from './memory/library'
+import { HISTORY_MAX_CHARS, collectHistory, renderSharedRecap } from './history'
 import type { ComposedScene, ContextBundle, KnownCastEntry, PerceptionOutcome, RoleplayOutput } from '@/types/character'
 import type { ObservedCue, PcExposure } from '@/types/exposure'
 import type { SceneSetup } from '@/types/scene'
@@ -106,65 +107,45 @@ function knownCastOf(ctx: PipelineContext): KnownCastEntry[] {
   )
 }
 
-/** 把一幕编排结果压成可读的剧情文本 */
-function formatSceneForRecap(scene: ComposedScene): string {
-  return scene.blocks
-    .map((block) => {
-      switch (block.kind) {
-        case 'scene':
-          return `〔场景〕${block.text}`
-        case 'pc-speech':
-          return `我：「${block.text}」`
-        case 'pc-action':
-          return `我：${block.text}`
-        case 'pc-cue':
-          return `（我的样子）${block.text}`
-        case 'speech':
-          return `${block.characterName ?? '某人'}：「${block.text}」`
-        case 'action':
-          return `${block.characterName ?? '某人'}：${block.text}`
-        case 'cue':
-          return `（${block.characterName ?? '某人'}的样子）${block.text}`
-        default:
-          return block.text
-      }
-    })
-    .join('\n')
-}
-
-const RECAP_MAX_CHARS = 2400
-
 /**
- * 前面已经演过的剧情。
+ * 前文剧情（共享版）。
  *
- * 光给「角色卡名单」是不够的 —— 「前面那个人」指的是谁，
- * 取决于上一幕里谁走在前面、谁站在哪儿，那只能从剧情本身看出来。
- * 所以这里直接把前几轮的编排结果摊开给模型看。
+ * 从第 1 轮一路累加，不再只看最近两轮 —— 滑动窗口省 token，但会把
+ * 「他三天前说过的那句话」抹掉，角色一致性先坏在这里。
+ * 超出预算才从最早的一轮开始丢，并在开头注明。
  */
-function buildRecap(ctx: PipelineContext, roundsBack = 2): string {
+function buildRecap(ctx: PipelineContext): string {
   if (!ctx.rounds?.length) return ''
 
   const previousRounds = ctx.rounds
     .filter((round) => round.sessionId === ctx.round.sessionId && round.index < ctx.round.index)
     .sort((a, b) => a.index - b.index)
-    .slice(-roundsBack)
 
   if (!previousRounds.length) return ''
 
   const parts: string[] = []
+  let total = 0
+
   for (const round of previousRounds) {
     const composeStep = Object.values(ctx.steps).find(
       (step) => step.roundId === round.id && step.stage === 'compose' && step.status === 'done',
     )
     const scene = composeStep?.output as ComposedScene | undefined
-    const body = scene?.blocks?.length ? formatSceneForRecap(scene) : round.userInput.trim()
-    parts.push(`── 第 ${round.index} 轮 ──\n${body}`)
+    const body = renderSharedRecap(scene, round.userInput)
+    const piece = `── 第 ${round.index} 轮 ──\n${body}`
+    parts.push(piece)
+    total += piece.length + 2
   }
 
-  const text = parts.join('\n\n')
-  if (text.length <= RECAP_MAX_CHARS) return text
-  // 太长就砍掉开头，保留离现在最近的部分
-  return `（前文较长，这里只保留最近的部分）\n…${text.slice(-RECAP_MAX_CHARS)}`
+  let start = 0
+  while (start < parts.length - 1 && total > HISTORY_MAX_CHARS) {
+    total -= parts[start].length + 2
+    start += 1
+  }
+
+  const text = parts.slice(start).join('\n\n')
+  if (!start) return text
+  return `（更早的 ${start} 轮已经太长，这里从第 ${previousRounds[start].index} 轮开始）\n${text}`
 }
 
 function emptyCost() {
@@ -323,11 +304,20 @@ async function executeStep(ctx: PipelineContext, step: Step): Promise<Step> {
 
       const output = buildContextBundle({
         card,
+        roundIndex: ctx.round.index,
         segments: segments ?? [],
         cards: castOut.characters,
         pcName: ctx.project.pcName,
         sceneSetup,
         recap: buildRecap(ctx),
+        history: collectHistory({
+          rounds: ctx.rounds ?? [],
+          steps: ctx.steps,
+          card,
+          pcName: ctx.project.pcName,
+          sessionId: ctx.round.sessionId,
+          currentRoundId: ctx.round.id,
+        }),
         memories,
         pcCues,
         candidates: perception?.candidates ?? [],

@@ -53,6 +53,36 @@ export default function ContextView({ bundle, roundId }: Props) {
       </div>
 
       <div className="ctx-section">
+        <h4>他亲身经历的往事（一轮一段，逐轮累加，永不重写）</h4>
+        {!bundle.history?.length ? (
+          <div className="hint">这是第一轮，他还没有往事。</div>
+        ) : (
+          bundle.history.map((round) => (
+            <div key={round.index} className="ctx-history-round">
+              <div className="ctx-round">
+                第 {round.index} 轮
+                {[round.time, round.place].filter(Boolean).length
+                  ? ` · ${[round.time, round.place].filter(Boolean).join(' · ')}`
+                  : ''}
+              </div>
+              {round.sceneLines.map((line, index) => (
+                <div key={index} className="ctx-event ctx-event-scene">
+                  〔场景〕{line}
+                </div>
+              ))}
+              {round.events.map((event, index) => (
+                <div key={index} className={`ctx-event ctx-event-${event.kind}`}>
+                  <span className="ctx-from">{event.from}</span>
+                  {event.kind === 'speech' ? `「${event.text}」` : event.text}
+                </div>
+              ))}
+              {round.inner ? <div className="ctx-inner">（他当时在想：{round.inner}）</div> : null}
+            </div>
+          ))
+        )}
+      </div>
+
+      <div className="ctx-section">
         <h4>他按时间顺序感知到的（这才是他实际的体验）</h4>
         <ol className="ctx-timeline">
           {bundle.perceived.map((event, index) => (
@@ -108,7 +138,7 @@ export default function ContextView({ bundle, roundId }: Props) {
       <Section
         title={
           bundle.recalled.length
-            ? `他记得的以前（${bundle.recalled.length} 段）`
+            ? `他记得的以前（${bundle.recalled.length} 段摘要 · 已并入上面的往事，不再单独发给他）`
             : '他记得的以前'
         }
         items={bundle.recalled.map((memory) => (
