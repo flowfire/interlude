@@ -168,6 +168,26 @@ function normalizeDistorted(raw: unknown, validRefs: Set<number>): PerceptionEnt
   return out
 }
 
+function normalizeRendered(
+  raw: unknown,
+  validRefs: Set<number>,
+  byRefKind: Map<number, PerceiveCandidateRecord['kind']>,
+): PerceptionEntry['rendered'] {
+  const out: NonNullable<PerceptionEntry['rendered']> = []
+  for (const entry of asArray(raw)) {
+    const item = asRecord(entry)
+    const ref = Number(item?.ref)
+    if (!Number.isFinite(ref) || !validRefs.has(ref)) continue
+    const id = Math.floor(ref)
+    const who = asText(item?.who).trim()
+    // 台词不给转述内容 —— 引号里是原话，只能换称呼
+    const as = byRefKind.get(id) === 'speech' ? '' : asText(item?.as).trim()
+    if (!who && !as) continue
+    out.push({ ref: id, who: who || undefined, as: as || undefined })
+  }
+  return out
+}
+
 function normalizeExtras(raw: unknown, allowMind: boolean): PerceptionEntry['extras'] {
   const out: PerceptionEntry['extras'] = []
   for (const entry of asArray(raw)) {
@@ -211,6 +231,7 @@ export async function runPerceiveStage(
 
   const candidates = buildPerceiveCandidates(input)
   const validRefs = new Set(candidates.map((item) => item.ref))
+  const byRefKind = new Map(candidates.map((item) => [item.ref, item.kind]))
   const innerRefs = candidates.filter((item) => item.kind === 'inner').map((item) => item.ref)
 
   /** 没有读取能力的角色读不到念头 —— 引擎强制兜底，不依赖模型 */
@@ -268,6 +289,7 @@ export async function runPerceiveStage(
         name: card.name,
         missed: [...merged.values()],
         distorted: normalizeDistorted(item.distorted, validRefs).filter((entry) => !merged.has(entry.ref)),
+        rendered: normalizeRendered(item.rendered, validRefs, byRefKind),
         extras: normalizeExtras(item.extras, allowMind),
         note: asText(item.note),
       })

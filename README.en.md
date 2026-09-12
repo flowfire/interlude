@@ -100,6 +100,8 @@ Click "what it received" on a character card and you see everything they got thi
 
 **Note that these happen in sequence, not in parallel.** You say something, pause, say something else — and that is the order the character experienced, not a categorised list of "things he said / things he did".
 
+And **it is worded from their own point of view**. You write "I glance up at you"; the person you looked at reads "he glanced up at me", and a third person in the room reads "he glanced up at Lin Yan". The "I" you wrote is never "I" to anybody else — that would make them think they did it. Dialogue is the one exception: what is inside the quotes is your exact wording, unchanged, and only the speaker's label is swapped.
+
 Further down you get their **past**: one block per round, accumulating from round 1, including what they themselves said and did and what they were thinking at the time — plus an explicit list of **what they definitely do not know.**
 
 That past is **append-only and never rewritten**: what goes out in round 5 is what went out in round 4 with one more block appended. Two consequences: the prompt prefix for a given character hits the provider's cache across rounds, and the character does not forget a line they said three rounds ago — which is the thing "just send the last few messages" always gets wrong.

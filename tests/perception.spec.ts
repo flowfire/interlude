@@ -13,6 +13,7 @@ import type {
   ContextBundle,
   KnownCastEntry,
   PerceiveCandidateRecord,
+  PerceptionEntry,
   RawCastResult,
 } from '@/types/character'
 import type { SceneSetup } from '@/types/scene'
@@ -528,5 +529,75 @@ describe('mindReading 的解析', () => {
     expect(parsed[0].mindReading).toContain('善于隐藏时会失准')
     expect(parsed[1].mindReading).toContain('碎片')
     expect(parsed[2].mindReading).toContain('读剧本')
+  })
+})
+
+/* ------------------------- 转述：每个人看到的是他自己视角 ------------------------- */
+
+describe('人称转述', () => {
+  const pcAction: PerceiveCandidateRecord[] = [
+    { ref: 1, kind: 'action', text: '你：我抬头看了你一眼。', from: '我' },
+    { ref: 2, kind: 'speech', text: '你：「你来得比我预想的早。」', from: '我' },
+  ]
+
+  function bundleFor(name: string, rendered?: PerceptionEntry['rendered']) {
+    return buildContextBundle({
+      card: card({ name }),
+      segments: [],
+      cards: [],
+      pcName: '我',
+      sceneSetup: setup(),
+      candidates: pcAction,
+      reception: { missed: [], distorted: [], extras: [], rendered },
+    })
+  }
+
+  it('用户扮演的角色在别人眼里是「他」，不是「我」', () => {
+    const bundle = bundleFor('林砚')
+    // 不能让他们读到「我：我抬头看了你一眼」—— 那会让他们以为是自己做的
+    expect(bundle.perceived[0].from).toBe('他')
+    expect(bundle.perceived[1].from).toBe('他')
+  })
+
+  it('被看的人看到「他看了我一眼」，旁观的人看到「他看了林砚一眼」', () => {
+    const seen = bundleFor('林砚', [{ ref: 1, who: '他', as: '他抬头看了我一眼。' }])
+    expect(seen.perceived[0].text).toBe('他抬头看了我一眼。')
+
+    const bystander = bundleFor('阿七', [{ ref: 1, who: '他', as: '他抬头看了林砚一眼。' }])
+    expect(bystander.perceived[0].text).toBe('他抬头看了林砚一眼。')
+  })
+
+  it('台词只换说话人，内容一个字都不能改', () => {
+    // 就算模型硬给台词塞一个 as，引擎也会丢掉它
+    const bundle = bundleFor('林砚', [{ ref: 2, who: '他', as: '他问你来得比他想得早。' }])
+    expect(bundle.perceived[1].text).toBe('你来得比我预想的早。')
+    expect(bundle.perceived[1].from).toBe('他')
+  })
+
+  it('用户填了真名就用真名', () => {
+    const bundle = buildContextBundle({
+      card: card({ name: '林砚' }),
+      segments: [],
+      cards: [],
+      pcName: '沈栖',
+      sceneSetup: setup(),
+      candidates: [{ ref: 1, kind: 'action', text: '你：我抬头看了你一眼。', from: '沈栖' }],
+      reception: { missed: [], distorted: [], extras: [] },
+    })
+    expect(bundle.perceived[0].from).toBe('沈栖')
+  })
+
+  it('分发失败（没有转述）时退回原文 + 第三人称称呼', () => {
+    const bundle = buildContextBundle({
+      card: card({ name: '林砚' }),
+      segments: [],
+      cards: [],
+      pcName: '我',
+      sceneSetup: setup(),
+      candidates: pcAction,
+      reception: { missed: [], distorted: [], extras: [] },
+    })
+    expect(bundle.perceived[0].text).toBe('我抬头看了你一眼。')
+    expect(bundle.perceived[0].from).toBe('他')
   })
 })

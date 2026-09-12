@@ -297,8 +297,33 @@ const ROUND2_SITUATION = {
 
 const ROUND1_PERCEIVE = {
   entries: [
-    { name: '林砚', missed: [], distorted: [], extras: [], note: '' },
-    { name: '阿七', missed: [], distorted: [], extras: [], note: '' },
+    {
+      name: '林砚',
+      missed: [],
+      distorted: [],
+      // 转述：同一句「我推门进了茶馆」，在林砚眼里是「他推门进来」
+      rendered: [
+        { ref: 5, who: '他', as: '推门进来，袖子湿了半截。' },
+        { ref: 6, who: '你', as: '早就坐在靠里的位置，面前那盏茶只剩一半。' },
+        { ref: 7, who: '他' },
+        { ref: 8, who: '你', as: '抬眼看他，笑了一下' },
+        { ref: 10, who: '阿七', as: '擦着杯子，一直没抬头。' },
+      ],
+      extras: [],
+      note: '',
+    },
+    {
+      name: '阿七',
+      missed: [],
+      distorted: [],
+      rendered: [
+        { ref: 5, who: '他', as: '推门进来，袖子湿了半截。' },
+        { ref: 7, who: '他' },
+        { ref: 10, who: '你', as: '擦着杯子，一直没抬头。' },
+      ],
+      extras: [],
+      note: '',
+    },
   ],
 }
 

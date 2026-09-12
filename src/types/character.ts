@@ -126,6 +126,19 @@ export interface PerceptionEntry {
   distorted: { ref: number; as: string }[]
   /** 在这些信息之外，**额外**察觉到的（超常感官 / 读心） */
   extras: { text: string; channel: PerceiveChannel; certainty: number }[]
+  /**
+   * 转述：这条信息**在他眼里**该怎么念。
+   *
+   * 候选池里存的是用户写的第一人称叙述（「我抬头看了你一眼」）。
+   * 同一个动作，被看的人看到的是「他看了我一眼」，旁观的人看到的是
+   * 「他看了林砚一眼」—— 这是信息分发的一部分，不是文字游戏。
+   *
+   * - `who`：这条在他眼里是谁做的（「他」「阿七」，或者他自己）
+   * - `as`：内容的转述版本。**台词不给 as** —— 引号里是原话，一个字都不能改
+   *
+   * 只对确实含人称代词的信息给；「雨下大了」这种谁看都一样，不用给。
+   */
+  rendered?: { ref: number; who?: string; as?: string }[]
   note: string
 }
 
