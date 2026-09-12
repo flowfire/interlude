@@ -124,16 +124,24 @@ describe('局面推进：世界自己会往前走', () => {
 
   it('被点名的角色会收到导演的推力，没被点名的收不到', () => {
     const pushed = buildRoleplayMessages({
-      bundle: { ...bundle(), push: '狼群已经贴到三步之内，站在你身后那个人会是第一个被扑倒的。' },
+      bundle: {
+        ...bundle(),
+        nudge: {
+          push: '狼群已经贴到三步之内，站在你身后那个人会是第一个被扑倒的。',
+          act: '他动了 —— 第一头狼刚扑上来就被他按进了泥里。',
+        },
+      },
       project: DEFAULT_PROJECT_SETTINGS,
     })[1].content
 
-    expect(pushed).toContain('【导演点名】')
+    expect(pushed).toContain('【导演指令】')
     expect(pushed).toContain('狼群已经贴到三步之内')
-    expect(pushed).toContain('不能只给表情和姿态')
+    expect(pushed).toContain('第一头狼刚扑上来就被他按进了泥里')
+    // 导演给的是剧情，怎么演是演员的事
+    expect(pushed).toContain('怎么发生由你演')
 
     const plain = buildRoleplayMessages({ bundle: bundle(), project: DEFAULT_PROJECT_SETTINGS })[1].content
-    expect(plain).not.toContain('【导演点名】')
+    expect(plain).not.toContain('【导演指令】')
   })
 
   it('僵局点名只针对角色，永远不点用户', () => {
@@ -147,6 +155,7 @@ describe('局面推进：世界自己会往前走', () => {
     })
     expect(system.content).toContain('绝对不要碰用户扮演的角色')
     expect(system.content).toContain('用户扮演的角色永远不在点名范围内')
+    expect(system.content).toContain('同样的权限')
     expect(system.content).toContain('"nudges"')
   })
 

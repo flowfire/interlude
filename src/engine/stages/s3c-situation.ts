@@ -61,7 +61,8 @@ function normalizeNudges(raw: unknown, cards: CharacterCard[], pcName: string): 
     const push = asText(record?.push).trim()
     const who = byName.get(asText(record?.who).trim())
     if (!who || !push || out.some((entry) => entry.who === who)) continue
-    out.push({ who, push })
+    const act = asText(record?.act).trim()
+    out.push({ who, push, act: act || undefined })
     if (out.length >= 2) break
   }
   return out

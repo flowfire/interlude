@@ -261,12 +261,20 @@ function renderRoundSettings(bundle: ContextBundle, project: ProjectSettings, ra
     .join(' · ')
 
   const lines = ['【本轮设定】']
-  if (bundle.push?.trim()) {
-    lines.push(
-      `【导演点名】\n${bundle.push.trim()}\n\n` +
-        '现在不是等的时候。这一轮你必须做出**实质性的动作** —— 说话、动手、走开都行，' +
-        '但不能只给表情和姿态。做什么由你自己决定。',
-    )
+  const nudge = bundle.nudge
+  if (nudge?.push?.trim() || nudge?.act?.trim()) {
+    const body = [
+      nudge.act?.trim() ? `导演要你在这一轮里做到这个：\n${nudge.act.trim()}` : '',
+      nudge.push?.trim() ? `他的理由：${nudge.push.trim()}` : '',
+      nudge.act?.trim()
+        ? '这件事**必须发生**，但**怎么发生由你演** —— 用你的动作、你的台词、你的节奏把它落实下来。' +
+          '不要复述上面那句话，也不要让这件事显得像是别人替你做的。'
+        : '现在不是等的时候。这一轮你必须做出**实质性的动作** —— 说话、动手、走开都行，' +
+          '但不能只给表情和姿态。做什么由你自己决定。',
+    ]
+      .filter(Boolean)
+      .join('\n\n')
+    lines.push(`【导演指令】\n${body}`)
   }
   if (state) lines.push(`你此刻的状态 —— ${state}`)
   lines.push(FREEDOM_HINT[project.freedomLevel])

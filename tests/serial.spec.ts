@@ -216,7 +216,13 @@ describe('僵局时导演点名', () => {
       escalation: '再这样下去这壶茶就白沏了',
       events: [],
       order: ['林砚', '阿七'],
-      nudges: [{ who: '林砚', push: '你已经等了他三天，他今天要是不开口，你打算就这么坐到打烊吗。' }],
+      nudges: [
+        {
+          who: '林砚',
+          push: '你已经等了他三天，他今天要是不开口，你打算就这么坐到打烊吗。',
+          act: '他把杯子放下了 —— 这是他今晚第一次主动做出会发出声音的动作。',
+        },
+      ],
       note: '',
     }
 
@@ -231,13 +237,16 @@ describe('僵局时导演点名', () => {
 
     const linyan = contextOf(result.steps, '林砚', 's1-r1')
     const aqi = contextOf(result.steps, '阿七', 's1-r1')
-    expect(linyan?.push).toContain('你已经等了他三天')
-    expect(aqi?.push).toBeUndefined()
+    expect(linyan?.nudge?.push).toContain('你已经等了他三天')
+    expect(linyan?.nudge?.act).toContain('他把杯子放下了')
+    expect(aqi?.nudge).toBeUndefined()
 
     const linyanPrompt = calls.find((call) => call.label === 'roleplay:林砚')?.prompt ?? ''
     const aqiPrompt = calls.find((call) => call.label === 'roleplay:阿七')?.prompt ?? ''
-    expect(linyanPrompt).toContain('【导演点名】')
-    expect(aqiPrompt).not.toContain('【导演点名】')
+    expect(linyanPrompt).toContain('【导演指令】')
+    expect(linyanPrompt).toContain('他把杯子放下了')
+    expect(linyanPrompt).toContain('这件事**必须发生**')
+    expect(aqiPrompt).not.toContain('【导演指令】')
   })
 })
 
