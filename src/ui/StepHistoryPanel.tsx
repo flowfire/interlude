@@ -4,6 +4,7 @@ import { getCastLibrary, getMemories } from '@/engine/memory/library'
 import { useAppStore } from '@/store/appStore'
 import { SOURCE_LABEL, type CharacterCard } from '@/types/character'
 import type { MemoryEntry } from '@/types/memory'
+import { SCENE_MODE_LABEL } from '@/types/scene'
 import { STAGE_LABEL, type Step } from '@/types/step'
 import { formatDateTime } from '@/utils/time'
 import { rerunStep } from './usePipelineActions'
@@ -111,7 +112,10 @@ function summarize(step: Step): string {
   }
   if (step.stage === 'scene') {
     const output = step.output as { place?: string; present?: unknown[]; inputMode?: string } | null
-    if (output?.present) return `${output.inputMode ?? ''} · ${output.place || '地点未定'} · 在场 ${output.present.length} 人`
+    if (output?.present) {
+      const mode = SCENE_MODE_LABEL[output.inputMode as keyof typeof SCENE_MODE_LABEL] ?? output.inputMode ?? ''
+      return `${mode} · ${output.place || '地点未定'} · 在场 ${output.present.length} 人`
+    }
   }
   if (step.stage === 'cast') {
     const output = step.output as { characters?: unknown[]; reusedCount?: number } | null

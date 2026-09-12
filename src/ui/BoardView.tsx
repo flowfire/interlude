@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useAppStore } from '@/store/appStore'
-import { SEGMENT_KIND_LABEL, type Segment } from '@/types/segment'
+import { SEGMENT_KIND_LABEL, type Segment, type SegmentKind } from '@/types/segment'
 import { SCENE_MODE_LABEL } from '@/types/scene'
 import { RATING_LABEL, type ContentRating, type Round } from '@/types/step'
 import { isRoundDraftDirty } from '@/utils/roundDraft'
@@ -138,7 +138,7 @@ function RoundBlock({ round, isLast, demo }: { round: Round; isLast: boolean; de
           <span className="hint">
             {segmentsData
               ? `${segmentsData.segments.length} 个片段 · ${Object.entries(typeCounts)
-                  .map(([kind, count]) => `${kind}×${count}`)
+                  .map(([kind, count]) => `${SEGMENT_KIND_LABEL[kind as SegmentKind] ?? kind}×${count}`)
                   .join(' ')} · 点击${showSegments ? '收起' : '查看并编辑'}拆解`
               : '尚未拆解'}
           </span>
