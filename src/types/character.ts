@@ -161,6 +161,13 @@ export interface ContextBundle {
   counterpartProfile: string
   presentNames: string[]
   /**
+   * 前几轮已经演过的内容。
+   *
+   * 放在提示词的最前面（所有角色共享的那一段）—— 它既是最长的，
+   * 也是跨角色完全一致的，缓存命中收益最大。
+   */
+  recap: string
+  /**
    * 这一轮的场面。
    * 只保留客观环境（时间地点氛围）—— 「此刻正在发生什么」和开场画面都走信息分发，
    * 因为它们可能包含某个角色看不见的东西。

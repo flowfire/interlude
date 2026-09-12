@@ -24,6 +24,8 @@ export interface ContextBuildInput {
   cards: CharacterCard[]
   pcName: string
   sceneSetup: SceneSetup
+  /** 前几轮已经演过的内容（跨角色共享，放在提示词最前面以利缓存命中） */
+  recap?: string
   /** 这一轮被分发出去的信息（带编号） */
   candidates?: PerceiveCandidateRecord[]
   /** 这个角色对上面这些信息的接收情况 */
@@ -111,6 +113,7 @@ export function buildContextBundle(input: ContextBuildInput): ContextBundle {
     pcCues = [],
     candidates = [],
     reception,
+    recap = '',
   } = input
   void cards
 
@@ -173,6 +176,7 @@ export function buildContextBundle(input: ContextBuildInput): ContextBundle {
     pcName,
     counterpartProfile: sceneSetup.pcProfile || '（没有额外描写，你只能看到眼前这个人本身）',
     presentNames,
+    recap,
     scene: {
       time: sceneSetup.time,
       place: sceneSetup.place,

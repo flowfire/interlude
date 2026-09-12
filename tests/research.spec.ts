@@ -192,15 +192,21 @@ describe('资料会进入提示词', () => {
       knownFacts: [],
       doesNotKnow: [],
       recalled: [],
+      recap: '',
     }
 
     const messages = buildRoleplayMessages({ bundle, project: DEFAULT_PROJECT_SETTINGS })
     const system = messages[0].content
+    const user = messages[1].content
 
-    expect(system).toContain('动手前先活动一下脖子')
-    expect(system).toContain('「少废话。」')
-    expect(system).toContain('不会对小孩下手')
-    expect(system).toContain('《X战警》')
-    expect(system).toContain('标志性特征')
+    // 角色专属内容（标志性特征、示例台词、硬约束、原作事实）现在都在 user 段里
+    expect(user).toContain('动手前先活动一下脖子')
+    expect(user).toContain('「少废话。」')
+    expect(user).toContain('不会对小孩下手')
+    expect(user).toContain('《X战警》')
+    expect(user).toContain('标志性特征')
+    // system 保持通用：不含任何角色专属内容，这样同轮所有角色能共享前缀缓存
+    expect(system).not.toContain('动手前先活动一下脖子')
+    expect(system).not.toContain('《X战警》')
   })
 })

@@ -1,5 +1,5 @@
 import type { ChatMessage } from '@/types/llm'
-import type { ContextBundle, PerceiveChannel } from '@/types/character'
+import type { ContextBundle } from '@/types/character'
 import { PERCEIVE_CHANNEL_LABEL } from '@/types/character'
 import type { ContentRating } from '@/types/step'
 import type { ProjectSettings } from '@/types/settings'
@@ -25,7 +25,6 @@ const R18_HINT = `
 2. **推进必须是「你会做的事」。** 关系没到那一步就不要跳到那一步 ——
    该犹豫的还是犹豫，该试探的还是试探，该推开的时候还是会推开。
 3. **不要一步到位。** 节奏由此刻的关系与情境决定，不由分级决定。
-   这一轮该走到哪，取决于前面发生过什么。
 `
 
 const FREEDOM_HINT: Record<ProjectSettings['freedomLevel'], string> = {
@@ -34,54 +33,43 @@ const FREEDOM_HINT: Record<ProjectSettings['freedomLevel'], string> = {
   high: '自由度：高。你可以主动追问、试探、做决定，甚至把话题引向你想去的地方。',
 }
 
-const SYSTEM = `你正在一部互动剧里扮演「__NAME__」。你只演这一个角色，用这一个角色的眼睛看世界。
+/**
+ * 通用指令 —— **不含任何角色专属内容**。
+ *
+ * 这样同一轮里所有角色的 system 完全相同，跨角色能命中前缀缓存。
+ * 角色卡、记忆这些只属于某一个人的东西全部放在 user 里。
+ */
+const SYSTEM = `你正在一部互动剧里扮演其中一个角色。你只演这一个角色，用这一个角色的眼睛看世界。
 
-【你是谁】
-姓名：__NAME____ALIASES____FRANCHISE__
-身份概述：__SUMMARY__
-说话风格：__SPEECH_STYLE__
-性格：__TEMPERAMENT__
-习惯性的小动作与微表情：__HABITS__
-背景：__BACKGROUND__
-此刻心境：__MOOD__
-此刻所在：__LOCATION__
-
-【你能做的事 —— 超出这个范围的事，你做不到】
-__ABILITIES__
-
-【你察觉得到、而别人察觉不到的东西】
-__PERCEPTION__
-
-【你的标志性特征 —— 要让熟悉你的人一眼认出你】
-__SIGNATURE__
-
-【你的说话方式参考】
-下面这些是**语气示例**，用来帮你找准用词习惯和句长，不是你必须说的台词：
-__VOICE_SAMPLES__
-
-【原作里确定的事实 —— 不要与之矛盾】
-__CANON_ANCHORS__
-
-【你绝对不会做的事、不会说的话】
-__BOUNDARIES__
+【你会收到的内容】
+用户消息分成两段：
+· 前半段是**所有在场角色共享的背景**：故事、客观环境、前几轮已经演过的内容。
+· 后半段是**只属于你的部分**：你扮演谁、你记得什么、你此刻实际接收到了什么。
+两段之间有一条分隔线。
 
 【你不能做什么】
-1. 你只知道下面「上下文」里给你的信息。你**不知道任何人的内心想法**，包括「__PC_NAME__」的。想知道，只能从他的表情、语气、动作去猜，而且可能猜错。
+1. 你只能使用「只属于你的部分」和共享背景里给你的信息。
+   你**不知道任何人的内心想法** —— 除非那一段里明确写了你读到了。
 2. 不要替别人说话、不要写别人的反应、不要描写环境。
 3. 不要用旁白腔，不要写"仿佛""似乎预示着"这类小说腔的句子。
 
 【你要怎么演】
 把你这一轮的反应拆成若干个节拍（beats），每个节拍只能是三类之一：
-- "speech"：你说出口的话。要短、要像真人说话，带口语和停顿，不要长篇大论，不要一口气说完所有想法。
-- "action"：你做的动作。只写看得见的部分（"把伞靠在门边"），不要解释动机（不要写"因为他想掩饰紧张"）。
-- "cue"：你脸上的、身上的、语气上的细微反应（"笑维持了半秒就收住了"）。这是别人唯一能观察到你情绪的地方。
+- "speech"：你说出口的话。要短、要像真人说话，带口语和停顿，不要长篇大论。
+- "action"：你做的动作。只写看得见的部分（"把伞靠在门边"），不要解释动机
+  （不要写"因为他想掩饰紧张"）。
+- "cue"：你脸上的、身上的、语气上的细微反应（"笑维持了半秒就收住了"）。
+  这是别人唯一能观察到你情绪的地方。
 
 【硬性格式】
 1. beats 的 speech 直接写台词内容，不要加引号、不要写"他说"。
 2. beats 的 action / cue 用第三人称描述，可以省略主语。
-3. 你的真实想法写进 inner 字段。**inner 不会被任何人看到**，所以放心写实话，但绝对不要把它抄进 beats。
-4. 你**至少要说一句话**。如果你确实选择沉默，那就不要写 speech，并在 silentReason 里说明你为什么不说话（沉默本身也是一种反应）。
-5. __FREEDOM__
+3. 你的真实想法写进 inner 字段。**inner 不会被任何人看到**，所以放心写实话，
+   但绝对不要把它抄进 beats。
+4. 你**至少要说一句话**。如果你确实选择沉默，那就不要写 speech，
+   并在 silentReason 里说明你为什么不说话（沉默本身也是一种反应）。
+5. 不要复述或引用你的 inner。
+6. __FREEDOM__
 __RATING__
 
 【输出格式】
@@ -89,7 +77,7 @@ __RATING__
   "beats": [
     { "kind": "cue", "text": "右手在门框上顿了一下" },
     { "kind": "action", "text": "把湿伞靠在门边，坐到靠里的位置" },
-    { "kind": "speech", "text": "坐吧。靠窗那桌别坐。", "addressee": ["__PC_NAME__"] }
+    { "kind": "speech", "text": "坐吧。靠窗那桌别坐。", "addressee": [] }
   ],
   "inner": "她手上没有戴那枚戒指。",
   "mood": "收起了玩世不恭",
@@ -97,6 +85,8 @@ __RATING__
 }
 
 只输出这一个 JSON 对象，不要任何解释文字、不要 Markdown 围栏。`
+
+export const SEPARATOR = '━━━━━━━━━━━━━━━ 以下只属于「你」━━━━━━━━━━━━━━━'
 
 function listOrNone(values: string[], empty = '（没有特别说明）'): string {
   return values.length ? values.join('、') : empty
@@ -106,21 +96,97 @@ function bullets(values: string[], empty = '（没有特别说明）'): string {
   return values.length ? values.map((value) => `· ${value}`).join('\n') : empty
 }
 
-function renderBundle(bundle: ContextBundle): string {
+/**
+ * 共享背景段 —— 同一轮里**所有角色收到的一模一样**。
+ *
+ * 放在提示词最前面，是为了让这部分（往往是最长的：前文回顾 + 环境）
+ * 能够命中 prompt 前缀缓存。
+ */
+function renderShared(bundle: ContextBundle, project: ProjectSettings): string {
+  const sceneHead = [bundle.scene.time, bundle.scene.place, bundle.scene.atmosphere]
+    .filter(Boolean)
+    .join(' · ')
+
+  const parts: string[] = ['【共享背景】', `故事：《${project.storyTitle}》`]
+
+  if (sceneHead) parts.push(`时间地点：${sceneHead}`)
+  parts.push(`对面站着的人：「${bundle.pcName}」—— ${bundle.counterpartProfile}`)
+
+  // 注意：这里不能按「除了我以外还有谁」来写，否则每个角色的这一段都不一样，
+  // 共享前缀就断了。在场名单本身是公开信息，直接把所有人都列出来即可。
+  if (bundle.presentNames.length) parts.push(`在场的人：${bundle.presentNames.join('、')}`)
+
+  // 老工作区里存的 ContextBundle 可能没有 recap，容错处理
+  const recap = (bundle.recap ?? '').trim()
+  if (recap) {
+    parts.push(`【前面已经演过的内容】\n${recap}`)
+  }
+
+  return parts.join('\n\n')
+}
+
+/**
+ * 角色专属段 —— 从这里开始每个角色各不相同，缓存不再共享。
+ */
+function renderPersonal(bundle: ContextBundle): string {
+  const { card } = bundle
   const parts: string[] = []
 
-  const sceneHead: string[] = []
-  if (bundle.scene.time) sceneHead.push(`时间：${bundle.scene.time}`)
-  if (bundle.scene.place) sceneHead.push(`地点：${bundle.scene.place}`)
-  if (bundle.scene.atmosphere) sceneHead.push(`氛围：${bundle.scene.atmosphere}`)
   parts.push(
-    `【这是什么场面】\n${sceneHead.join('\n') || '（没有额外说明）'}\n\n` +
-      (bundle.sceneLines.length
-        ? bundle.sceneLines.join('\n')
-        : '（环境上没有什么值得说的）'),
+    [
+      '【你扮演谁】',
+      `姓名：${card.name}${card.aliases.length ? `（也叫 ${card.aliases.join('、')}）` : ''}${card.franchise ? `（出自：${card.franchise}）` : ''}`,
+      `身份概述：${card.persona.summary || '（素材里没有明说）'}`,
+      `说话风格：${card.persona.speechStyle || '（素材里没有明说，按性格自然发挥）'}`,
+      `性格：${listOrNone(card.persona.temperament ?? [], '（素材里没有明说）')}`,
+      `习惯性的小动作与微表情：${listOrNone(card.persona.habits ?? [], '（素材里没有明说）')}`,
+      `背景：${card.persona.background || '（素材里没有明说）'}`,
+      `此刻心境：${card.state.mood || '（未说明）'}`,
+      `此刻所在：${card.state.location || '（未说明）'}`,
+    ].join('\n'),
   )
 
-  parts.push(`【对面站着的人：「${bundle.pcName}」】\n${bundle.counterpartProfile}`)
+  const abilities = bullets(card.persona.abilities ?? [], '（没有特别说明，按常理判断）')
+  parts.push(`【你能做的事 —— 超出这个范围的事，你做不到】\n${abilities}`)
+
+  const perception = bullets(card.persona.perception ?? [], '（没有超出常人的感知）')
+  parts.push(`【你察觉得到、而别人察觉不到的东西】\n${perception}`)
+
+  const signature = bullets(card.persona.signature ?? [])
+  if (card.persona.signature?.length) {
+    parts.push(`【你的标志性特征 —— 要让熟悉你的人一眼认出你】\n${signature}`)
+  }
+
+  if (card.persona.voiceSamples?.length) {
+    parts.push(
+      `【你的说话方式参考】\n下面这些是**语气示例**，用来帮你找准用词习惯和句长，不是你必须说的台词：\n` +
+        bullets(card.persona.voiceSamples),
+    )
+  }
+
+  if (card.persona.canonAnchors?.length) {
+    parts.push(`【原作里确定的事实 —— 不要与之矛盾】\n${bullets(card.persona.canonAnchors)}`)
+  }
+
+  if (card.persona.boundaries?.length) {
+    parts.push(`【你绝对不会做的事、不会说的话】\n${bullets(card.persona.boundaries)}`)
+  }
+
+  if (bundle.recalled.length) {
+    const lines = bundle.recalled.map((memory) => {
+      const head = `第 ${memory.roundIndex} 轮 · ${memory.where || '某处'}：${memory.summary}`
+      const inner = memory.inner ? `\n    （你当时在想：${memory.inner}）` : ''
+      return `· ${head}${inner}`
+    })
+    parts.push(
+      `【你还记得的事（按时间顺序，越靠后越近）】\n${lines.join('\n')}\n` +
+        '这些是你亲身经历的过去。可以自然地引用、联想、记仇、叙旧，但不要像复述档案一样把它们念出来。',
+    )
+  }
+
+  if (bundle.sceneLines.length) {
+    parts.push(`【你眼前的环境】\n${bundle.sceneLines.join('\n')}`)
+  }
 
   if (bundle.ownThoughts.length) {
     parts.push(`【你自己此刻在想什么（只有你知道）】\n${bundle.ownThoughts.map((line) => `· ${line}`).join('\n')}`)
@@ -132,7 +198,6 @@ function renderBundle(bundle: ContextBundle): string {
       const certainty = item.certainty < 0.7 ? `（把握 ${Math.round(item.certainty * 100)}%）` : ''
       return `· ${label}：${item.text}${certainty}`
     })
-
     parts.push(
       `【你额外察觉到的】\n${lines.join('\n')}\n\n` +
         '这是你的感官**实际捕捉到**的东西 —— 没捕捉到的部分已经被滤掉了，所以这就是你这次的收获。\n' +
@@ -153,32 +218,9 @@ function renderBundle(bundle: ContextBundle): string {
     })
 
     parts.push(
-      `【刚才按时间顺序发生的事】\n${lines.join('\n')}\n\n` +
-        '这些是**依次发生**的，不是同时发生的。轮到你时，你是在回应这整串事情。' +
+      `【你实际接收到的事（按时间顺序）】\n${lines.join('\n')}\n\n` +
+        '这些是**依次发生**的，不是同时发生的 —— 没轮到你的时候你只是看着、听着。\n' +
         '凡是标着「你说」的，都是你已经说过的，不要重复。',
-    )
-
-    if (bundle.perceived.some((event) => event.kind === 'cue')) {
-      parts.push(
-        '注意：你观察到的是**现象**，不是他的心里话。你可以据此猜测他的心情，但很可能猜错 —— ' +
-          '除非你的性格就是会当面点破，否则不要把你猜到的结论直接说出来。',
-      )
-    }
-  }
-
-  if (bundle.knownFacts.length) {
-    parts.push(`【你知道的背景】\n${bundle.knownFacts.map((line) => `· ${line}`).join('\n')}`)
-  }
-
-  if (bundle.recalled.length) {
-    const lines = bundle.recalled.map((memory) => {
-      const head = `第 ${memory.roundIndex} 轮 · ${memory.where || '某处'}：${memory.summary}`
-      const inner = memory.inner ? `\n    （你当时在想：${memory.inner}）` : ''
-      return `· ${head}${inner}`
-    })
-    parts.push(
-      `【你还记得的事（按时间顺序，越靠后越近）】\n${lines.join('\n')}\n` +
-        '这些是你亲身经历的过去。可以自然地引用、联想、记仇、叙旧，但不要像复述档案一样把它们念出来。',
     )
   }
 
@@ -186,44 +228,24 @@ function renderBundle(bundle: ContextBundle): string {
     `【你确定不知道的事 —— 不要表现出你知道】\n${bundle.doesNotKnow.map((line) => `· ${line}`).join('\n')}`,
   )
 
-  parts.push(`【场上还有】${listOrNone(bundle.presentNames.filter((name) => name !== bundle.name))}`)
+  if (bundle.knownFacts.length) {
+    parts.push(`【你知道的背景】\n${bullets(bundle.knownFacts)}`)
+  }
+
+  parts.push('【你的任务】\n对眼前这一幕做出你的反应。拆成若干节拍，用约定的 JSON 输出。')
 
   return parts.join('\n\n')
 }
 
 export function buildRoleplayMessages(input: RoleplayPromptInput): ChatMessage[] {
   const { bundle, project, rating = 'general' } = input
-  const { card } = bundle
 
-  const system = SYSTEM.replaceAll('__NAME__', card.name)
-    .replaceAll('__ALIASES__', card.aliases.length ? `（也叫 ${card.aliases.join('、')}）` : '')
-    .replaceAll('__FRANCHISE__', card.franchise ? `（出自：${card.franchise}）` : '')
-    .replaceAll('__SUMMARY__', card.persona.summary || '（素材里没有明说）')
-    .replaceAll('__SPEECH_STYLE__', card.persona.speechStyle || '（素材里没有明说，按性格自然发挥）')
-    .replaceAll('__TEMPERAMENT__', listOrNone(card.persona.temperament ?? [], '（素材里没有明说）'))
-    .replaceAll('__HABITS__', listOrNone(card.persona.habits ?? [], '（素材里没有明说）'))
-    .replaceAll('__BACKGROUND__', card.persona.background || '（素材里没有明说）')
-    .replaceAll('__ABILITIES__', bullets(card.persona.abilities ?? [], '（没有特别说明，按常理判断）'))
-    .replaceAll('__PERCEPTION__', bullets(card.persona.perception ?? [], '（没有超出常人的感知）'))
-    .replaceAll('__SIGNATURE__', bullets(card.persona.signature ?? []))
-    .replaceAll(
-      '__VOICE_SAMPLES__',
-      bullets(card.persona.voiceSamples ?? [], '（没有示例，按你的性格自然发挥）'),
-    )
-    .replaceAll('__CANON_ANCHORS__', bullets(card.persona.canonAnchors ?? []))
-    .replaceAll('__BOUNDARIES__', bullets(card.persona.boundaries ?? []))
-    .replaceAll('__MOOD__', card.state.mood || '（未说明）')
-    .replaceAll('__LOCATION__', card.state.location || '（未说明）')
-    .replaceAll('__FREEDOM__', FREEDOM_HINT[project.freedomLevel])
-    .replaceAll('__RATING__', rating === 'r18' ? R18_HINT : '')
-    .replaceAll('__PC_NAME__', project.pcName)
+  const system = SYSTEM.replaceAll('__FREEDOM__', FREEDOM_HINT[project.freedomLevel]).replaceAll(
+    '__RATING__',
+    rating === 'r18' ? R18_HINT : '',
+  )
 
-  const user = `【上下文 —— 你只知道这些】
-
-${renderBundle(bundle)}
-
-【你的任务】
-对眼前这一幕做出你的反应。拆成若干节拍，用约定的 JSON 输出。`
+  const user = `${renderShared(bundle, project)}\n\n${SEPARATOR}\n\n${renderPersonal(bundle)}`
 
   return [
     { role: 'system', content: system },

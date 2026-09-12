@@ -90,6 +90,7 @@ function bundleOf(name: string): ContextBundle {
     knownFacts: [],
     doesNotKnow: [],
     recalled: [],
+    recap: '',
   }
 }
 

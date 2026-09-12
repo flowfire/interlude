@@ -327,6 +327,7 @@ async function executeStep(ctx: PipelineContext, step: Step): Promise<Step> {
         cards: castOut.characters,
         pcName: ctx.project.pcName,
         sceneSetup,
+        recap: buildRecap(ctx),
         memories,
         pcCues,
         candidates: perception?.candidates ?? [],

@@ -462,11 +462,11 @@ describe('能力与感知会进角色提示词', () => {
       sceneSetup: setup(),
     })
 
-    const system = buildRoleplayMessages({ bundle, project: DEFAULT_PROJECT_SETTINGS })[0].content
-    expect(system).toContain('会开锁')
-    expect(system).toContain('认得草药')
-    expect(system).toContain('超出这个范围的事，你做不到')
-    expect(system).toContain('闻得出三天前留下的气味')
+    const user = buildRoleplayMessages({ bundle, project: DEFAULT_PROJECT_SETTINGS })[1].content
+    expect(user).toContain('会开锁')
+    expect(user).toContain('认得草药')
+    expect(user).toContain('超出这个范围的事，你做不到')
+    expect(user).toContain('闻得出三天前留下的气味')
   })
 })
 

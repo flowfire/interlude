@@ -62,6 +62,7 @@ function bundle(): ContextBundle {
     knownFacts: [],
     doesNotKnow: [],
     recalled: [],
+    recap: '',
   }
 }
 
