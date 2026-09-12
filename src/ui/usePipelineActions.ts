@@ -71,16 +71,30 @@ export async function runRoundFor(roundId: string): Promise<void> {
     const scene = composeStep?.output as ComposedScene | undefined
     const cast = castStep?.output as CastStageOutput | undefined
 
+    const sceneStep = result.sceneStepId ? result.steps[result.sceneStepId] : undefined
+    const sceneSetup = sceneStep?.output as SceneSetup | undefined
+
     if (!scene?.reactions.length) {
-      const reason = cast?.usedModel === false ? `（阵容解析降级：${cast.fallbackReason ?? '未知'}）` : ''
-      useAppStore
-        .getState()
-        .setError(`这一轮没有生成任何角色反应。可能是素材里没有其他出场人物，或者模型不可用。${reason}`)
+      const presentNames = (sceneSetup?.present ?? []).map((item) => item.name)
+      if (!presentNames.length) {
+        useAppStore
+          .getState()
+          .setError(
+            '这一轮场上只有你一个人 —— 素材里没有提到其他在场的人，所以没有人需要反应。' +
+              '想让他们有反应，就在素材里提到他们，哪怕只是一句「我看见了谁」。',
+          )
+      } else {
+        const reason =
+          cast?.usedModel === false
+            ? `阵容解析降级了：${cast.fallbackReason ?? '未知'}`
+            : '角色反应没生成出来，具体报错看右栏步骤历史。'
+        useAppStore
+          .getState()
+          .setError(`这一轮识别到 ${presentNames.length} 个在场者（${presentNames.join('、')}），但没有人产生反应。${reason}`)
+      }
     }
 
     // 给这条对话自动起个名字（只在这条对话还没被命名过时）
-    const sceneStep = result.sceneStepId ? result.steps[result.sceneStepId] : undefined
-    const sceneSetup = sceneStep?.output as SceneSetup | undefined
     if (sceneSetup) {
       const latest = useAppStore.getState()
       const ownRounds = latest.rounds.filter((item) => item.sessionId === ctx.round.sessionId)
