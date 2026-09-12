@@ -56,7 +56,7 @@ export interface AppState extends WorkspaceSnapshot {
   autoTitleSession: (sessionId: string, title: string) => void
   deleteSession: (sessionId: string) => void
 
-  newRound: (userInput: string, rating?: ContentRating) => Round
+  newRound: (userInput: string, rating?: ContentRating, idle?: boolean) => Round
   updateRoundInput: (roundId: string, userInput: string) => void
   /** 改某一轮的分级 */
   setRoundRating: (roundId: string, rating: ContentRating) => void
@@ -201,7 +201,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       }
     }),
 
-  newRound: (userInput, rating = 'general') => {
+  newRound: (userInput, rating = 'general', idle = false) => {
     const state = get()
     let sessions = state.sessions
     let sessionId = state.activeSessionId
@@ -219,6 +219,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       sessionId,
       index,
       userInput,
+      idle: idle || undefined,
       rating,
       stepIds: [],
       rootStepIds: [],

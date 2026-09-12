@@ -91,6 +91,14 @@ export const DEFAULT_SESSION_TITLE = '新的对话'
  */
 export type ContentRating = 'general' | 'r18'
 
+/**
+ * 「什么都不做」这一轮写进原文的固定文本。
+ *
+ * 它得非空，否则整条流水线没有素材可拆；同时要一眼看得出这是用户主动交的棒，
+ * 而不是一句真的台词。
+ */
+export const IDLE_INPUT = '（这一轮我什么都没做。）'
+
 export const RATING_LABEL: Record<ContentRating, string> = {
   general: '常规',
   r18: 'R18',
@@ -104,6 +112,13 @@ export interface Round {
   index: number
   /** 你这一轮输入的文字 */
   userInput: string
+  /**
+   * 这一轮是用户**主动交棒**：他什么都没做。
+   *
+   * 这不是"空输入"，而是一个明确的信号 —— 导演会收到一份强刺激：
+   * 世界必须往前走一大步，而且至少要点名一个人动起来。
+   */
+  idle?: boolean
   /** 这一轮的分级（旧数据可能没有，按 general 处理） */
   rating?: ContentRating
   stepIds: string[]

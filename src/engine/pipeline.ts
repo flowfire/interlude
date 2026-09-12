@@ -319,6 +319,7 @@ async function executeStep(ctx: PipelineContext, step: Step): Promise<Step> {
         cards: castOut?.characters ?? [],
         pcName: ctx.project.pcName,
         storyTitle: ctx.project.storyTitle,
+        idle: ctx.round.idle,
         previousRecap: buildRecap(ctx),
         previous: previousSituation(ctx),
       })

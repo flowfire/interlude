@@ -9,6 +9,7 @@ import type { ContextBundle, HistoryRound } from '@/types/character'
 import type { SituationState } from '@/types/situation'
 import type { SceneSetup } from '@/types/scene'
 import type { Segment } from '@/types/segment'
+import { IDLE_INPUT } from '@/types/step'
 import { DEFAULT_LLM_SETTINGS, DEFAULT_PROJECT_SETTINGS } from '@/types/settings'
 import type { LlmClient } from '@/engine/llm/client'
 
@@ -157,6 +158,26 @@ describe('局面推进：世界自己会往前走', () => {
     expect(system.content).toContain('用户扮演的角色永远不在点名范围内')
     expect(system.content).toContain('同样的权限')
     expect(system.content).toContain('"nudges"')
+  })
+
+  it('用户主动交棒的那一轮，导演收到的是强刺激而不是空输入', () => {
+    const messages = buildSituationMessages({
+      storyTitle: '测试',
+      pcName: '我',
+      idle: true,
+      doc: normalizeInput(IDLE_INPUT),
+      segments: [],
+      sceneSetup: setup,
+      drives: [{ name: '金刚狼', drive: '把这孩子活着带出去', brief: '挡在前面' }],
+    })
+
+    const [system, user] = messages
+    expect(system.content).toContain('用户主动交棒')
+    expect(system.content).toContain('必须点名')
+    expect(system.content).toContain('要给 act（不能只给 push）')
+    expect(user.content).toContain('用户主动交棒：这一轮他什么都没做')
+    // 交棒轮的原文本身不该被当成一句台词递给导演
+    expect(user.content).not.toContain('（这一轮我什么都没做。）')
   })
 
   it('模型不可用时只降级，不阻断整轮，并沿用上一轮的压力', async () => {

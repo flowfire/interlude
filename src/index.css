@@ -820,6 +820,15 @@ pre.code {
   margin-top: 10px;
   flex-wrap: wrap;
 }
+.btn-idle {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+}
+.btn-idle:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
 .r18-toggle {
   display: inline-flex;
   align-items: center;

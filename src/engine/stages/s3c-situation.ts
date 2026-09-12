@@ -16,6 +16,8 @@ export interface SituationStageInput {
   cards: CharacterCard[]
   pcName: string
   storyTitle: string
+  /** 这一轮用户主动交棒了（什么都没做） */
+  idle?: boolean
   previousRecap?: string
   previous?: { pressure: string; escalation: string; pace?: SituationPace } | null
 }
@@ -103,11 +105,12 @@ export async function runSituationStage(
   client: LlmClient,
   input: SituationStageInput,
 ): Promise<{ output: SituationState; result: ChatResult | null }> {
-  const { doc, segments, sceneSetup, cards, pcName, storyTitle, previousRecap, previous } = input
+  const { doc, segments, sceneSetup, cards, pcName, storyTitle, idle, previousRecap, previous } = input
 
   const messages = buildSituationMessages({
     storyTitle,
     pcName,
+    idle,
     doc,
     segments,
     sceneSetup,

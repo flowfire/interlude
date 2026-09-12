@@ -14,6 +14,8 @@ export interface SituationDrive {
 export interface SituationPromptInput {
   storyTitle: string
   pcName: string
+  /** 这一轮用户主动交棒了（什么都没做） */
+  idle?: boolean
   doc: NormalizedDoc
   segments: Segment[]
   sceneSetup: SceneSetup
@@ -90,6 +92,17 @@ const SYSTEM = `你是「幕间」的**局面**，也就是这一场戏的**导�
   写过的名字）。
 - 顺序要能讲出理由。讲不出理由就按"谁离这件事最近"排。
 
+【用户主动交棒的那一轮】
+有时候用户会**主动**选择这一轮什么都不做（界面上有这么一个按钮）。
+你会收到明确的信号。那不是"空输入"，是用户把主动权交出来了：
+**这是给你的强刺激，不是让你也停下来。**
+
+这种轮次你比平时有更大的责任：
+- 世界必须往前走，而且要比平时**大一步**。
+- **必须点名**，而且要给 act（不能只给 push）—— 让某个人真正动起来。
+  这一轮至少要有一个明确的、会改变局面的动作发生。
+- 如果这一轮最后什么都没发生，那就是你失职。
+
 【僵局的时候，你有权点名 —— 这是你最重要的权限】
 角色只会对眼前的事做反应。但有时候**眼前的事不够**：
 用户写的人设可能就是"什么都不会做"的人（怯懦、犹豫、被动、在装死），
@@ -161,7 +174,7 @@ const SYSTEM = `你是「幕间」的**局面**，也就是这一场戏的**导�
 只输出这一个 JSON 对象，不要任何解释文字、不要 Markdown 围栏。`
 
 export function buildSituationMessages(input: SituationPromptInput): ChatMessage[] {
-  const { storyTitle, pcName, doc, segments, sceneSetup, previousRecap, previous, drives } = input
+  const { storyTitle, pcName, idle, doc, segments, sceneSetup, previousRecap, previous, drives } = input
 
   // 内心想法不给局面看 —— 世界不知道谁在想什么
   const segmentLines = segments
@@ -204,7 +217,7 @@ ${sceneSetup.opening.length ? `开场画面：\n${sceneSetup.opening.map((line) 
 ${driveLine}
 
 【用户这一轮写的原文】
-${doc.text}
+${idle ? '（用户主动交棒：这一轮他什么都没做。把主动权接过来。）' : doc.text}
 
 【拆解结果】
 ${segmentLines || '（这一轮用户没有写具体内容）'}

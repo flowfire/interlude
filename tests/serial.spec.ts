@@ -3,6 +3,7 @@ import { runFullRound } from '@/engine/pipeline'
 import type { LlmClient, ChatJsonOptions } from '@/engine/llm/client'
 import type { ContextBundle, PerceivedEvent } from '@/types/character'
 import type { Round } from '@/types/step'
+import { IDLE_INPUT } from '@/types/step'
 import { DEFAULT_LLM_SETTINGS, DEFAULT_PROJECT_SETTINGS } from '@/types/settings'
 
 /**
@@ -203,6 +204,26 @@ describe('角色是挨个反应的', () => {
     const linyan = contextOf(result.steps, '林砚')
     // 林砚没被排进去，引擎按阵容顺序把他补在后面 —— 所以他看得到阿七
     expect(texts(linyan!.perceived)).toContain(AQI_LINE)
+  })
+})
+
+describe('用户主动交棒', () => {
+  it('「什么都不做」那一轮，导演拿到的原文不是那句占位文本', async () => {
+    const calls: Recorded[] = []
+    const round: Round = { ...makeRound(1, IDLE_INPUT), idle: true }
+
+    await runFullRound({
+      client: recordingClient(script(['林砚', '阿七']), calls),
+      project: PROJECT,
+      round,
+      rounds: [round],
+      steps: {},
+      ledger: [],
+    })
+
+    const situationPrompt = calls.find((call) => call.label === 'situation')?.prompt ?? ''
+    expect(situationPrompt).toContain('用户主动交棒：这一轮他什么都没做')
+    expect(situationPrompt).not.toContain(IDLE_INPUT)
   })
 })
 

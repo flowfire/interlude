@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useAppStore } from '@/store/appStore'
 import { loadComposerState, saveComposerState } from '@/store/localSettings'
 import { runRoundFor } from './usePipelineActions'
+import { IDLE_INPUT } from '@/types/step'
 
 const SAMPLE = `三天后，傍晚。雨刚停，青石板上还积着水洼。
 我推门进了城南那家茶馆，袖子湿了半截。
@@ -33,6 +34,13 @@ export default function InputBar() {
     if (!text || busy) return
     const round = newRound(text, r18 ? 'r18' : 'general')
     setDraft('')
+    await runRoundFor(round.id)
+  }
+
+  /** 主动交棒：这一轮我什么都不做，让场面和角色自己往前走 */
+  const handleIdle = async () => {
+    if (busy) return
+    const round = newRound(IDLE_INPUT, r18 ? 'r18' : 'general', true)
     await runRoundFor(round.id)
   }
 
@@ -80,6 +88,15 @@ export default function InputBar() {
       <div className="composer-actions">
         <button className="btn btn-primary" disabled={busy || !draft.trim()} onClick={() => void handleSend()}>
           {busy ? '生成中…' : '发送'}
+        </button>
+
+        <button
+          className="btn btn-idle"
+          disabled={busy}
+          onClick={() => void handleIdle()}
+          title={'这一轮我什么都不做，把主动权交给场面和其他角色。\n导演会收到这个信号，让剧情往前走一大步。'}
+        >
+          什么都不做
         </button>
 
         <label

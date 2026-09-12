@@ -169,6 +169,8 @@ That is the built-in demo: it uses a scripted set of model responses and **actua
    - `I said: "You're earlier than I expected."`
    - `(I run into Wolverine)`
 3. **Hit send.** The new round is appended and the view scrolls to it.
+
+   If you do not want to do anything this round, hit **"do nothing"** next to it. It still generates a round, but down a different path: the input is recorded as "(I did nothing this round.)" and the director gets a **strong signal** — the world has to move a big step, and at least one character has to be called out to do something substantial. If your persona is someone who never takes the initiative, this is your normal move.
 4. **Need to change something?** Two ways:
    - Click **"edit the source"** at the top right of your input block and rewrite the whole thing
    - Hover the round divider and click **"replay from this round"** (same input, run again)
