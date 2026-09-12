@@ -56,10 +56,12 @@ export interface AppState extends WorkspaceSnapshot {
   autoTitleSession: (sessionId: string, title: string) => void
   deleteSession: (sessionId: string) => void
 
-  newRound: (userInput: string, rating?: ContentRating, idle?: boolean) => Round
+  newRound: (userInput: string, rating?: ContentRating, idle?: boolean, direct?: boolean) => Round
   updateRoundInput: (roundId: string, userInput: string) => void
   /** 改某一轮的分级 */
   setRoundRating: (roundId: string, rating: ContentRating) => void
+  /** 改某一轮的「快速进入」（只在成人向那一轮有意义） */
+  setRoundDirect: (roundId: string, direct: boolean) => void
   /** 作废某一轮之后的所有轮次（同一对话内）—— 时间线从那里重新开始 */
   truncateAfterRound: (roundId: string) => void
   /** 清掉某一轮的所有步骤与账本 —— 改了原文之后整棵步骤树要重建（角色可能变了） */
@@ -201,7 +203,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       }
     }),
 
-  newRound: (userInput, rating = 'general', idle = false) => {
+  newRound: (userInput, rating = 'general', idle = false, direct = false) => {
     const state = get()
     let sessions = state.sessions
     let sessionId = state.activeSessionId
@@ -221,6 +223,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       userInput,
       idle: idle || undefined,
       rating,
+      direct: direct || undefined,
       stepIds: [],
       rootStepIds: [],
       status: 'draft',
@@ -246,10 +249,19 @@ export const useAppStore = create<AppState>((set, get) => ({
       ),
     })),
 
+  setRoundDirect: (roundId, direct) =>
+    set((state) => ({
+      rounds: state.rounds.map((round) =>
+        round.id === roundId ? { ...round, direct: direct || undefined, updatedAt: nowIso() } : round,
+      ),
+    })),
+
   setRoundRating: (roundId, rating) =>
     set((state) => ({
       rounds: state.rounds.map((round) =>
-        round.id === roundId ? { ...round, rating, updatedAt: nowIso() } : round,
+        round.id === roundId
+          ? { ...round, rating, direct: rating === 'r18' ? round.direct : undefined, updatedAt: nowIso() }
+          : round,
       ),
     })),
 

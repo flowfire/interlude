@@ -328,6 +328,7 @@ async function executeStep(ctx: PipelineContext, step: Step): Promise<Step> {
         storyTitle: ctx.project.storyTitle,
         idle: ctx.round.idle,
         rating: ctx.round.rating ?? 'general',
+        direct: Boolean(ctx.round.direct),
         previousRecap: buildRecap(ctx),
         previous: previousSituation(ctx),
       })
@@ -361,6 +362,7 @@ async function executeStep(ctx: PipelineContext, step: Step): Promise<Step> {
         exposure,
         sceneSetup,
         pcName: ctx.project.pcName,
+        rating: ctx.round.rating ?? 'general',
         situation,
         positions,
       })
@@ -441,6 +443,7 @@ async function executeStep(ctx: PipelineContext, step: Step): Promise<Step> {
         bundle,
         project: ctx.project,
         rating: ctx.round.rating ?? 'general',
+        direct: Boolean(ctx.round.direct),
       })
       return done(step, output, { model: result?.model, cost: costOf(result, startedAt) })
     }

@@ -207,6 +207,7 @@ export async function regenerateRoundFromInput(
   roundId: string,
   newInput: string,
   rating?: ContentRating,
+  direct?: boolean,
 ): Promise<void> {
   const store = useAppStore.getState()
   if (store.busy) return
@@ -219,6 +220,8 @@ export async function regenerateRoundFromInput(
 
   const nextRating = rating ?? round.rating ?? 'general'
   const ratingChanged = nextRating !== (round.rating ?? 'general')
+  const nextDirect = nextRating === 'r18' ? Boolean(direct ?? round.direct) : false
+  const directChanged = nextDirect !== Boolean(round.direct)
 
   const later = store.rounds.filter((item) => item.sessionId === round.sessionId && item.index > round.index)
   store.saveUndo(later.length ? `改这一轮，丢弃 ${later.length} 轮` : '改这一轮')
@@ -229,6 +232,7 @@ export async function regenerateRoundFromInput(
   useAppStore.getState().updateRoundInput(roundId, text)
   // 3. 分级也一起落下（只改了分级同样要重跑）
   if (ratingChanged) useAppStore.getState().setRoundRating(roundId, nextRating)
+  if (directChanged) useAppStore.getState().setRoundDirect(roundId, nextDirect)
   // 4. 清掉这一轮的旧步骤（角色可能变了，结构要重建）
   useAppStore.getState().clearRoundSteps(roundId)
   // 5. 整轮重跑

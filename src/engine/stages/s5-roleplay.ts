@@ -67,6 +67,8 @@ export interface RoleplayStageInput {
   project: ProjectSettings
   /** 这一轮的分级 */
   rating?: ContentRating
+  /** 「快速进入」—— 只在成人向那一轮有意义 */
+  direct?: boolean
 }
 
 export async function runRoleplayStage(

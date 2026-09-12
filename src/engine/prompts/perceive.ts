@@ -1,5 +1,6 @@
 import type { ChatMessage } from '@/types/llm'
 import type { PerceiveCandidateRecord } from '@/types/character'
+import type { ContentRating } from '@/types/step'
 
 export interface PerceiveActor {
   name: string
@@ -11,11 +12,31 @@ export interface PerceiveActor {
   mindReading: string
 }
 
+/**
+ * 成人向那一轮：在场的人会比平时更留意用户身上的一切。
+ *
+ * 放宽的是**注意力的阈值**，不是空间关系 —— 背对着、隔着一条街，
+ * 该没看见还是没看见。这条只作用在"差一点就注意到"的那一档上。
+ */
+export const R18_NOTICE_HINT = `
+【本轮分级：成人向 —— 用户身上的细节更容易被注意到】
+这一轮在场的人会比平时更留意用户：他的呼吸、体温、手指放在哪、视线落在哪、
+声音有什么变化。所以：
+- **默认全收到**这条规则不变，但**不要轻易判 missed**。
+  只有当空间关系上确实隔开（背对着、离得很远、在另一个房间），
+  或者他的注意力明确在别处，才判 missed。
+- 用户身上那些细微的表现（cue）在场的人都收得到 ——
+  这种轮次里，没有理由漏掉。
+- 反过来说，别人身上的细节仍然按各自的处境判，不要一并放宽。
+`
+
 export interface PerceivePromptInput {
   pcName: string
   actors: PerceiveActor[]
   /** 这一轮实际发生了什么，一条一个编号 */
   candidates: PerceiveCandidateRecord[]
+  /** 这一轮的分级 */
+  rating?: ContentRating
 }
 
 const SYSTEM = `你是「幕间」的信息分发器。
@@ -94,7 +115,7 @@ mind 直接读到念头（只有该角色确实有读取能力时才用）
 四个数组都可以是空的。只输出这一个 JSON 对象，不要解释文字，不要 Markdown 围栏。`
 
 export function buildPerceiveMessages(input: PerceivePromptInput): ChatMessage[] {
-  const { pcName, actors, candidates } = input
+  const { pcName, actors, candidates, rating = 'general' } = input
 
   const actorLines = actors
     .map((actor, index) => {
@@ -119,8 +140,10 @@ ${candidateLines}
 请对照每个人的位置、注意力与感官，标出他**接收上的偏差**。
 默认所有人都收到了全部信息，所以大多数条目应该三个数组都是空的。`
 
+  const system = rating === 'r18' ? `${SYSTEM}\n${R18_NOTICE_HINT}` : SYSTEM
+
   return [
-    { role: 'system', content: SYSTEM },
+    { role: 'system', content: system },
     { role: 'user', content: user },
   ]
 }

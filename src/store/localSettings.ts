@@ -14,9 +14,11 @@ const COMPOSER_KEY = 'interlude.composer'
 export interface ComposerState {
   /** 上次发送时用的分级 —— 延续上一次的勾选，不用每次重勾 */
   rating: ContentRating
+  /** 成人向下的「快速进入」 */
+  direct: boolean
 }
 
-export const DEFAULT_COMPOSER_STATE: ComposerState = { rating: 'general' }
+export const DEFAULT_COMPOSER_STATE: ComposerState = { rating: 'general', direct: false }
 
 function readJson<T>(key: string): Partial<T> | null {
   // 服务端渲染 / 测试环境里没有 localStorage

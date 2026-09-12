@@ -23,16 +23,25 @@ export default function InputBar() {
   const [personaOpen, setPersonaOpen] = useState(false)
   // 延续上一次的勾选（存在 localStorage 里），红色够显眼，不用每次重勾
   const [r18, setR18] = useState(() => loadComposerState().rating === 'r18')
+  const [direct, setDirect] = useState(() => loadComposerState().direct)
 
   const handleR18Change = (value: boolean) => {
     setR18(value)
-    saveComposerState({ rating: value ? 'r18' : 'general' })
+    // 关掉 R18 时「快速进入」自动失效 —— 它只在成人向那一轮有意义
+    const nextDirect = value ? direct : false
+    if (!value) setDirect(false)
+    saveComposerState({ rating: value ? 'r18' : 'general', direct: nextDirect })
+  }
+
+  const handleDirectChange = (value: boolean) => {
+    setDirect(value)
+    saveComposerState({ rating: r18 ? 'r18' : 'general', direct: value })
   }
 
   const handleSend = async () => {
     const text = draft.trim()
     if (!text || busy) return
-    const round = newRound(text, r18 ? 'r18' : 'general')
+    const round = newRound(text, r18 ? 'r18' : 'general', false, r18 && direct)
     setDraft('')
     await runRoundFor(round.id)
   }
@@ -40,7 +49,7 @@ export default function InputBar() {
   /** 主动交棒：这一轮我什么都不做，让场面和角色自己往前走 */
   const handleIdle = async () => {
     if (busy) return
-    const round = newRound(IDLE_INPUT, r18 ? 'r18' : 'general', true)
+    const round = newRound(IDLE_INPUT, r18 ? 'r18' : 'general', true, r18 && direct)
     await runRoundFor(round.id)
   }
 
@@ -115,6 +124,25 @@ export default function InputBar() {
           />
           R18 倾向
         </label>
+
+        {r18 ? (
+          <label
+            className={`r18-toggle ${direct ? 'on' : ''}`}
+            title={
+              '快速进入：导演会更急着把场面推向那件事，不再绕圈子；\n' +
+              '旁白和台词的用词也会更直白。\n' +
+              '勾选会一直保留，直到你取消 R18。'
+            }
+          >
+            <input
+              type="checkbox"
+              checked={direct}
+              disabled={busy}
+              onChange={(event) => handleDirectChange(event.target.checked)}
+            />
+            快速进入
+          </label>
+        ) : null}
 
         <button className="btn" disabled={busy} onClick={() => setDraft(SAMPLE)} title="一段有具体演出的素材">
           示例：具体演出

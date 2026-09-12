@@ -206,6 +206,14 @@ That is the built-in demo: it uses a scripted set of model responses and **actua
 
 There is an **"R18 leaning"** checkbox next to the input box. **It stays checked** (across reloads) — it is visible enough not to be forgotten, while the rating itself lives on each round, so you can turn it on or off for a single round at any time.
 
+Once R18 is on, a second checkbox appears next to it: **"straight in"**:
+
+- **The director stops stalling**: it goes straight to escalation or climax instead of building, and can assign physical progress directly.
+- **The narration and the dialogue get blunter**: no more hiding behind metaphor and trailing off.
+- **Your details are much easier to notice**: everyone present gets a lower threshold for noticing — your breathing, your warmth, where your hands are, where your eyes go. Spatial reasoning is unchanged (back turned, in another room — still missed).
+
+**None of the three lines are relaxed**: the personality does not change, the relationship stage is not skipped, and the boundaries of the character you play are not anyone else's to decide. Someone who does not swear does not suddenly start swearing because you ticked a box — their bluntness is their own.
+
 When it is on, the engine tells **both the director and the characters** they may move in that direction. The director's remit is wider — it can assign actions with physical distance, testing and suggestion in them, make the setting private, and slow the pace down. But the same three lines are written into its prompt as inviolable:
 
 1. **The personality does not change.** A restrained person is still restrained in that scene — only what they restrain changes. Someone who jokes around still jokes around. Nobody becomes a different person because the scene allows it.

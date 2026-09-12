@@ -53,6 +53,7 @@ function RoundBlock({ round, isLast, demo }: { round: Round; isLast: boolean; de
   const [editing, setEditing] = useState(false)
   const [inputDraft, setInputDraft] = useState(round.userInput)
   const [ratingDraft, setRatingDraft] = useState<ContentRating>(round.rating ?? 'general')
+  const [directDraft, setDirectDraft] = useState(Boolean(round.direct))
   void steps
 
   const laterCount = rounds.filter(
@@ -61,7 +62,8 @@ function RoundBlock({ round, isLast, demo }: { round: Round; isLast: boolean; de
 
   const inputChanged = inputDraft.trim() !== round.userInput.trim()
   const ratingChanged = ratingDraft !== (round.rating ?? 'general')
-  const dirty = isRoundDraftDirty(round, { userInput: inputDraft, rating: ratingDraft })
+  const directChanged = directDraft !== Boolean(round.direct)
+  const dirty = isRoundDraftDirty(round, { userInput: inputDraft, rating: ratingDraft, direct: directDraft })
 
   const segmentsData = getSegmentsOfRound(round.id)
   const sceneData = getSceneOfRound(round.id)
@@ -206,7 +208,7 @@ function RoundBlock({ round, isLast, demo }: { round: Round; isLast: boolean; de
                   document
                     .getElementById(`round-${round.id}`)
                     ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-                  void regenerateRoundFromInput(round.id, inputDraft, ratingDraft)
+                  void regenerateRoundFromInput(round.id, inputDraft, ratingDraft, directDraft)
                 }}
               >
                 {busy ? '生成中…' : '保存并重新生成'}
@@ -226,12 +228,27 @@ function RoundBlock({ round, isLast, demo }: { round: Round; isLast: boolean; de
                 />
                 R18 倾向
               </label>
+              {ratingDraft === 'r18' ? (
+                <label
+                  className={`r18-toggle ${directDraft ? 'on' : ''}`}
+                  title="勾上之后导演会更急着把场面推向那件事，用词也更直白"
+                >
+                  <input
+                    type="checkbox"
+                    checked={directDraft}
+                    disabled={busy}
+                    onChange={(event) => setDirectDraft(event.target.checked)}
+                  />
+                  快速进入
+                </label>
+              ) : null}
               <span className="hint">
                 {!dirty
                   ? '内容和分级都没变'
                   : [
                       inputChanged ? '整轮会重新拆解、重新分发给每个角色' : null,
                       ratingChanged ? `分级改为 ${RATING_LABEL[ratingDraft]}` : null,
+                      directChanged ? `快速进入：${directDraft ? '开' : '关'}` : null,
                     ]
                       .filter(Boolean)
                       .join(' · ')}

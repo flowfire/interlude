@@ -1,8 +1,9 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createElement } from 'react'
 import { renderToString } from 'react-dom/server'
 import App from '@/App'
 import ContextView from '@/ui/ContextView'
+import InputBar from '@/ui/InputBar'
 import type { ContextBundle } from '@/types/character'
 
 describe('界面冒烟', () => {
@@ -136,5 +137,31 @@ describe('上下文面板', () => {
   it('还没有往事时说明这是第一轮', () => {
     const html = renderToString(createElement(ContextView, { bundle: makeBundle([]), roundId: 'r1' }))
     expect(html).toContain('还没有往事')
+  })
+})
+
+describe('输入区的分级勾选', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('没勾 R18 时没有「快速进入」', () => {
+    vi.stubGlobal('localStorage', {
+      getItem: () => JSON.stringify({ rating: 'general', direct: false }),
+      setItem: () => {},
+    })
+    const html = renderToString(createElement(InputBar))
+    expect(html).toContain('R18 倾向')
+    expect(html).not.toContain('快速进入')
+  })
+
+  it('勾上 R18 之后才出现「快速进入」', () => {
+    vi.stubGlobal('localStorage', {
+      getItem: () => JSON.stringify({ rating: 'r18', direct: true }),
+      setItem: () => {},
+    })
+    const html = renderToString(createElement(InputBar))
+    expect(html).toContain('R18 倾向')
+    expect(html).toContain('快速进入')
   })
 })

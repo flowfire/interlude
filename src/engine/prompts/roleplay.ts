@@ -10,6 +10,8 @@ export interface RoleplayPromptInput {
   project: ProjectSettings
   /** 这一轮的分级，由用户在发送时单独选择 */
   rating?: ContentRating
+  /** 「快速进入」—— 只在成人向那一轮有意义 */
+  direct?: boolean
 }
 
 /** 成人向：放开尺度，但把人设这条线写死 */
@@ -26,6 +28,23 @@ const R18_HINT = `
 2. **推进必须是「你会做的事」。** 关系没到那一步就不要跳到那一步 ——
    该犹豫的还是犹豫，该试探的还是试探，该推开的时候还是会推开。
 3. **不要一步到位。** 节奏由此刻的关系与情境决定，不由分级决定。
+`
+
+/**
+ * 「快速进入」—— 叠在成人向之上的一层。
+ *
+ * 它只改两件事：**多快进入**、**用词多直白**。人设、关系阶段、用户边界
+ * 这三条底线一条都没动 —— 一个本来不说脏话的人，不会因为勾了它突然满口脏话。
+ */
+const R18_DIRECT_HINT = `
+【快速进入】
+用户还勾了「快速进入」—— 他不想绕圈子。所以：
+- 该发生的事就让它发生，别再用犹豫、退让、岔开话题拖时间。
+- 台词直说。想要什么、身体什么反应，用最直接的说法讲出来，
+  不要靠隐喻、留白和"欲言又止"。
+- 脏话、粗话都可以用（「操」「鸡巴」这类），只要**这个人**在这种时候
+  确实会这么说话。他的直白得是他自己的直白。
+- 三条底线一条没松：性格不变、关系阶段不跳、用户扮演的那个人的边界不归你。
 `
 
 const FREEDOM_HINT: Record<ProjectSettings['freedomLevel'], string> = {
@@ -262,7 +281,12 @@ function renderCurrentRound(bundle: ContextBundle): string {
  * 前面那些已经缓存好的内容作废。R18 段落里说的「上面人设」，
  * 指的也正是排在它前面的角色卡。
  */
-function renderRoundSettings(bundle: ContextBundle, project: ProjectSettings, rating: ContentRating): string {
+function renderRoundSettings(
+  bundle: ContextBundle,
+  project: ProjectSettings,
+  rating: ContentRating,
+  direct: boolean,
+): string {
   const { card } = bundle
   const state = [card.state.mood ? `心境：${card.state.mood}` : '', card.state.location ? `所在：${card.state.location}` : '']
     .filter(Boolean)
@@ -293,15 +317,18 @@ function renderRoundSettings(bundle: ContextBundle, project: ProjectSettings, ra
   }
   if (state) lines.push(`你此刻的状态 —— ${state}`)
   lines.push(FREEDOM_HINT[project.freedomLevel])
-  if (rating === 'r18') lines.push(R18_HINT.trim())
+  if (rating === 'r18') {
+    lines.push(R18_HINT.trim())
+    if (direct) lines.push(R18_DIRECT_HINT.trim())
+  }
   return lines.join('\n\n')
 }
 
 export function buildRoleplayMessages(input: RoleplayPromptInput): ChatMessage[] {
-  const { bundle, project, rating = 'general' } = input
+  const { bundle, project, rating = 'general', direct = false } = input
 
   const sections = [renderIdentity(bundle, project), renderHistory(bundle), renderCurrentRound(bundle)]
-  sections.push(renderRoundSettings(bundle, project, rating))
+  sections.push(renderRoundSettings(bundle, project, rating, direct))
   sections.push(
     '【你的任务】\n把这一轮演出来，拆成若干节拍。\n\n' +
       '记住你是在演一个**具体的人**：他此刻会说什么、会做什么、会不会犹豫、' +

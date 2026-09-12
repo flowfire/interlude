@@ -4,6 +4,7 @@ import { buildRoleplayMessages } from '@/engine/prompts/roleplay'
 import { buildSceneMessages } from '@/engine/prompts/scene'
 import { buildExposureMessages } from '@/engine/prompts/exposure'
 import { buildSituationMessages } from '@/engine/prompts/situation'
+import { buildPerceiveMessages } from '@/engine/prompts/perceive'
 import { normalizeInput } from '@/engine/stages/s0-normalize'
 import { stableCharacterId } from '@/engine/stages/s3-cast'
 import type { CharacterCard, ContextBundle } from '@/types/character'
@@ -140,6 +141,65 @@ describe('R18 分级', () => {
     expect(r18[0].content).not.toContain('自由度')
   })
 
+  it('「快速进入」是叠在成人向之上的一层，两条都齐了才生效', () => {
+    const base = {
+      bundle: bundle(),
+      project: DEFAULT_PROJECT_SETTINGS,
+    }
+
+    const off = buildRoleplayMessages({ ...base, rating: 'r18' })[1].content
+    expect(off).toContain('成人向')
+    expect(off).not.toContain('【快速进入】')
+
+    const on = buildRoleplayMessages({ ...base, rating: 'r18', direct: true })[1].content
+    expect(on).toContain('【快速进入】')
+    expect(on).toContain('不想绕圈子')
+    expect(on).toContain('脏话、粗话都可以用')
+
+    // 底线一条没松
+    expect(on).toContain('三条底线一条没松')
+
+    // 没勾 R18 时它不该出现
+    const general = buildRoleplayMessages({ ...base, rating: 'general', direct: true })[1].content
+    expect(general).not.toContain('【快速进入】')
+  })
+
+  it('导演也会收到「快速进入」，落在节奏与用词上', () => {
+    const base = {
+      storyTitle: '测试',
+      pcName: '我',
+      doc: normalizeInput('我把门关上。'),
+      segments: [],
+      sceneSetup: setup(),
+      drives: [],
+    }
+
+    const on = buildSituationMessages({ ...base, rating: 'r18', direct: true })[0].content
+    expect(on).toContain('【快速进入】')
+    expect(on).toContain('pace 直接给 escalate 或 climax')
+    expect(on).toContain('用户扮演的角色一个字都不能替他写')
+
+    const off = buildSituationMessages({ ...base, rating: 'r18' })[0].content
+    expect(off).not.toContain('【快速进入】')
+  })
+
+  it('成人向那一轮，用户身上的细节更容易被注意到', () => {
+    const base = {
+      pcName: '我',
+      actors: [{ name: '林砚', position: '桌边', senses: [], mindReading: '' }],
+      candidates: [],
+    }
+
+    const r18 = buildPerceiveMessages({ ...base, rating: 'r18' })[0].content
+    expect(r18).toContain('用户身上的细节更容易被注意到')
+    expect(r18).toContain('不要轻易判 missed')
+    // 放宽的是注意力阈值，不是空间关系
+    expect(r18).toContain('背对着、离得很远、在另一个房间')
+
+    const general = buildPerceiveMessages({ ...base, rating: 'general' })[0].content
+    expect(general).not.toContain('不要轻易判 missed')
+  })
+
   it('导演也会收到分级 —— 他能直接指派角色做什么', () => {
     const messages = buildSituationMessages({
       storyTitle: '测试',
@@ -213,29 +273,41 @@ describe('编辑一轮时，「分级变了」也算改动', () => {
   })
 
   it('内容和分级都没动 → 不算改动', () => {
-    expect(isRoundDraftDirty(makeRound('abc', 'general'), { userInput: 'abc', rating: 'general' })).toBe(false)
+    expect(isRoundDraftDirty(makeRound('abc', 'general'), { userInput: 'abc', rating: 'general', direct: false })).toBe(false)
   })
 
   it('内容一个字没改，只把 R18 勾上 → 也算改动', () => {
-    expect(isRoundDraftDirty(makeRound('abc', 'general'), { userInput: 'abc', rating: 'r18' })).toBe(true)
+    expect(isRoundDraftDirty(makeRound('abc', 'general'), { userInput: 'abc', rating: 'r18', direct: false })).toBe(true)
   })
 
   it('反过来，取消 R18 同样算改动', () => {
-    expect(isRoundDraftDirty(makeRound('abc', 'r18'), { userInput: 'abc', rating: 'general' })).toBe(true)
+    expect(isRoundDraftDirty(makeRound('abc', 'r18'), { userInput: 'abc', rating: 'general', direct: false })).toBe(true)
   })
 
   it('只改了内容也算改动', () => {
-    expect(isRoundDraftDirty(makeRound('abc'), { userInput: 'abd', rating: 'general' })).toBe(true)
+    expect(isRoundDraftDirty(makeRound('abc'), { userInput: 'abd', rating: 'general', direct: false })).toBe(true)
   })
 
   it('只有首尾空白不同 → 不算改动', () => {
-    expect(isRoundDraftDirty(makeRound('abc'), { userInput: '  abc\n', rating: 'general' })).toBe(false)
+    expect(isRoundDraftDirty(makeRound('abc'), { userInput: '  abc\n', rating: 'general', direct: false })).toBe(false)
+  })
+
+  it('只加勾「快速进入」也算改动', () => {
+    expect(
+      isRoundDraftDirty(makeRound('abc', 'r18'), { userInput: 'abc', rating: 'r18', direct: false }),
+    ).toBe(false)
+    expect(
+      isRoundDraftDirty(makeRound('abc', 'r18'), { userInput: 'abc', rating: 'r18', direct: true }),
+    ).toBe(true)
+    // 反过来取消也算
+    const on = { ...makeRound('abc', 'r18'), direct: true }
+    expect(isRoundDraftDirty(on, { userInput: 'abc', rating: 'r18', direct: false })).toBe(true)
   })
 
   it('旧数据没有 rating 字段时按 general 处理', () => {
     const legacy = makeRound('abc')
     delete (legacy as { rating?: ContentRating }).rating
-    expect(isRoundDraftDirty(legacy, { userInput: 'abc', rating: 'general' })).toBe(false)
-    expect(isRoundDraftDirty(legacy, { userInput: 'abc', rating: 'r18' })).toBe(true)
+    expect(isRoundDraftDirty(legacy, { userInput: 'abc', rating: 'general', direct: false })).toBe(false)
+    expect(isRoundDraftDirty(legacy, { userInput: 'abc', rating: 'r18', direct: false })).toBe(true)
   })
 })

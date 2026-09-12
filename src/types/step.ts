@@ -121,6 +121,13 @@ export interface Round {
   idle?: boolean
   /** 这一轮的分级（旧数据可能没有，按 general 处理） */
   rating?: ContentRating
+  /**
+   * 「快速进入」—— 只在成人向那一轮有意义。
+   *
+   * 勾上之后导演会更急着把场面推向那件事，旁白和台词的用词也更直白粗俗，
+   * 不再绕圈子。不勾就是照常的克制推进。
+   */
+  direct?: boolean
   stepIds: string[]
   rootStepIds: string[]
   status: 'draft' | 'running' | 'done' | 'error'

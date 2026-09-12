@@ -8,6 +8,7 @@ import type {
   PerceptionOutcome,
 } from '@/types/character'
 import type { PcExposure } from '@/types/exposure'
+import type { ContentRating } from '@/types/step'
 import type { SceneSetup } from '@/types/scene'
 import type { Segment } from '@/types/segment'
 import type { SituationState } from '@/types/situation'
@@ -28,6 +29,8 @@ export interface PerceiveStageInput {
   exposure?: PcExposure
   sceneSetup?: SceneSetup
   pcName: string
+  /** 这一轮的分级 —— 成人向会放宽「用户身上的细节」被注意到的门槛 */
+  rating?: ContentRating
   /** 这一轮「世界」自己发生的事 —— 也要分发给每个角色，谁没看见就是没看见 */
   situation?: SituationState
   /** 每个角色此刻在哪、注意力放在哪（key = characterId） */
@@ -255,6 +258,7 @@ export async function runPerceiveStage(
     pcName,
     actors: buildActors(input),
     candidates,
+    rating: input.rating,
   })
 
   try {

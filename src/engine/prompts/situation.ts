@@ -19,6 +19,8 @@ export interface SituationPromptInput {
   idle?: boolean
   /** 这一轮的分级 —— 导演要按它决定场面往哪推 */
   rating?: ContentRating
+  /** 「快速进入」 */
+  direct?: boolean
   doc: NormalizedDoc
   segments: Segment[]
   sceneSetup: SceneSetup
@@ -50,6 +52,21 @@ const R18_DIRECTOR_HINT = `
    你安排了 act，不等于可以让他们一步跨过关系。
 3. **不要替用户做决定。** 用户扮演的角色永远不在名单里 —— 这条在成人向的
    场面里尤其重要：**身体的边界是用户的，不是你的。**
+`
+
+/**
+ * 「快速进入」—— 叠在成人向之上，给导演的版本。
+ *
+ * 它只改**节奏**和**用词**，不改任何一条底线。
+ */
+const R18_DIRECT_HINT = `
+【快速进入】
+用户还勾了「快速进入」—— 他不想等。所以：
+- pace 直接给 escalate 或 climax，不要再用 build 铺陈。
+- act 可以直接写身体上的进展，别只写"气氛变得暧昧了一点"。
+- events 也可以更直接：门外没人了、最后一个人也走了、灯灭了。
+- 用词直白，不要绕。该写什么写什么。
+- 底线一条都没松：人设不变、关系阶段不跳过、**用户扮演的角色一个字都不能替他写**。
 `
 
 const SYSTEM = `你是「幕间」的**导演** —— 这一场戏归你。
@@ -229,7 +246,19 @@ const SYSTEM = `你是「幕间」的**导演** —— 这一场戏归你。
 只输出这一个 JSON 对象，不要任何解释文字、不要 Markdown 围栏。`
 
 export function buildSituationMessages(input: SituationPromptInput): ChatMessage[] {
-  const { storyTitle, pcName, idle, rating = 'general', doc, segments, sceneSetup, previousRecap, previous, drives } = input
+  const {
+    storyTitle,
+    pcName,
+    idle,
+    rating = 'general',
+    direct = false,
+    doc,
+    segments,
+    sceneSetup,
+    previousRecap,
+    previous,
+    drives,
+  } = input
 
   // 内心想法不给局面看 —— 世界不知道谁在想什么
   const segmentLines = segments
@@ -281,7 +310,10 @@ ${segmentLines || '（这一轮用户没有写具体内容）'}
 
 请写出这一轮的局面：节奏、压力、下一步、这一轮实际发生的事，以及**谁先动谁后动**。`
 
-  const system = rating === 'r18' ? `${SYSTEM}\n${R18_DIRECTOR_HINT}` : SYSTEM
+  const hints = [rating === 'r18' ? R18_DIRECTOR_HINT : '', rating === 'r18' && direct ? R18_DIRECT_HINT : '']
+    .filter(Boolean)
+    .join('\n')
+  const system = hints ? `${SYSTEM}\n${hints}` : SYSTEM
 
   return [
     { role: 'system', content: system },
