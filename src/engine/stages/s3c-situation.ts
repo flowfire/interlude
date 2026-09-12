@@ -5,6 +5,7 @@ import type { SituationEvent, SituationDirection, SituationPace, SituationState 
 import { RawSituationSchema } from '@/types/situation'
 import type { SceneSetup } from '@/types/scene'
 import type { Segment } from '@/types/segment'
+import type { ContentRating } from '@/types/step'
 import type { NormalizedDoc } from './s0-normalize'
 import { asArray, asRecord, asText } from '@/utils/record'
 import { buildSituationMessages, type SituationDrive } from '../prompts/situation'
@@ -18,6 +19,8 @@ export interface SituationStageInput {
   storyTitle: string
   /** 这一轮用户主动交棒了（什么都没做） */
   idle?: boolean
+  /** 这一轮的分级 —— 导演要按它决定场面往哪推 */
+  rating?: ContentRating
   previousRecap?: string
   previous?: { pressure: string; escalation: string; pace?: SituationPace } | null
 }
@@ -111,12 +114,13 @@ export async function runSituationStage(
   client: LlmClient,
   input: SituationStageInput,
 ): Promise<{ output: SituationState; result: ChatResult | null }> {
-  const { doc, segments, sceneSetup, cards, pcName, storyTitle, idle, previousRecap, previous } = input
+  const { doc, segments, sceneSetup, cards, pcName, storyTitle, idle, rating, previousRecap, previous } = input
 
   const messages = buildSituationMessages({
     storyTitle,
     pcName,
     idle,
+    rating,
     doc,
     segments,
     sceneSetup,

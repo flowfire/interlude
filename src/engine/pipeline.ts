@@ -327,6 +327,7 @@ async function executeStep(ctx: PipelineContext, step: Step): Promise<Step> {
         pcName: ctx.project.pcName,
         storyTitle: ctx.project.storyTitle,
         idle: ctx.round.idle,
+        rating: ctx.round.rating ?? 'general',
         previousRecap: buildRecap(ctx),
         previous: previousSituation(ctx),
       })

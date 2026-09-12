@@ -204,11 +204,13 @@ That is the built-in demo: it uses a scripted set of model responses and **actua
 
 There is an **"R18 leaning"** checkbox next to the input box. **It stays checked** (across reloads) — it is visible enough not to be forgotten, while the rating itself lives on each round, so you can turn it on or off for a single round at any time.
 
-When it is on, the engine tells the character AIs they may move in that direction, while three lines are written into the prompt as inviolable:
+When it is on, the engine tells **both the director and the characters** they may move in that direction. The director's remit is wider — it can assign actions with physical distance, testing and suggestion in them, make the setting private, and slow the pace down. But the same three lines are written into its prompt as inviolable:
 
 1. **The personality does not change.** A restrained person is still restrained in that scene — only what they restrain changes. Someone who jokes around still jokes around. Nobody becomes a different person because the scene allows it.
 2. **Any advance has to be something *they* would do.** If the relationship is not there yet, it does not jump there — hesitation stays hesitation, testing stays testing.
 3. **Do not skip to the end.** The pace comes from the relationship and the moment, not from the rating.
+
+For the director the third line carries extra weight: **the physical boundary belongs to the player, not to the director** — it may decide what other characters do, but never anything on your behalf.
 
 Scene building and the "exteriorisation" step get the same signal: the atmosphere may be more private and charged, and the visible traces may be more direct (breathing, warmth, where a gaze lingers). But **how much leaks is still decided by the persona** — someone who keeps things in still keeps things in; ticking R18 does not put it on their face.
 

@@ -2,6 +2,7 @@ import type { ChatMessage } from '@/types/llm'
 import type { NormalizedDoc } from '../stages/s0-normalize'
 import type { Segment } from '@/types/segment'
 import type { SceneSetup } from '@/types/scene'
+import type { ContentRating } from '@/types/step'
 import { renderRecap } from './segmenter'
 
 export interface SituationDrive {
@@ -16,6 +17,8 @@ export interface SituationPromptInput {
   pcName: string
   /** 这一轮用户主动交棒了（什么都没做） */
   idle?: boolean
+  /** 这一轮的分级 —— 导演要按它决定场面往哪推 */
+  rating?: ContentRating
   doc: NormalizedDoc
   segments: Segment[]
   sceneSetup: SceneSetup
@@ -26,6 +29,28 @@ export interface SituationPromptInput {
   /** 在场的人各自想要什么 */
   drives: SituationDrive[]
 }
+
+/**
+ * 成人向 —— 给导演的版本。
+ *
+ * 和给演员的那份是同一套底线，但落到导演的职责上：他能安排的是**场面与剧情**
+ * （环境、距离、谁做什么），所以他要在这一层上把分寸拿住。
+ */
+const R18_DIRECTOR_HINT = `
+【本轮分级：成人向】
+用户在这一轮选择了成人向的方向。作为导演，你可以把场面往那边推：
+- 让环境更私密：让雨把人困在屋里、把灯拨暗、让外面的声音远下去
+- 指派带有身体距离、试探、暗示意味的动作（act 里可以直接写这些）
+- 放慢节奏，让这一轮停在细节上，而不是急着推进事件
+
+三条底线，一条都不能破：
+1. **人设不变。** 一个克制的人在这种场景里依然克制，只是克制的内容变了。
+   不要因为分级允许，就让谁变成另一个人。
+2. **推进必须符合关系阶段。** 该犹豫的还是犹豫，该试探的还是试探。
+   你安排了 act，不等于可以让他们一步跨过关系。
+3. **不要替用户做决定。** 用户扮演的角色永远不在名单里 —— 这条在成人向的
+   场面里尤其重要：**身体的边界是用户的，不是你的。**
+`
 
 const SYSTEM = `你是「幕间」的**导演** —— 这一场戏归你。
 
@@ -204,7 +229,7 @@ const SYSTEM = `你是「幕间」的**导演** —— 这一场戏归你。
 只输出这一个 JSON 对象，不要任何解释文字、不要 Markdown 围栏。`
 
 export function buildSituationMessages(input: SituationPromptInput): ChatMessage[] {
-  const { storyTitle, pcName, idle, doc, segments, sceneSetup, previousRecap, previous, drives } = input
+  const { storyTitle, pcName, idle, rating = 'general', doc, segments, sceneSetup, previousRecap, previous, drives } = input
 
   // 内心想法不给局面看 —— 世界不知道谁在想什么
   const segmentLines = segments
@@ -256,8 +281,10 @@ ${segmentLines || '（这一轮用户没有写具体内容）'}
 
 请写出这一轮的局面：节奏、压力、下一步、这一轮实际发生的事，以及**谁先动谁后动**。`
 
+  const system = rating === 'r18' ? `${SYSTEM}\n${R18_DIRECTOR_HINT}` : SYSTEM
+
   return [
-    { role: 'system', content: SYSTEM },
+    { role: 'system', content: system },
     { role: 'user', content: user },
   ]
 }

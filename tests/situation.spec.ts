@@ -166,6 +166,29 @@ describe('局面推进：世界自己会往前走', () => {
     expect(without).not.toContain('这一轮不要跟用户交互')
   })
 
+  it('成人向那一轮，导演也拿到分级和边界', () => {
+    const base = {
+      storyTitle: '测试',
+      pcName: '我',
+      doc: normalizeInput('我把门关上。'),
+      segments: [],
+      sceneSetup: setup,
+      drives: [],
+    }
+
+    const [r18] = buildSituationMessages({ ...base, rating: 'r18' })
+    expect(r18.content).toContain('【本轮分级：成人向】')
+    // 落到导演的职责上：他能安排的是场面与剧情
+    expect(r18.content).toContain('指派带有身体距离、试探、暗示意味的动作')
+    // 三条底线一条不少
+    expect(r18.content).toContain('人设不变')
+    expect(r18.content).toContain('推进必须符合关系阶段')
+    expect(r18.content).toContain('身体的边界是用户的，不是你的')
+
+    const [general] = buildSituationMessages({ ...base, rating: 'general' })
+    expect(general.content).not.toContain('成人向')
+  })
+
   it('导演每一轮都可以派任务，不是只有僵局才派', () => {
     const [system] = buildSituationMessages({
       storyTitle: '测试',

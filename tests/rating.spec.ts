@@ -3,6 +3,7 @@ import { useAppStore } from '@/store/appStore'
 import { buildRoleplayMessages } from '@/engine/prompts/roleplay'
 import { buildSceneMessages } from '@/engine/prompts/scene'
 import { buildExposureMessages } from '@/engine/prompts/exposure'
+import { buildSituationMessages } from '@/engine/prompts/situation'
 import { normalizeInput } from '@/engine/stages/s0-normalize'
 import { stableCharacterId } from '@/engine/stages/s3-cast'
 import type { CharacterCard, ContextBundle } from '@/types/character'
@@ -137,6 +138,32 @@ describe('R18 分级', () => {
     expect(r18[0].content).toBe(general[0].content)
     expect(r18[0].content).not.toContain('成人向')
     expect(r18[0].content).not.toContain('自由度')
+  })
+
+  it('导演也会收到分级 —— 他能直接指派角色做什么', () => {
+    const messages = buildSituationMessages({
+      storyTitle: '测试',
+      pcName: '我',
+      rating: 'r18',
+      doc: normalizeInput('我把门关上。'),
+      segments: [],
+      sceneSetup: {
+        inputMode: 'dialogue',
+        time: '夜里',
+        place: '客栈房间',
+        atmosphere: '只有一盏灯',
+        opening: [],
+        situation: '门关上了。',
+        pcProfile: '站在门口',
+        present: [{ name: '林砚', role: '坐在桌边', brief: '看着你', kind: 'character', active: true }],
+        establishedBeats: [],
+        usedModel: true,
+      },
+      drives: [{ name: '林砚', drive: '想让你自己开口', brief: '坐在桌边' }],
+    })
+
+    expect(messages[0].content).toContain('成人向')
+    expect(messages[0].content).toContain('身体的边界是用户的，不是你的')
   })
 
   it('场景构建也会收到分级，但只放氛围、不动人物处境', () => {
