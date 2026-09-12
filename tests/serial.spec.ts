@@ -225,6 +225,30 @@ describe('用户主动交棒', () => {
     expect(situationPrompt).toContain('用户主动交棒：这一轮他什么都没做')
     expect(situationPrompt).not.toContain(IDLE_INPUT)
   })
+
+  it('那句占位原文不会漏进角色的时间线 —— 交棒只有导演知道', async () => {
+    const calls: Recorded[] = []
+    const round: Round = { ...makeRound(1, IDLE_INPUT), idle: true }
+
+    const result = await runFullRound({
+      client: recordingClient(script(['林砚', '阿七']), calls),
+      project: PROJECT,
+      round,
+      rounds: [round],
+      steps: {},
+      ledger: [],
+    })
+
+    const linyan = contextOf(result.steps, '林砚', 's1-r1')
+    const prompt = calls.find((call) => call.label === 'roleplay:林砚')?.prompt ?? ''
+
+    // 精确到那句占位文本：提示词里有一句通用的「哪怕用户什么都没做」是可以的
+    expect(prompt).not.toContain(IDLE_INPUT)
+    expect(prompt).not.toContain('交棒')
+    expect(prompt).not.toContain('主动权')
+    // 但这一轮的场面还在，他不是瞎的
+    expect((linyan?.perceived.length ?? 0) + (linyan?.sceneLines.length ?? 0)).toBeGreaterThan(0)
+  })
 })
 
 describe('僵局时导演点名', () => {

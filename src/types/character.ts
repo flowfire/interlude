@@ -239,8 +239,6 @@ export interface ContextBundle {
    * 主角不在场的空白不是冻结的 —— 别人照样在过日子。
    */
   interlude?: { summary: string; mine?: string }
-  /** 用户这一轮主动交棒了（什么都没做） */
-  pcIdle?: boolean
   /** 这一轮的局面：正在逼近什么（世界自己的判断，所有角色都看得到） */
   pressure: string
   /** 如果没有任何人干预，接下去会发生什么 */

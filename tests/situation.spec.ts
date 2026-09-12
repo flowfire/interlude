@@ -172,9 +172,13 @@ describe('局面推进：世界自己会往前走', () => {
     })
 
     const [system, user] = messages
-    expect(system.content).toContain('用户主动交棒')
-    expect(system.content).toContain('必须点名')
-    expect(system.content).toContain('要给 act（不能只给 push）')
+    expect(system.content).toContain('用户主动交棒的那一轮')
+    expect(system.content).toContain('只有你知道')
+    expect(system.content).toContain('必须给 act')
+    expect(system.content).toContain('允许你点多个人')
+    expect(system.content).toContain('不要写成一段平静的过渡')
+    // 交棒这件事只有导演知道：它不能被转达给角色
+    expect(system.content).toContain('不能把这个信息转达给任何人')
     expect(user.content).toContain('用户主动交棒：这一轮他什么都没做')
     // 交棒轮的原文本身不该被当成一句台词递给导演
     expect(user.content).not.toContain('（这一轮我什么都没做。）')

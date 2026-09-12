@@ -49,7 +49,7 @@ function normalizeOrder(raw: unknown, cards: CharacterCard[]): string[] {
   return out
 }
 
-function normalizeNudges(raw: unknown, cards: CharacterCard[], pcName: string): SituationNudge[] {
+function normalizeNudges(raw: unknown, cards: CharacterCard[], pcName: string, idle = false): SituationNudge[] {
   const byName = new Map<string, string>()
   for (const card of cards) {
     if (card.name === pcName) continue
@@ -65,7 +65,8 @@ function normalizeNudges(raw: unknown, cards: CharacterCard[], pcName: string): 
     if (!who || !push || out.some((entry) => entry.who === who)) continue
     const act = asText(record?.act).trim()
     out.push({ who, push, act: act || undefined })
-    if (out.length >= 2) break
+    // 交棒轮里用户不推，导演可以多点几个人把这一轮撑起来
+    if (out.length >= (idle ? 3 : 2)) break
   }
   return out
 }
@@ -143,7 +144,7 @@ export async function runSituationStage(
         escalation: asText(parsed.escalation).trim(),
         events: normalizeEvents(parsed.events, pcName),
         order: normalizeOrder(parsed.order, cards),
-        nudges: normalizeNudges(parsed.nudges, cards, pcName),
+        nudges: normalizeNudges(parsed.nudges, cards, pcName, idle),
         note: asText(parsed.note) || undefined,
         usedModel: true,
       },

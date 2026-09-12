@@ -343,9 +343,13 @@ async function executeStep(ctx: PipelineContext, step: Step): Promise<Step> {
 
       const situation = findUpstreamByStage(ctx.steps, step.id, 'situation')?.output as SituationState | undefined
 
+      // 交棒轮的那句占位原文是给用户和导演看的，不是这一轮发生的事 ——
+      // 角色只该看得见「他没有动」这个事实，看不见「他交棒了」这件事。
+      const perceivableSegments = ctx.round.idle ? [] : segments
+
       const { output, result } = await runPerceiveStage(ctx.client, {
         cards,
-        segments,
+        segments: perceivableSegments,
         exposure,
         sceneSetup,
         pcName: ctx.project.pcName,
@@ -398,14 +402,13 @@ async function executeStep(ctx: PipelineContext, step: Step): Promise<Step> {
         card,
         roundIndex: ctx.round.index,
         earlierBeats,
-        segments: segments ?? [],
+        segments: ctx.round.idle ? [] : segments ?? [],
         cards: castOut.characters,
         pcName: ctx.project.pcName,
         sceneSetup,
         recap: buildRecap(ctx),
         situation: situation,
         nudge: situation?.nudges?.find((item) => item.who === card.name),
-        pcIdle: ctx.round.idle,
         history: collectHistory({
           rounds: ctx.rounds ?? [],
           steps: ctx.steps,

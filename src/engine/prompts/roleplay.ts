@@ -296,14 +296,6 @@ export function buildRoleplayMessages(input: RoleplayPromptInput): ChatMessage[]
 
   const sections = [renderIdentity(bundle, project), renderHistory(bundle), renderCurrentRound(bundle)]
   sections.push(renderRoundSettings(bundle, project, rating))
-  if (bundle.pcIdle) {
-    sections.push(
-      `【他这一轮什么都没做】\n${bundle.pcName}这一轮没有任何动作，也没有说话。\n\n` +
-        '那不是让你去搭话、安慰、确认他状态的信号 —— 恰恰相反：' +
-        '他主动把这一轮交出来了，该动的是你。去做你本来要做的事。',
-    )
-  }
-
   sections.push(
     '【你的任务】\n决定你这一轮做什么，拆成若干节拍。\n\n' +
       '要回应的是**整个局势**，不是用户一个人。如果这一刻真正要紧的是别的东西' +

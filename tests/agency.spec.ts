@@ -144,21 +144,12 @@ describe('局面事件要和时间线并列', () => {
   })
 })
 
-describe('pc 交棒那一轮', () => {
-  it('明说这不是让他去搭话的信号', () => {
-    const user = buildRoleplayMessages({
-      bundle: bundle({ pcIdle: true }),
-      project: DEFAULT_PROJECT_SETTINGS,
-    })[1].content
-
-    expect(user).toContain('【他这一轮什么都没做】')
-    expect(user).toContain('不是让你去搭话、安慰、确认他状态的信号')
-    expect(user).toContain('该动的是你')
-  })
-
-  it('不是交棒轮就不出现这段话', () => {
+describe('交棒是只有导演知道的 meta 信息', () => {
+  it('角色拿到的提示词里不含任何交棒相关的说法', () => {
     const user = buildRoleplayMessages({ bundle: bundle(), project: DEFAULT_PROJECT_SETTINGS })[1].content
     expect(user).not.toContain('【他这一轮什么都没做】')
+    expect(user).not.toContain('交棒')
+    expect(user).not.toContain('主动权')
   })
 })
 

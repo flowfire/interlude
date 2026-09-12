@@ -35,8 +35,6 @@ export interface ContextBuildInput {
   situation?: { pressure: string; escalation: string }
   /** 导演点到他头上的指令（只在僵局时出现） */
   nudge?: { push: string; act?: string }
-  /** 用户这一轮主动交棒了（什么都没做） */
-  pcIdle?: boolean
   /**
    * 这一轮**在他之前**行动的人已经说了什么、做了什么。
    *
@@ -163,7 +161,6 @@ export function buildContextBundle(input: ContextBuildInput): ContextBundle {
     history = [],
     situation,
     nudge,
-    pcIdle,
   } = input
   void cards
 
@@ -236,7 +233,6 @@ export function buildContextBundle(input: ContextBuildInput): ContextBundle {
     recap,
     history,
     nudge,
-    pcIdle,
     interlude: sceneSetup.interlude
       ? {
           summary: sceneSetup.interlude.summary,
