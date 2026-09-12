@@ -19,12 +19,15 @@ export default function InputBar() {
 
   const [draft, setDraft] = useState('')
   const [personaOpen, setPersonaOpen] = useState(false)
+  const [r18, setR18] = useState(false)
 
   const handleSend = async () => {
     const text = draft.trim()
     if (!text || busy) return
-    const round = newRound(text)
+    const round = newRound(text, r18 ? 'r18' : 'general')
     setDraft('')
+    // 分级是每轮单独选的，发送后归零，免得下一轮忘了取消
+    setR18(false)
     await runRoundFor(round.id)
   }
 
@@ -73,6 +76,24 @@ export default function InputBar() {
         <button className="btn btn-primary" disabled={busy || !draft.trim()} onClick={() => void handleSend()}>
           {busy ? '生成中…' : '发送'}
         </button>
+
+        <label
+          className={`r18-toggle ${r18 ? 'on' : ''}`}
+          title={
+            '这一轮往成人向推进。\n' +
+            '角色能自己控制的那部分（距离、触碰、语气、身体反应）会放开尺度，\n' +
+            '但性格、说话方式、关系阶段不会变，也不会一步到位。\n' +
+            '只对这一次发送生效。'
+          }
+        >
+          <input
+            type="checkbox"
+            checked={r18}
+            disabled={busy}
+            onChange={(event) => setR18(event.target.checked)}
+          />
+          R18 倾向
+        </label>
 
         <button className="btn" disabled={busy} onClick={() => setDraft(SAMPLE)} title="一段有具体演出的素材">
           示例：具体演出

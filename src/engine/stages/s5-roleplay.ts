@@ -7,6 +7,7 @@ import {
   type RawRoleplay,
   type RoleplayOutput,
 } from '@/types/character'
+import type { ContentRating } from '@/types/step'
 import type { ProjectSettings } from '@/types/settings'
 import { buildRoleplayMessages } from '../prompts/roleplay'
 
@@ -61,6 +62,8 @@ export function normalizeRoleplayOutput(raw: RawRoleplay, bundle: ContextBundle)
 export interface RoleplayStageInput {
   bundle: ContextBundle
   project: ProjectSettings
+  /** 这一轮的分级 */
+  rating?: ContentRating
 }
 
 export async function runRoleplayStage(

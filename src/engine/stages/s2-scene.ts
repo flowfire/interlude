@@ -9,6 +9,7 @@ import {
   type SceneSetup,
 } from '@/types/scene'
 import type { Segment } from '@/types/segment'
+import type { ContentRating } from '@/types/step'
 import type { ProjectSettings } from '@/types/settings'
 import { buildSceneMessages } from '../prompts/scene'
 import type { NormalizedDoc } from './s0-normalize'
@@ -18,6 +19,8 @@ export interface SceneStageInput {
   segments: Segment[]
   project: ProjectSettings
   previousScene?: { place: string; situation: string; summary: string } | null
+  /** 这一轮的分级 */
+  rating?: ContentRating
 }
 
 const INPUT_MODES: SceneInputMode[] = ['dialogue', 'outline', 'mixed']
@@ -192,7 +195,7 @@ export async function runSceneStage(
   client: LlmClient,
   input: SceneStageInput,
 ): Promise<{ output: SceneSetup; result: ChatResult | null }> {
-  const { doc, segments, project, previousScene } = input
+  const { doc, segments, project, previousScene, rating = 'general' } = input
 
   const messages = buildSceneMessages({
     doc,
@@ -201,6 +204,7 @@ export async function runSceneStage(
     pcPersona: project.pcPersona,
     storyTitle: project.storyTitle,
     previousScene,
+    rating,
   })
 
   try {

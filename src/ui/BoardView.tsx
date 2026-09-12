@@ -40,6 +40,7 @@ function RoundBlock({ round, isLast, demo }: { round: Round; isLast: boolean; de
   const steps = useAppStore((state) => state.steps)
   const rounds = useAppStore((state) => state.rounds)
   const busy = useAppStore((state) => state.busy)
+  const setRoundRating = useAppStore((state) => state.setRoundRating)
   const [showSegments, setShowSegments] = useState(demo === 'segments')
   const [editing, setEditing] = useState(false)
   const [inputDraft, setInputDraft] = useState(round.userInput)
@@ -65,6 +66,7 @@ function RoundBlock({ round, isLast, demo }: { round: Round; isLast: boolean; de
     <section className="round-block" id={`round-${round.id}`}>
       <div className="round-divider">
         <span className="round-index">第 {round.index} 轮</span>
+        {round.rating === 'r18' ? <span className="chip chip-r18">R18</span> : null}
         {round.status === 'running' ? <span className="chip chip-warn">生成中</span> : null}
         {round.status === 'error' ? <span className="chip chip-error">有步骤失败</span> : null}
         <div className="round-line" />
@@ -175,6 +177,20 @@ function RoundBlock({ round, isLast, demo }: { round: Round; isLast: boolean; de
               <button className="btn" disabled={busy} onClick={() => setEditing(false)}>
                 取消
               </button>
+              <label
+                className={`r18-toggle ${round.rating === 'r18' ? 'on' : ''}`}
+                title="这一轮往成人向推进 —— 只影响角色能自己控制的那部分，不改人设，也不一步到位"
+              >
+                <input
+                  type="checkbox"
+                  checked={round.rating === 'r18'}
+                  disabled={busy}
+                  onChange={(event) =>
+                    setRoundRating(round.id, event.target.checked ? 'r18' : 'general')
+                  }
+                />
+                R18 倾向
+              </label>
               <span className="hint">
                 {inputDraft.trim() === round.userInput.trim()
                   ? '内容没变'

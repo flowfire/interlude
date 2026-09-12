@@ -1,0 +1,149 @@
+import { beforeEach, describe, expect, it } from 'vitest'
+import { useAppStore } from '@/store/appStore'
+import { buildRoleplayMessages } from '@/engine/prompts/roleplay'
+import { buildSceneMessages } from '@/engine/prompts/scene'
+import { buildExposureMessages } from '@/engine/prompts/exposure'
+import { normalizeInput } from '@/engine/stages/s0-normalize'
+import { stableCharacterId } from '@/engine/stages/s3-cast'
+import type { CharacterCard, ContextBundle } from '@/types/character'
+import type { SceneSetup } from '@/types/scene'
+import { DEFAULT_PROJECT_SETTINGS } from '@/types/settings'
+
+function card(): CharacterCard {
+  return {
+    id: stableCharacterId('林砚'),
+    name: '林砚',
+    aliases: [],
+    tier: 'major',
+    origin: 'generated',
+    canonical: false,
+    franchise: '',
+    source: 'material',
+    persona: {
+      summary: '话少的人',
+      speechStyle: '句子很短',
+      temperament: ['克制'],
+      habits: ['答话前先停半拍'],
+      background: '和「我」有旧账',
+      signature: ['答话前先停半拍'],
+      voiceSamples: ['「嗯。」'],
+      canonAnchors: [],
+      boundaries: ['不会主动解释自己的动机'],
+    },
+    state: { mood: '戒备', location: '茶馆' },
+    appearsInInput: true,
+    evidence: '素材里他答了一个字',
+  }
+}
+
+function bundle(): ContextBundle {
+  return {
+    characterId: stableCharacterId('林砚'),
+    name: '林砚',
+    card: card(),
+    pcName: '我',
+    counterpartProfile: '站在门口没动',
+    presentNames: ['我', '林砚'],
+    scene: { time: '傍晚', place: '城南茶馆', atmosphere: '雨刚停', situation: '你推门进来', opening: [] },
+    perceived: [],
+    sceneLines: [],
+    heard: [],
+    seen: [],
+    ownThoughts: [],
+    ownPriorLines: [],
+    pcCues: [],
+    knownFacts: [],
+    doesNotKnow: [],
+    recalled: [],
+  }
+}
+
+function setup(): SceneSetup {
+  return {
+    inputMode: 'dialogue',
+    time: '傍晚',
+    place: '城南茶馆',
+    atmosphere: '雨刚停',
+    opening: [],
+    situation: '你推门进来',
+    pcProfile: '外套湿了一片',
+    present: [{ name: '林砚', role: '靠里坐着', brief: '在喝茶', kind: 'character', active: true }],
+    establishedBeats: [],
+    usedModel: true,
+  }
+}
+
+describe('R18 分级', () => {
+  beforeEach(() => {
+    useAppStore.getState().resetWorkspace()
+  })
+
+  it('分级跟着轮次走：勾了就是 r18，没勾默认 general', () => {
+    const rated = useAppStore.getState().newRound('第一轮', 'r18')
+    const plain = useAppStore.getState().newRound('第二轮')
+
+    expect(rated.rating).toBe('r18')
+    expect(plain.rating).toBe('general')
+
+    // 两轮各存各的，互不影响
+    const rounds = useAppStore.getState().rounds
+    expect(rounds[0].rating).toBe('r18')
+    expect(rounds[1].rating).toBe('general')
+  })
+
+  it('可以让某一轮重新选择分级', () => {
+    const round = useAppStore.getState().newRound('第一轮')
+    expect(round.rating).toBe('general')
+
+    useAppStore.getState().setRoundRating(round.id, 'r18')
+    expect(useAppStore.getState().rounds[0].rating).toBe('r18')
+  })
+
+  it('勾选后，角色提示词里出现成人向段落，并且写死了人设底线', () => {
+    const messages = buildRoleplayMessages({ bundle: bundle(), project: DEFAULT_PROJECT_SETTINGS, rating: 'r18' })
+    const system = messages[0].content
+
+    expect(system).toContain('成人向')
+    // 三条底线缺一不可
+    expect(system).toContain('性格不能变')
+    expect(system).toContain('你会做的事')
+    expect(system).toContain('不要一步到位')
+  })
+
+  it('不勾选时，提示词里完全没有成人向内容', () => {
+    const messages = buildRoleplayMessages({ bundle: bundle(), project: DEFAULT_PROJECT_SETTINGS, rating: 'general' })
+    expect(messages[0].content).not.toContain('成人向')
+    expect(messages[0].content).not.toContain('身体距离')
+  })
+
+  it('场景构建也会收到分级，但只放氛围、不动人物处境', () => {
+    const messages = buildSceneMessages({
+      doc: normalizeInput('我推门进来'),
+      segments: [],
+      pcName: '我',
+      pcPersona: '',
+      storyTitle: '测试',
+      rating: 'r18',
+    })
+    const user = messages[1].content
+
+    expect(user).toContain('成人向')
+    expect(user).toContain('不要为了营造气氛而改变人物的处境')
+  })
+
+  it('外化也收到分级，但强调泄漏程度仍由人设决定', () => {
+    const messages = buildExposureMessages({
+      pcName: '我',
+      pcPersona: '沈栖，习惯把情绪压住',
+      innerLines: ['我有点慌'],
+      sceneSetup: setup(),
+      presentNames: ['我', '林砚'],
+      storyTitle: '测试',
+      rating: 'r18',
+    })
+    const user = messages[1].content
+
+    expect(user).toContain('成人向')
+    expect(user).toContain('泄漏程度仍然由人设决定')
+  })
+})

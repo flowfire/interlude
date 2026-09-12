@@ -292,6 +292,11 @@ textarea {
   color: var(--green);
   background: rgba(94, 176, 168, 0.12);
 }
+.chip-r18 {
+  color: #e0807c;
+  background: rgba(192, 80, 77, 0.14);
+  border-color: rgba(192, 80, 77, 0.35);
+}
 
 .kind-scene {
   color: var(--green);
@@ -813,6 +818,34 @@ pre.code {
   gap: 8px;
   align-items: center;
   margin-top: 10px;
+  flex-wrap: wrap;
+}
+.r18-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12.5px;
+  color: var(--text-faint);
+  cursor: pointer;
+  padding: 5px 9px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  user-select: none;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+.r18-toggle:hover {
+  color: var(--text-dim);
+  border-color: #4a3a3c;
+}
+.r18-toggle input {
+  cursor: pointer;
+  accent-color: #c0504d;
+  margin: 0;
+}
+.r18-toggle.on {
+  color: #e0807c;
+  border-color: rgba(192, 80, 77, 0.55);
+  background: rgba(192, 80, 77, 0.1);
 }
 
 /* ---------- 场面卡片 ---------- */

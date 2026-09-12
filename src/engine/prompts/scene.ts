@@ -1,6 +1,7 @@
 import type { ChatMessage } from '@/types/llm'
 import type { NormalizedDoc } from '../stages/s0-normalize'
 import type { Segment } from '@/types/segment'
+import type { ContentRating } from '@/types/step'
 
 export interface ScenePromptInput {
   doc: NormalizedDoc
@@ -9,6 +10,8 @@ export interface ScenePromptInput {
   pcPersona: string
   storyTitle: string
   previousScene?: { place: string; situation: string; summary: string } | null
+  /** 这一轮的分级，由用户在发送时单独选择 */
+  rating?: ContentRating
 }
 
 const SYSTEM = `你是「幕间」的场景构建器。用户会给你一段剧情素材以及它的拆解结果，你要把这段素材变成**一个可以立刻开演的场面**。
@@ -70,7 +73,7 @@ const SYSTEM = `你是「幕间」的场景构建器。用户会给你一段剧�
 只输出这一个 JSON 对象，不要解释文字，不要 Markdown 围栏。`
 
 export function buildSceneMessages(input: ScenePromptInput): ChatMessage[] {
-  const { doc, segments, pcName, pcPersona, storyTitle, previousScene } = input
+  const { doc, segments, pcName, pcPersona, storyTitle, previousScene, rating = 'general' } = input
 
   const segmentLines = segments
     .map((segment) => {
@@ -91,6 +94,11 @@ export function buildSceneMessages(input: ScenePromptInput): ChatMessage[] {
     ? `【上一幕的结尾】\n地点：${previousScene.place}\n情境：${previousScene.situation}`
     : '【这是第一幕】'
 
+  const ratingLine =
+    rating === 'r18'
+      ? '\n【本轮分级：成人向】氛围可以更私密、更暧昧（光线、距离、体温、沉默的质感），但**不要为了营造气氛而改变人物的处境或关系**。场面该是几个人还是几个人，该在哪里还是在哪里。\n'
+      : ''
+
   const user = `故事：《${storyTitle}》
 视角角色（用户扮演）：「${pcName}」
 
@@ -103,7 +111,7 @@ ${doc.text}
 
 【拆解结果】
 ${segmentLines}
-
+${ratingLine}
 请判断用户写的是具体演出还是概要，并输出这一轮的场面设定。`
 
   return [

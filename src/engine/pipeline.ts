@@ -133,6 +133,7 @@ async function executeStep(ctx: PipelineContext, step: Step): Promise<Step> {
         segments,
         project: ctx.project,
         previousScene: findPreviousScene(ctx),
+        rating: ctx.round.rating ?? 'general',
       })
       return done(step, output, { model: result?.model, cost: costOf(result, startedAt) })
     }
@@ -142,7 +143,12 @@ async function executeStep(ctx: PipelineContext, step: Step): Promise<Step> {
       const sceneSetup = findUpstreamByStage(ctx.steps, step.id, 'scene')?.output as SceneSetup | undefined
       if (!sceneSetup) throw new Error('缺少上游的场景构建结果')
 
-      const { output, result } = await runExposureStage(ctx.client, { segments, sceneSetup, project: ctx.project })
+      const { output, result } = await runExposureStage(ctx.client, {
+        segments,
+        sceneSetup,
+        project: ctx.project,
+        rating: ctx.round.rating ?? 'general',
+      })
       return done(step, output, { model: result?.model, cost: costOf(result, startedAt) })
     }
 
@@ -208,7 +214,11 @@ async function executeStep(ctx: PipelineContext, step: Step): Promise<Step> {
       const bundle = findUpstreamByStage(ctx.steps, step.id, 'context')?.output as ContextBundle | undefined
       if (!bundle) throw new Error('缺少上游的上下文包')
 
-      const { output, result } = await runRoleplayStage(ctx.client, { bundle, project: ctx.project })
+      const { output, result } = await runRoleplayStage(ctx.client, {
+        bundle,
+        project: ctx.project,
+        rating: ctx.round.rating ?? 'general',
+      })
       return done(step, output, { model: result?.model, cost: costOf(result, startedAt) })
     }
 

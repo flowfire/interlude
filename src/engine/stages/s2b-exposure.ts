@@ -9,6 +9,7 @@ import {
 } from '@/types/exposure'
 import type { SceneSetup } from '@/types/scene'
 import type { Segment } from '@/types/segment'
+import type { ContentRating } from '@/types/step'
 import type { ProjectSettings } from '@/types/settings'
 import { makeId } from '@/utils/id'
 import { clamp } from '@/utils/time'
@@ -20,6 +21,8 @@ export interface ExposureStageInput {
   segments: Segment[]
   sceneSetup: SceneSetup
   project: ProjectSettings
+  /** 这一轮的分级 */
+  rating?: ContentRating
 }
 
 /**
@@ -77,7 +80,7 @@ export async function runExposureStage(
   client: LlmClient,
   input: ExposureStageInput,
 ): Promise<{ output: PcExposure; result: ChatResult | null }> {
-  const { segments, sceneSetup, project } = input
+  const { segments, sceneSetup, project, rating = 'general' } = input
   const innerLines = findPcInnerLines(segments, project.pcName)
 
   if (!innerLines.length) {
@@ -96,6 +99,7 @@ export async function runExposureStage(
     sceneSetup,
     presentNames,
     storyTitle: project.storyTitle,
+    rating,
   })
 
   try {

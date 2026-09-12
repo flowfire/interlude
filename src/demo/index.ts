@@ -72,7 +72,8 @@ export async function seedDemoWorkspace(): Promise<{ snapshot: WorkspaceSnapshot
     createdAt: timestamp,
     updatedAt: timestamp,
   }
-  const round2: Round = { ...round1, id: 'demo-r2', index: 2, userInput: ROUND2_INPUT }
+  // 第二轮演示「每轮可以单独选分级」：这一轮勾了 R18 倾向
+  const round2: Round = { ...round1, id: 'demo-r2', index: 2, userInput: ROUND2_INPUT, rating: 'r18' }
   const rounds = [round1, round2]
 
   const first = await runFullRound({

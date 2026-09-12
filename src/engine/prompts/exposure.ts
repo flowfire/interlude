@@ -1,5 +1,6 @@
 import type { ChatMessage } from '@/types/llm'
 import type { SceneSetup } from '@/types/scene'
+import type { ContentRating } from '@/types/step'
 
 export interface ExposurePromptInput {
   pcName: string
@@ -9,6 +10,8 @@ export interface ExposurePromptInput {
   sceneSetup: SceneSetup
   presentNames: string[]
   storyTitle: string
+  /** 这一轮的分级，由用户在发送时单独选择 */
+  rating?: ContentRating
 }
 
 const SYSTEM = `你是「幕间」的外化器。
@@ -66,7 +69,7 @@ channel 取值：face / voice / body / pause / gaze / posture / object / breath�
 只输出这一个 JSON 对象，不要解释文字，不要 Markdown 围栏。`
 
 export function buildExposureMessages(input: ExposurePromptInput): ChatMessage[] {
-  const { pcName, pcPersona, innerLines, sceneSetup, presentNames, storyTitle } = input
+  const { pcName, pcPersona, innerLines, sceneSetup, presentNames, storyTitle, rating = 'general' } = input
 
   const sceneLines = [
     sceneSetup.time ? `时间：${sceneSetup.time}` : '',
@@ -94,7 +97,7 @@ ${presentNames.filter((name) => name !== pcName).join('、') || '（只有他自
 
 【他这一轮写下的内心活动（按时间顺序编号）】
 ${innerLines.map((line, index) => `[${index}] ${line}`).join('\n')}
-
+${rating === 'r18' ? '\n【本轮分级：成人向】外化线索可以更直白 —— 呼吸、体温、视线停留的位置、更明显的身体信号。但**泄漏程度仍然由人设决定**：藏得住事的人依然是藏得住的，不会因为分级就写在脸上。\n' : ''}
 请判断这些内心会在别人眼里留下什么痕迹，每条线索标明来自哪一条（fromIndex）。`
 
   return [

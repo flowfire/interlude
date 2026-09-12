@@ -1,11 +1,31 @@
 import type { ChatMessage } from '@/types/llm'
 import type { ContextBundle } from '@/types/character'
+import type { ContentRating } from '@/types/step'
 import type { ProjectSettings } from '@/types/settings'
 
 export interface RoleplayPromptInput {
   bundle: ContextBundle
   project: ProjectSettings
+  /** 这一轮的分级，由用户在发送时单独选择 */
+  rating?: ContentRating
 }
+
+/** 成人向：放开尺度，但把人设这条线写死 */
+const R18_HINT = `
+【本轮分级：成人向】
+用户在这一轮选择了成人向的方向。在不违背上面人设的前提下，你可以：
+- 让身体距离、触碰、语气里的暗示更直接
+- 描写更私密的身体细节与生理反应
+- 让台词带上更明确的试探或欲望
+
+但有三条底线，一条都不能破：
+1. **性格不能变。** 一个克制的人在这种场景里依然是克制的，只是克制的内容变了；
+   一个爱开玩笑的人依然会开玩笑。你不会因为场景允许就变成另一个人。
+2. **推进必须是「你会做的事」。** 关系没到那一步就不要跳到那一步 ——
+   该犹豫的还是犹豫，该试探的还是试探，该推开的时候还是会推开。
+3. **不要一步到位。** 节奏由此刻的关系与情境决定，不由分级决定。
+   这一轮该走到哪，取决于前面发生过什么。
+`
 
 const FREEDOM_HINT: Record<ProjectSettings['freedomLevel'], string> = {
   low: '自由度：低。你只对眼前这一句话做最直接的反应，不要主动引出新话题、不要推动剧情。',
@@ -55,6 +75,7 @@ __BOUNDARIES__
 3. 你的真实想法写进 inner 字段。**inner 不会被任何人看到**，所以放心写实话，但绝对不要把它抄进 beats。
 4. 你**至少要说一句话**。如果你确实选择沉默，那就不要写 speech，并在 silentReason 里说明你为什么不说话（沉默本身也是一种反应）。
 5. __FREEDOM__
+__RATING__
 
 【输出格式】
 {
@@ -152,7 +173,7 @@ function renderBundle(bundle: ContextBundle): string {
 }
 
 export function buildRoleplayMessages(input: RoleplayPromptInput): ChatMessage[] {
-  const { bundle, project } = input
+  const { bundle, project, rating = 'general' } = input
   const { card } = bundle
 
   const system = SYSTEM.replaceAll('__NAME__', card.name)
@@ -173,6 +194,7 @@ export function buildRoleplayMessages(input: RoleplayPromptInput): ChatMessage[]
     .replaceAll('__MOOD__', card.state.mood || '（未说明）')
     .replaceAll('__LOCATION__', card.state.location || '（未说明）')
     .replaceAll('__FREEDOM__', FREEDOM_HINT[project.freedomLevel])
+    .replaceAll('__RATING__', rating === 'r18' ? R18_HINT : '')
     .replaceAll('__PC_NAME__', project.pcName)
 
   const user = `【上下文 —— 你只知道这些】

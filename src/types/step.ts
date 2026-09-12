@@ -81,6 +81,17 @@ export interface Session {
 
 export const DEFAULT_SESSION_TITLE = '新的对话'
 
+/**
+ * 内容分级。由你在**每次发送时单独选择**，跟着这一轮走。
+ * general = 常规；r18 = 成人向倾向（角色能自己控制的那部分往这个方向走，但不能脱离人设）。
+ */
+export type ContentRating = 'general' | 'r18'
+
+export const RATING_LABEL: Record<ContentRating, string> = {
+  general: '常规',
+  r18: 'R18',
+}
+
 export interface Round {
   id: string
   /** 属于哪一个对话 */
@@ -89,6 +100,8 @@ export interface Round {
   index: number
   /** 你这一轮输入的文字 */
   userInput: string
+  /** 这一轮的分级（旧数据可能没有，按 general 处理） */
+  rating?: ContentRating
   stepIds: string[]
   rootStepIds: string[]
   status: 'draft' | 'running' | 'done' | 'error'
