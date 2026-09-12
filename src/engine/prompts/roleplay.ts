@@ -34,10 +34,12 @@ const FREEDOM_HINT: Record<ProjectSettings['freedomLevel'], string> = {
 }
 
 /**
- * 通用指令 —— **不含任何角色专属内容**。
+ * 通用指令 —— **一个字节都不随项目、轮次、角色变化**。
  *
- * 这样同一轮里所有角色的 system 完全相同，跨角色能命中前缀缓存。
- * 角色卡、记忆这些只属于某一个人的东西全部放在 user 里。
+ * 这是一个纯粹的前缀：只要用户第一次发过请求，之后所有请求
+ * （包括换角色、换轮次、换分级、甚至换一个对话）都能命中这段缓存。
+ * 自由度与分级这些「这一轮的设定」全部挪到 user 的末尾，它们会变，
+ * 但它们在后面，改它们不会波及前面已经缓存好的内容。
  */
 const SYSTEM = `你正在一部互动剧里扮演其中一个角色。你只演这一个角色，用这一个角色的眼睛看世界。
 
@@ -69,8 +71,6 @@ const SYSTEM = `你正在一部互动剧里扮演其中一个角色。你只演�
 4. 你**至少要说一句话**。如果你确实选择沉默，那就不要写 speech，
    并在 silentReason 里说明你为什么不说话（沉默本身也是一种反应）。
 5. 不要复述或引用你的 inner。
-6. __FREEDOM__
-__RATING__
 
 【输出格式】
 {
@@ -237,18 +237,31 @@ function renderPersonal(bundle: ContextBundle): string {
   return parts.join('\n\n')
 }
 
+/**
+ * 这一轮的设定（自由度 + 分级）—— 放在最末尾。
+ *
+ * 它们会随项目设置或用户每轮勾选的复选框变化，属于「会变的东西」，
+ * 所以刻意不给它们靠前的位置：改这两项不会让前面的缓存全部作废。
+ * 同时放在最后也正好是人设之后，R18 段落里「不违背上面人设」指向明确。
+ */
+function renderRoundSettings(project: ProjectSettings, rating: ContentRating): string {
+  const lines = [`【本轮设定】`, FREEDOM_HINT[project.freedomLevel]]
+  if (rating === 'r18') lines.push(R18_HINT.trim())
+  return lines.join('\n\n')
+}
+
 export function buildRoleplayMessages(input: RoleplayPromptInput): ChatMessage[] {
   const { bundle, project, rating = 'general' } = input
 
-  const system = SYSTEM.replaceAll('__FREEDOM__', FREEDOM_HINT[project.freedomLevel]).replaceAll(
-    '__RATING__',
-    rating === 'r18' ? R18_HINT : '',
-  )
-
-  const user = `${renderShared(bundle, project)}\n\n${SEPARATOR}\n\n${renderPersonal(bundle)}`
+  const user = [
+    renderShared(bundle, project),
+    SEPARATOR,
+    renderPersonal(bundle),
+    renderRoundSettings(project, rating),
+  ].join('\n\n')
 
   return [
-    { role: 'system', content: system },
+    { role: 'system', content: SYSTEM },
     { role: 'user', content: user },
   ]
 }

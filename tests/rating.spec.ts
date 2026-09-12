@@ -109,19 +109,29 @@ describe('R18 分级', () => {
 
   it('勾选后，角色提示词里出现成人向段落，并且写死了人设底线', () => {
     const messages = buildRoleplayMessages({ bundle: bundle(), project: DEFAULT_PROJECT_SETTINGS, rating: 'r18' })
-    const system = messages[0].content
+    const user = messages[1].content
 
-    expect(system).toContain('成人向')
+    expect(user).toContain('成人向')
     // 三条底线缺一不可
-    expect(system).toContain('性格不能变')
-    expect(system).toContain('你会做的事')
-    expect(system).toContain('不要一步到位')
+    expect(user).toContain('性格不能变')
+    expect(user).toContain('你会做的事')
+    expect(user).toContain('不要一步到位')
   })
 
   it('不勾选时，提示词里完全没有成人向内容', () => {
     const messages = buildRoleplayMessages({ bundle: bundle(), project: DEFAULT_PROJECT_SETTINGS, rating: 'general' })
     expect(messages[0].content).not.toContain('成人向')
-    expect(messages[0].content).not.toContain('身体距离')
+    expect(messages[1].content).not.toContain('成人向')
+    expect(messages[1].content).not.toContain('身体距离')
+  })
+
+  it('分级只影响 user，system 永远逐字节相同（前缀缓存）', () => {
+    const r18 = buildRoleplayMessages({ bundle: bundle(), project: DEFAULT_PROJECT_SETTINGS, rating: 'r18' })
+    const general = buildRoleplayMessages({ bundle: bundle(), project: DEFAULT_PROJECT_SETTINGS, rating: 'general' })
+
+    expect(r18[0].content).toBe(general[0].content)
+    expect(r18[0].content).not.toContain('成人向')
+    expect(r18[0].content).not.toContain('自由度')
   })
 
   it('场景构建也会收到分级，但只放氛围、不动人物处境', () => {

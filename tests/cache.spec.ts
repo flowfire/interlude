@@ -141,6 +141,24 @@ describe('提示词缓存友好', () => {
     expect(personalAt).toBeGreaterThan(dividerAt)
   })
 
+  it('system 是纯静态常量：换自由度、换分级都不变', () => {
+    const base = buildRoleplayMessages({
+      bundle: bundleFor('林砚', '话少', RECAP),
+      project: DEFAULT_PROJECT_SETTINGS,
+    })[0].content
+
+    const highFreedom = buildRoleplayMessages({
+      bundle: bundleFor('林砚', '话少', RECAP),
+      project: { ...DEFAULT_PROJECT_SETTINGS, freedomLevel: 'high' },
+      rating: 'r18',
+    })
+
+    expect(highFreedom[0].content).toBe(base)
+    // 变异的部分必须在 system 之外
+    expect(highFreedom[1].content).toContain('自由度：高')
+    expect(highFreedom[1].content).toContain('成人向')
+  })
+
   it('分隔线之后的内容才是每个角色不一样的', () => {
     const a = buildRoleplayMessages({
       bundle: bundleFor('林砚', '话少', RECAP),
