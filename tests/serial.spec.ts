@@ -206,6 +206,41 @@ describe('角色是挨个反应的', () => {
   })
 })
 
+describe('僵局时导演点名', () => {
+  it('被点名的人拿到推力，没被点名的拿不到，用户永远不在名单里', async () => {
+    const calls: Recorded[] = []
+    const round = makeRound(1, '我站着不动。')
+    const scripted = script(['林砚', '阿七'])
+    scripted.situation = {
+      pressure: '三个人谁也不说话',
+      escalation: '再这样下去这壶茶就白沏了',
+      events: [],
+      order: ['林砚', '阿七'],
+      nudges: [{ who: '林砚', push: '你已经等了他三天，他今天要是不开口，你打算就这么坐到打烊吗。' }],
+      note: '',
+    }
+
+    const result = await runFullRound({
+      client: recordingClient(scripted, calls),
+      project: PROJECT,
+      round,
+      rounds: [round],
+      steps: {},
+      ledger: [],
+    })
+
+    const linyan = contextOf(result.steps, '林砚', 's1-r1')
+    const aqi = contextOf(result.steps, '阿七', 's1-r1')
+    expect(linyan?.push).toContain('你已经等了他三天')
+    expect(aqi?.push).toBeUndefined()
+
+    const linyanPrompt = calls.find((call) => call.label === 'roleplay:林砚')?.prompt ?? ''
+    const aqiPrompt = calls.find((call) => call.label === 'roleplay:阿七')?.prompt ?? ''
+    expect(linyanPrompt).toContain('【导演点名】')
+    expect(aqiPrompt).not.toContain('【导演点名】')
+  })
+})
+
 describe('下一轮时，整场都成了往事', () => {
   it('先开口的人也知道了后开口的人上一轮说了什么', async () => {
     const calls: Recorded[] = []

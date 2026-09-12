@@ -20,6 +20,7 @@ const situation: SituationState = {
     { kind: 'scene', text: '最前面那两头伏低了身子' },
   ],
   pace: 'escalate',
+  nudges: [],
   order: ['金刚狼', '阿七'],
   usedModel: true,
 }
@@ -121,6 +122,34 @@ describe('局面推进：世界自己会往前走', () => {
     expect(user.content).toContain('把这孩子活着带出去')
   })
 
+  it('被点名的角色会收到导演的推力，没被点名的收不到', () => {
+    const pushed = buildRoleplayMessages({
+      bundle: { ...bundle(), push: '狼群已经贴到三步之内，站在你身后那个人会是第一个被扑倒的。' },
+      project: DEFAULT_PROJECT_SETTINGS,
+    })[1].content
+
+    expect(pushed).toContain('【导演点名】')
+    expect(pushed).toContain('狼群已经贴到三步之内')
+    expect(pushed).toContain('不能只给表情和姿态')
+
+    const plain = buildRoleplayMessages({ bundle: bundle(), project: DEFAULT_PROJECT_SETTINGS })[1].content
+    expect(plain).not.toContain('【导演点名】')
+  })
+
+  it('僵局点名只针对角色，永远不点用户', () => {
+    const [system] = buildSituationMessages({
+      storyTitle: '测试',
+      pcName: '我',
+      doc: normalizeInput('我站着不动。'),
+      segments: [],
+      sceneSetup: setup,
+      drives: [{ name: '金刚狼', drive: '把这孩子活着带出去', brief: '挡在前面' }],
+    })
+    expect(system.content).toContain('绝对不要碰用户扮演的角色')
+    expect(system.content).toContain('用户扮演的角色永远不在点名范围内')
+    expect(system.content).toContain('"nudges"')
+  })
+
   it('模型不可用时只降级，不阻断整轮，并沿用上一轮的压力', async () => {
     const client = {
       settings: { ...DEFAULT_LLM_SETTINGS },
@@ -145,6 +174,7 @@ describe('局面推进：世界自己会往前走', () => {
 
     expect(output.usedModel).toBe(false)
     expect(output.events).toEqual([])
+    expect(output.nudges).toEqual([])
     expect(output.pressure).toBe('上一轮的压力')
   })
 })

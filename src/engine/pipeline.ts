@@ -379,6 +379,8 @@ async function executeStep(ctx: PipelineContext, step: Step): Promise<Step> {
       const perception = findUpstreamByStage(ctx.steps, step.id, 'perceive')?.output as PerceptionOutcome | undefined
       const reception = perception?.entries.find((entry) => entry.characterId === card.id)
 
+      const situation = findUpstreamByStage(ctx.steps, step.id, 'situation')?.output as SituationState | undefined
+
       // 这一轮在他之前行动的人已经说了什么做了什么 —— 他就在旁边，听得见
       const earlierBeats: PerceivedEvent[] = []
       for (const step_ of upstreamStepsByStage(ctx.steps, step.id, 'roleplay')) {
@@ -400,7 +402,8 @@ async function executeStep(ctx: PipelineContext, step: Step): Promise<Step> {
         pcName: ctx.project.pcName,
         sceneSetup,
         recap: buildRecap(ctx),
-        situation: findUpstreamByStage(ctx.steps, step.id, 'situation')?.output as SituationState | undefined,
+        situation: situation,
+        push: situation?.nudges?.find((nudge) => nudge.who === card.name)?.push,
         history: collectHistory({
           rounds: ctx.rounds ?? [],
           steps: ctx.steps,

@@ -33,6 +33,8 @@ export interface ContextBuildInput {
   history?: HistoryRound[]
   /** 这一轮的局面（世界自己往前走的那一步） */
   situation?: { pressure: string; escalation: string }
+  /** 导演点到他头上的那句推力（只在僵局时出现） */
+  push?: string
   /**
    * 这一轮**在他之前**行动的人已经说了什么、做了什么。
    *
@@ -154,6 +156,7 @@ export function buildContextBundle(input: ContextBuildInput): ContextBundle {
     recap = '',
     history = [],
     situation,
+    push,
   } = input
   void cards
 
@@ -225,6 +228,7 @@ export function buildContextBundle(input: ContextBuildInput): ContextBundle {
     presentNames,
     recap,
     history,
+    push,
     pressure: situation?.pressure ?? '',
     escalation: situation?.escalation ?? '',
     scene: {

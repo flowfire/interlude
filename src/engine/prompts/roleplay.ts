@@ -261,6 +261,13 @@ function renderRoundSettings(bundle: ContextBundle, project: ProjectSettings, ra
     .join(' · ')
 
   const lines = ['【本轮设定】']
+  if (bundle.push?.trim()) {
+    lines.push(
+      `【导演点名】\n${bundle.push.trim()}\n\n` +
+        '现在不是等的时候。这一轮你必须做出**实质性的动作** —— 说话、动手、走开都行，' +
+        '但不能只给表情和姿态。做什么由你自己决定。',
+    )
+  }
   if (state) lines.push(`你此刻的状态 —— ${state}`)
   lines.push(FREEDOM_HINT[project.freedomLevel])
   if (rating === 'r18') lines.push(R18_HINT.trim())

@@ -1,7 +1,7 @@
 import type { LlmClient } from '@/engine/llm/client'
 import type { ChatResult } from '@/types/llm'
 import type { CharacterCard } from '@/types/character'
-import type { SituationEvent, SituationPace, SituationState } from '@/types/situation'
+import type { SituationEvent, SituationNudge, SituationPace, SituationState } from '@/types/situation'
 import { RawSituationSchema } from '@/types/situation'
 import type { SceneSetup } from '@/types/scene'
 import type { Segment } from '@/types/segment'
@@ -47,13 +47,34 @@ function normalizeOrder(raw: unknown, cards: CharacterCard[]): string[] {
   return out
 }
 
-function normalizeEvents(raw: unknown): SituationEvent[] {
+function normalizeNudges(raw: unknown, cards: CharacterCard[], pcName: string): SituationNudge[] {
+  const byName = new Map<string, string>()
+  for (const card of cards) {
+    if (card.name === pcName) continue
+    byName.set(card.name, card.name)
+    for (const alias of card.aliases ?? []) byName.set(alias, card.name)
+  }
+
+  const out: SituationNudge[] = []
+  for (const item of asArray(raw)) {
+    const record = asRecord(item)
+    const push = asText(record?.push).trim()
+    const who = byName.get(asText(record?.who).trim())
+    if (!who || !push || out.some((entry) => entry.who === who)) continue
+    out.push({ who, push })
+    if (out.length >= 2) break
+  }
+  return out
+}
+
+function normalizeEvents(raw: unknown, pcName: string): SituationEvent[] {
   const out: SituationEvent[] = []
   for (const item of asArray(raw)) {
     const record = asRecord(item)
     const text = asText(record?.text).trim()
     if (!text) continue
     const kind = asText(record?.kind).toLowerCase() === 'scene' ? 'scene' : 'ambient'
+    // 落在用户身上的事件只认用户自己 —— 替角色做决定不是导演的活，角色有自己的反应通道
     out.push({ kind, text })
     if (out.length >= MAX_EVENTS) break
   }
@@ -108,6 +129,7 @@ export async function runSituationStage(
       escalation?: unknown
       events?: unknown
       order?: unknown
+      nudges?: unknown
       note?: unknown
     }
     return {
@@ -115,8 +137,9 @@ export async function runSituationStage(
         pace: normalizePace(parsed.pace),
         pressure: asText(parsed.pressure).trim() || previous?.pressure || '',
         escalation: asText(parsed.escalation).trim(),
-        events: normalizeEvents(parsed.events),
+        events: normalizeEvents(parsed.events, pcName),
         order: normalizeOrder(parsed.order, cards),
+        nudges: normalizeNudges(parsed.nudges, cards, pcName),
         note: asText(parsed.note) || undefined,
         usedModel: true,
       },
@@ -130,6 +153,7 @@ export async function runSituationStage(
         escalation: previous?.escalation ?? '',
         events: [],
         order: [],
+        nudges: [],
         note: '（局面推进失败，这一轮世界原地不动）',
         usedModel: false,
         fallbackReason: error instanceof Error ? error.message : String(error),

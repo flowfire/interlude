@@ -42,6 +42,8 @@ In SillyTavern the story advances **one message at a time**: you do not send any
 
 At the same time, every card carries a **"what they want"** — not a personality trait, a goal — and each round the character decides for themselves what to do about it. So when you write "I stay still like he told me to", Wolverine can go fight the wolves, because his goal was never "talk to you" — it was "get this kid out alive".
 
+And if it still deadlocks — your persona simply is not someone who acts, and every character has their own reason to wait — the director **calls someone out**: it picks whoever most needs to move and gives them a push ("the pack is three steps away; the one standing behind you gets taken first"). That character has to do something substantial this round. This is the director giving notes, not the director acting for them: *what* they do is still their own call. **The character you play is never on that list** — what you wrote is what happens, and nobody moves you.
+
 There is also no rule anywhere that says every character must speak every round. When a fight breaks out, their main channel is action, not dialogue.
 
 **SillyTavern is the better fit if** you want fine control over every generation, you rely on lorebooks and regex, and you like tuning prompts yourself.

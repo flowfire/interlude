@@ -8,6 +8,23 @@ export interface SituationEvent {
   text: string
 }
 
+/**
+ * 僵局时，导演点名要求某个角色**必须动**。
+ *
+ * 这是导演解决死锁的方式：用户写的人设可能就是"什么都不会做"的人，
+ * 角色又各有各的理由等着 —— 这时候只能由导演点名，把某人推上场。
+ *
+ * 注意它**不是**替那个角色写台词写动作（那是越界），
+ * 而是告诉他「现在不是等的时候」，动什么是他自己决定的。
+ * 用户扮演的角色永远不会出现在这里：用户写什么就是什么。
+ */
+export interface SituationNudge {
+  /** 被点名的角色（必须是在场的人） */
+  who: string
+  /** 给他的推力：为什么他现在必须动 */
+  push: string
+}
+
 export const SITUATION_EVENT_LABEL: Record<SituationEventKind, string> = {
   scene: '眼前',
   ambient: '动静',
@@ -42,6 +59,8 @@ export interface SituationState {
   escalation: string
   /** 这一轮在节奏上的位置 */
   pace: SituationPace
+  /** 僵局时点名的角色（通常为空） */
+  nudges: SituationNudge[]
   /** 这一轮客观发生的事，按顺序（会进时间线，也会进信息分发） */
   events: SituationEvent[]
   /**
@@ -62,5 +81,6 @@ export const RawSituationSchema = z.object({
   escalation: z.union([z.string(), z.number(), z.null()]).optional(),
   events: z.union([z.array(z.unknown()), z.string(), z.null()]).optional(),
   order: z.union([z.array(z.unknown()), z.string(), z.null()]).optional(),
+  nudges: z.union([z.array(z.unknown()), z.string(), z.null()]).optional(),
   note: z.union([z.string(), z.number(), z.null()]).optional(),
 })
