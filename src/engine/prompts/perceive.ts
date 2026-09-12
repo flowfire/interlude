@@ -1,9 +1,5 @@
 import type { ChatMessage } from '@/types/llm'
-
-export interface PerceiveCandidate {
-  kind: string
-  text: string
-}
+import type { PerceiveCandidateRecord } from '@/types/character'
 
 export interface PerceiveActor {
   name: string
@@ -18,52 +14,62 @@ export interface PerceiveActor {
 export interface PerceivePromptInput {
   pcName: string
   actors: PerceiveActor[]
-  /** 这一轮实际发生了什么 */
-  candidates: PerceiveCandidate[]
+  /** 这一轮实际发生了什么，一条一个编号 */
+  candidates: PerceiveCandidateRecord[]
 }
 
 const SYSTEM = `你是「幕间」的信息分发器。
 
 你的工作只有一件：把「这一轮实际发生了什么」，转化成**每个角色各自接收到的版本**。
 
-同一个场面，不同的人接收到的东西是不一样的：
+同一个场面，不同的人接收到的东西不一样：
 - 背对着的人看不到你手上的动作
 - 注意力在别处的人会漏掉一句话，或者只听见半句
-- 普通人注意不到空气里那点气味变化、地板那一声轻响
+- 有人把一句玩笑听成了挑衅（他接收到了，但理解走样了）
 - 而感官超常的人，可能连你藏在背后的手都察觉得到
 
-【硬性要求】
-1. **明面上的东西不算你的活。** 当面对他说的话、他正看着的大动作，引擎会直接给他，
-   不要重复写进 perceived。
-2. 你只写**各人额外察觉到的**那部分 —— 取决于他的位置、注意力和感官。
-3. **返回空数组是非常常见的正确答案。** 大部分角色在大部分时候都不会额外察觉到什么。
-   所有人都写满内容，才是判断失败。
-4. 给他一个**模糊的感觉**，往往比给精确内容更真实：
-     ✓「背后有一声很轻的摩擦」
-     ✗「他在你背后比了个手势」
-   把握不大的写成猜测的口吻，certainty 给低一点；确信无疑的才给高分。
-5. 「没说出口的」这类信息，**只对确实有读取能力的角色开放**，
-   别人一律不能给 —— 哪怕他感官再敏锐。
-6. 不要把一个人察觉到的东西写进另一个人的条目里。每个人只看得到自己那一份。
-7. 引擎给你的名单里有几个人，你就输出几条，一条不少也一条不多。
+【默认规则 —— 这决定了你要写多少】
+**默认每个人都接收到了全部信息。** 你只需要报**偏差**，不用逐个复述：
 
-【通道（channel）】
+- missed：他**没接收到**的，写明是哪一条编号、为什么（背对着 / 走神 / 不在场 / 被挡住）
+- distorted：他接收到了、但**走了样**的，写明是哪一条编号、他实际听成／看成了什么
+- extras：在这些信息**之外**他额外察觉到的（超常感官、读到念头）
+
+大多数角色在大多数时候，三个数组都是空的。**这是最常见的正确答案。**
+
+【硬性要求】
+1. 只用编号（ref）引用信息，**不要复述原文**。
+2. 「没说出口的」这类信息，**只对确实有读取能力的角色开放**。
+   别人即使感官再敏锐也不能收到 —— 如果分发时发现这一条，直接写进 missed。
+3. 不要把某个人漏掉的信息写进另一个人的条目里。
+4. 引擎给你的名单里有几个人，你就输出几条，一条不少也一条不多。
+5. 只有在**确实有理由**的时候才标 missed。没有明确理由（位置、注意力、遮挡）
+   就不要扣别人的信息 —— 漏判比多判更伤。
+
+【通道（extra 用）】
 sight 看到 / hearing 听到 / smell 闻到 / touch 触到 / intuition 说不清来由的直觉 /
 mind 直接读到念头（只有该角色确实有读取能力时才用）
+
+【extra 的写法】
+给他一个**模糊的感觉**往往比给精确内容更真实：
+  ✓「背后有一声很轻的摩擦」
+  ✗「他在你背后比了个手势」
+把握不大的写成猜测的口吻，certainty 给低一点。
 
 【输出格式】
 {
   "entries": [
-    { "name": "必须与名单完全一致", "perceived": [], "note": "一句话说明他额外察觉到多少" },
     {
-      "name": "另一个人的名字",
-      "perceived": [{ "text": "他实际察觉到的内容", "channel": "hearing", "certainty": 0.4 }],
-      "note": "……"
+      "name": "必须与名单完全一致",
+      "missed": [{ "ref": 1, "why": "他背对着你，看不见" }],
+      "distorted": [{ "ref": 3, "as": "他听成了不耐烦" }],
+      "extras": [{ "text": "背后有一声很轻的摩擦", "channel": "hearing", "certainty": 0.4 }],
+      "note": "一句话说明他这一轮的接收情况"
     }
   ]
 }
 
-只输出这一个 JSON 对象，不要解释文字，不要 Markdown 围栏。`
+三个数组都可以是空的。只输出这一个 JSON 对象，不要解释文字，不要 Markdown 围栏。`
 
 export function buildPerceiveMessages(input: PerceivePromptInput): ChatMessage[] {
   const { pcName, actors, candidates } = input
@@ -77,8 +83,8 @@ export function buildPerceiveMessages(input: PerceivePromptInput): ChatMessage[]
     .join('\n')
 
   const candidateLines = candidates.length
-    ? candidates.map((item) => `· （${item.kind}）${item.text}`).join('\n')
-    : '（这一轮没有值得注意的信息）'
+    ? candidates.map((item) => `[${item.ref}] （${kindLabel(item.kind)}）${item.text}`).join('\n')
+    : '（这一轮没有值得分发的信息）'
 
   const user = `视角角色（用户扮演）：「${pcName}」——不需要给他分发，他由用户驱动。
 
@@ -88,10 +94,30 @@ ${actorLines}
 【这一轮实际发生了什么】
 ${candidateLines}
 
-请把上面这些信息，转化成每个人各自接收到的版本。记住：什么都没多察觉到，是合理的答案。`
+请对照每个人的位置、注意力与感官，标出他**接收上的偏差**。
+默认所有人都收到了全部信息，所以大多数条目应该三个数组都是空的。`
 
   return [
     { role: 'system', content: SYSTEM },
     { role: 'user', content: user },
   ]
+}
+
+function kindLabel(kind: PerceiveCandidateRecord['kind']): string {
+  switch (kind) {
+    case 'speech':
+      return '说出口的'
+    case 'action':
+      return '动作'
+    case 'scene':
+      return '场景'
+    case 'ambient':
+      return '氛围'
+    case 'cue':
+      return '细微表现'
+    case 'inner':
+      return '没说出口的'
+    default:
+      return '信息'
+  }
 }

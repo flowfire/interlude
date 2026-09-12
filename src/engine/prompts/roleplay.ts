@@ -113,16 +113,14 @@ function renderBundle(bundle: ContextBundle): string {
   if (bundle.scene.time) sceneHead.push(`时间：${bundle.scene.time}`)
   if (bundle.scene.place) sceneHead.push(`地点：${bundle.scene.place}`)
   if (bundle.scene.atmosphere) sceneHead.push(`氛围：${bundle.scene.atmosphere}`)
-  if (bundle.scene.situation) sceneHead.push(`此刻正在发生：${bundle.scene.situation}`)
   parts.push(
-    `【这是什么场面】\n${sceneHead.join('\n') || '（没有额外说明）'}\n\n${bundle.scene.opening.map((line) => line).join('\n')}`,
+    `【这是什么场面】\n${sceneHead.join('\n') || '（没有额外说明）'}\n\n` +
+      (bundle.sceneLines.length
+        ? bundle.sceneLines.join('\n')
+        : '（环境上没有什么值得说的）'),
   )
 
   parts.push(`【对面站着的人：「${bundle.pcName}」】\n${bundle.counterpartProfile}`)
-
-  if (bundle.sceneLines.length) {
-    parts.push(`【你眼睛看到的其他环境细节】\n${bundle.sceneLines.map((line) => `· ${line}`).join('\n')}`)
-  }
 
   if (bundle.ownThoughts.length) {
     parts.push(`【你自己此刻在想什么（只有你知道）】\n${bundle.ownThoughts.map((line) => `· ${line}`).join('\n')}`)

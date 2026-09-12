@@ -78,7 +78,7 @@ function bundleOf(name: string): ContextBundle {
     pcName: '我',
     presentNames: ['我', name],
     counterpartProfile: '（没有额外描写）',
-    scene: { time: '', place: '', atmosphere: '', situation: '', opening: [] },
+    scene: { time: '', place: '', atmosphere: '' },
     perceived: [],
     sceneLines: [],
     heard: [],
@@ -227,12 +227,21 @@ describe('S4 上下文分配（信息隔离是核心安全属性）', () => {
       cards,
       pcName: '我',
       sceneSetup: setup(),
+      candidates: [
+        { ref: 1, kind: 'speech', text: '路上耽搁了', from: '林砚' },
+        { ref: 2, kind: 'action', text: '把湿伞靠在门边', from: '林砚' },
+        { ref: 3, kind: 'speech', text: '你来得比我预想的早', from: '我' },
+      ],
+      reception: { missed: [], distorted: [], extras: [] },
     })
 
     expect(bundle.ownThoughts.join('|')).toContain('他果然还是不想让我看出什么')
+    // 自己说过的话、做过的动作进 ownPriorLines，不进「听到 / 看到」
     expect(bundle.ownPriorLines.join('|')).toContain('路上耽搁了')
+    expect(bundle.ownPriorLines.join('|')).toContain('把湿伞靠在门边')
     expect(bundle.heard.map((item) => item.text)).not.toContain('路上耽搁了')
     expect(bundle.seen.map((item) => item.text)).not.toContain('把湿伞靠在门边')
+    // 别人（用户）说的话才进「听到」
     expect(bundle.heard.map((item) => item.text)).toContain('你来得比我预想的早')
   })
 
@@ -256,6 +265,8 @@ describe('S4 上下文分配（信息隔离是核心安全属性）', () => {
       cards,
       pcName: '我',
       sceneSetup: setup(),
+      candidates: [{ ref: 1, kind: 'scene', text: '雨停了，青石板上还积着水洼' }],
+      reception: { missed: [], distorted: [], extras: [] },
     })
     expect(bundle.scene.place).toBe('城南茶馆')
     expect(bundle.sceneLines.join('|')).toContain('雨停了')

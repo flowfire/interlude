@@ -2,15 +2,17 @@ import type { LlmClient } from '@/engine/llm/client'
 import type { ChatResult } from '@/types/llm'
 import type {
   CharacterCard,
+  PerceiveCandidateRecord,
   PerceiveChannel,
   PerceptionEntry,
   PerceptionOutcome,
 } from '@/types/character'
 import type { PcExposure } from '@/types/exposure'
+import type { SceneSetup } from '@/types/scene'
 import type { Segment } from '@/types/segment'
 import { asArray, asRecord, asText } from '@/utils/record'
 import { clamp } from '@/utils/time'
-import { buildPerceiveMessages, type PerceiveActor, type PerceiveCandidate } from '../prompts/perceive'
+import { buildPerceiveMessages, type PerceiveActor } from '../prompts/perceive'
 import { z } from 'zod'
 
 const CHANNELS: PerceiveChannel[] = ['sight', 'hearing', 'smell', 'touch', 'intuition', 'mind']
@@ -23,34 +25,69 @@ export interface PerceiveStageInput {
   cards: CharacterCard[]
   segments: Segment[]
   exposure?: PcExposure
+  sceneSetup?: SceneSetup
   pcName: string
   /** 每个角色此刻在哪、注意力放在哪（key = characterId） */
   positions?: Record<string, string>
 }
 
 /**
- * 组装候选池：这一轮「实际发生了什么」。
+ * 组装候选池：这一轮「实际发生了什么」，逐条编号。
  *
- * 注意「没说出口的」只有在**场上确实有人能读到念头**时才放进来 ——
- * 不能因为多了一层分发，就把内心原文发进一个没人能读心的提示词里。
+ * 分发层用编号引用，所以台词原文不会被转述走样 —— 引擎按编号取原文。
+ *
+ * 「没说出口的」只有在**场上确实有人能读到念头**时才放进来；
+ * 而且下面还会对没有该能力的角色强制标记为 missed（双保险）。
  */
-export function buildPerceiveCandidates(input: PerceiveStageInput): PerceiveCandidate[] {
-  const { cards, segments, exposure, pcName } = input
-  const out: PerceiveCandidate[] = []
+export function buildPerceiveCandidates(input: PerceiveStageInput): PerceiveCandidateRecord[] {
+  const { cards, segments, exposure, sceneSetup, pcName } = input
+  const out: PerceiveCandidateRecord[] = []
+  let ref = 0
+
+  const push = (item: Omit<PerceiveCandidateRecord, 'ref'>) => {
+    ref += 1
+    out.push({ ...item, ref })
+  }
+
+  // 开场画面与「此刻正在发生什么」也要分发 ——
+  // 它们可能写着「你绕到他背后」这种某个人根本看不到的东西
+  for (const line of sceneSetup?.opening ?? []) {
+    const text = line.trim()
+    if (text) push({ kind: 'scene', text })
+  }
+  if (sceneSetup?.situation?.trim()) {
+    push({ kind: 'scene', text: sceneSetup.situation.trim() })
+  }
 
   for (const segment of segments) {
     if (segment.kind === 'action') {
       const who = segment.subject?.[0] ?? ''
-      out.push({ kind: '动作', text: who === pcName ? `你：${segment.text}` : `${who || '有人'}：${segment.text}` })
+      push({
+        kind: 'action',
+        text: who === pcName ? `你：${segment.text}` : `${who || '有人'}：${segment.text}`,
+        from: who || undefined,
+      })
       continue
     }
     if (segment.kind === 'speech') {
       const who = segment.speaker ?? '有人'
-      out.push({ kind: '说出口的', text: who === pcName ? `你：「${segment.text}」` : `${who}：「${segment.text}」` })
+      push({
+        kind: 'speech',
+        text: who === pcName ? `你：「${segment.text}」` : `${who}：「${segment.text}」`,
+        from: segment.speaker ?? undefined,
+      })
       continue
     }
-    if (segment.kind === 'scene' || segment.kind === 'ambient') {
-      out.push({ kind: '环境', text: segment.text })
+    if (segment.kind === 'scene') {
+      push({ kind: 'scene', text: segment.text })
+      continue
+    }
+    if (segment.kind === 'ambient' || segment.kind === 'narration') {
+      push({ kind: 'ambient', text: segment.text })
+      continue
+    }
+    if (segment.kind === 'worldfact' || segment.kind === 'offscreen') {
+      push({ kind: 'scene', text: segment.text })
     }
   }
 
@@ -60,12 +97,12 @@ export function buildPerceiveCandidates(input: PerceiveStageInput): PerceiveCand
       if (segment.kind !== 'inner') continue
       const owner = segment.subject?.[0]
       if (owner && owner !== pcName) continue
-      out.push({ kind: '没说出口的', text: segment.text })
+      push({ kind: 'inner', text: segment.text, from: pcName })
     }
   }
 
   for (const cue of exposure?.cues ?? []) {
-    out.push({ kind: '细微表现', text: cue.visible })
+    push({ kind: 'cue', text: cue.visible, from: pcName })
   }
 
   return out
@@ -82,8 +119,44 @@ function buildActors(input: PerceiveStageInput): PerceiveActor[] {
   }))
 }
 
-function normalizePerceived(raw: unknown, allowMind: boolean): PerceptionEntry['perceived'] {
-  const out: PerceptionEntry['perceived'] = []
+function normalizeRefList(raw: unknown, validRefs: Set<number>): number[] {
+  const out: number[] = []
+  for (const entry of asArray(raw)) {
+    const ref = Number(entry)
+    if (!Number.isFinite(ref) || !validRefs.has(ref)) continue
+    out.push(Math.floor(ref))
+  }
+  return out
+}
+
+function normalizeMissed(raw: unknown, validRefs: Set<number>): PerceptionEntry['missed'] {
+  const out: PerceptionEntry['missed'] = []
+  for (const entry of asArray(raw)) {
+    const item = asRecord(entry)
+    if (!item) continue
+    const ref = Number(item.ref)
+    if (!Number.isFinite(ref) || !validRefs.has(ref)) continue
+    out.push({ ref: Math.floor(ref), why: asText(item.why) || '（未说明理由）' })
+  }
+  return out
+}
+
+function normalizeDistorted(raw: unknown, validRefs: Set<number>): PerceptionEntry['distorted'] {
+  const out: PerceptionEntry['distorted'] = []
+  for (const entry of asArray(raw)) {
+    const item = asRecord(entry)
+    if (!item) continue
+    const ref = Number(item.ref)
+    if (!Number.isFinite(ref) || !validRefs.has(ref)) continue
+    const as = asText(item.as)
+    if (!as) continue
+    out.push({ ref: Math.floor(ref), as })
+  }
+  return out
+}
+
+function normalizeExtras(raw: unknown, allowMind: boolean): PerceptionEntry['extras'] {
+  const out: PerceptionEntry['extras'] = []
   for (const entry of asArray(raw)) {
     const item = asRecord(entry)
     if (!item) continue
@@ -101,18 +174,17 @@ function normalizePerceived(raw: unknown, allowMind: boolean): PerceptionEntry['
   return out
 }
 
+function emptyEntry(card: CharacterCard, note: string, forcedMissed: PerceptionEntry['missed'] = []): PerceptionEntry {
+  return { characterId: card.id, name: card.name, missed: forcedMissed, distorted: [], extras: [], note }
+}
+
 /**
  * 信息分发。
  *
- * 一次调用，把这一轮实际发生的事转化成**每个角色各自接收到的版本**。
+ * 一次调用，让每个角色各自接收到属于他的那一份 —— 包括**明面上的东西**，
+ * 因为「算不算明面」本身就是一次需要结合位置与注意力的判断，不该由引擎代劳。
  *
- * 为什么合成一次而不是每人一次：
- * - 判断「谁背对着谁」这类空间关系需要全局视角，单个角色的调用看不见别人在哪
- * - 省掉 N-1 次调用
- *
- * 为什么必须有这一层：
- * 判断「他能察觉到什么」和「扮演角色」不能是同一个调用 ——
- * 否则后者手里握着原文，说什么都约束不住。原文留在这一层，不外流。
+ * 默认全收到、只报偏差，所以模型输出短，台词原文也不会被转述走样。
  */
 export async function runPerceiveStage(
   client: LlmClient,
@@ -121,15 +193,28 @@ export async function runPerceiveStage(
   const { cards, pcName } = input
 
   if (!cards.length) {
-    return { output: { entries: [], usedModel: false }, result: null }
+    return { output: { candidates: [], entries: [], usedModel: false }, result: null }
   }
 
-  const emptyEntries = (note: string): PerceptionEntry[] =>
-    cards.map((card) => ({ characterId: card.id, name: card.name, perceived: [], note }))
-
   const candidates = buildPerceiveCandidates(input)
+  const validRefs = new Set(candidates.map((item) => item.ref))
+  const innerRefs = candidates.filter((item) => item.kind === 'inner').map((item) => item.ref)
+
+  /** 没有读取能力的角色读不到念头 —— 引擎强制兜底，不依赖模型 */
+  const forcedMissedFor = (card: CharacterCard): PerceptionEntry['missed'] =>
+    card.mindReading.trim()
+      ? []
+      : innerRefs.map((ref) => ({ ref, why: '他没有读取别人内心的能力' }))
+
   if (!candidates.length) {
-    return { output: { entries: emptyEntries('这一轮没有值得分发的信息。'), usedModel: false }, result: null }
+    return {
+      output: {
+        candidates,
+        entries: cards.map((card) => emptyEntry(card, '这一轮没有值得分发的信息。', forcedMissedFor(card))),
+        usedModel: false,
+      },
+      result: null,
+    }
   }
 
   const messages = buildPerceiveMessages({
@@ -148,23 +233,29 @@ export async function runPerceiveStage(
 
     const parsed = data as { entries?: unknown }
     const byName = new Map(cards.map((card) => [card.name, card]))
-
     const entries: PerceptionEntry[] = []
     const seen = new Set<string>()
 
     for (const raw of asArray(parsed.entries)) {
       const item = asRecord(raw)
       if (!item) continue
-      const name = asText(item.name)
-      const card = byName.get(name)
+      const card = byName.get(asText(item.name))
       if (!card || seen.has(card.id)) continue
       seen.add(card.id)
 
       const allowMind = Boolean(card.mindReading.trim())
+      // 强制兜底 + 模型自己报的，合并去重
+      const forced = forcedMissedFor(card)
+      const reported = normalizeMissed(item.missed, validRefs)
+      const merged = new Map<number, { ref: number; why: string }>()
+      for (const entry of [...forced, ...reported]) merged.set(entry.ref, entry)
+
       entries.push({
         characterId: card.id,
         name: card.name,
-        perceived: normalizePerceived(item.perceived, allowMind),
+        missed: [...merged.values()],
+        distorted: normalizeDistorted(item.distorted, validRefs).filter((entry) => !merged.has(entry.ref)),
+        extras: normalizeExtras(item.extras, allowMind),
         note: asText(item.note),
       })
     }
@@ -172,20 +263,17 @@ export async function runPerceiveStage(
     // 模型漏掉的人补上空条目 —— 名单里有几个就该有几个，一个不少
     for (const card of cards) {
       if (seen.has(card.id)) continue
-      entries.push({
-        characterId: card.id,
-        name: card.name,
-        perceived: [],
-        note: '（分发时漏掉了这个人，按没额外察觉到处理）',
-      })
+      entries.push(emptyEntry(card, '（分发时漏掉了这个人，按全部收到处理）', forcedMissedFor(card)))
     }
 
-    return { output: { entries, usedModel: true }, result }
+    void normalizeRefList
+    return { output: { candidates, entries, usedModel: true }, result }
   } catch (error) {
-    // 分发失败时按「谁都没多察觉到」处理 —— 这是最安全的一侧
+    // 分发失败时按「全都收到了」处理 —— 宁可多给信息，也不要凭空扣掉
     return {
       output: {
-        entries: emptyEntries('（信息分发失败，按没额外察觉到处理）'),
+        candidates,
+        entries: cards.map((card) => emptyEntry(card, '（信息分发失败，按全部收到处理）', forcedMissedFor(card))),
         usedModel: false,
         fallbackReason: error instanceof Error ? error.message : String(error),
       },

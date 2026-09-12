@@ -289,6 +289,7 @@ async function executeStep(ctx: PipelineContext, step: Step): Promise<Step> {
         cards,
         segments,
         exposure,
+        sceneSetup,
         pcName: ctx.project.pcName,
         positions,
       })
@@ -316,9 +317,9 @@ async function executeStep(ctx: PipelineContext, step: Step): Promise<Step> {
         fromIndex: cue.fromIndex,
         leakage: cue.leakage,
       }))
-      // 他额外察觉到的东西 —— 由独立的信息分发阶段给出，原文不在这里
+      // 他这一轮实际接收到的那一份 —— 由信息分发层筛过，原文由编号取回
       const perception = findUpstreamByStage(ctx.steps, step.id, 'perceive')?.output as PerceptionOutcome | undefined
-      const extras = perception?.entries.find((entry) => entry.characterId === card.id)?.perceived ?? []
+      const reception = perception?.entries.find((entry) => entry.characterId === card.id)
 
       const output = buildContextBundle({
         card,
@@ -328,7 +329,8 @@ async function executeStep(ctx: PipelineContext, step: Step): Promise<Step> {
         sceneSetup,
         memories,
         pcCues,
-        extras,
+        candidates: perception?.candidates ?? [],
+        reception,
       })
       return done(step, output, { cost: elapsed(startedAt) })
     }

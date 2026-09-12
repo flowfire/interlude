@@ -43,7 +43,7 @@ function bundleOf(name: string): ContextBundle {
     pcName: '我',
     counterpartProfile: '',
     presentNames: ['我', name],
-    scene: { time: '', place: '', atmosphere: '', situation: '', opening: [] },
+    scene: { time: '', place: '', atmosphere: '' },
     perceived: [],
     sceneLines: [],
     heard: [],

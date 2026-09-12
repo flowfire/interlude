@@ -180,7 +180,7 @@ describe('资料会进入提示词', () => {
       pcName: '我',
       counterpartProfile: '站在门口没动',
       presentNames: ['我', '金刚狼'],
-      scene: { time: '傍晚', place: '旅馆门口', atmosphere: '雨刚停', situation: '打了个照面', opening: [] },
+      scene: { time: '傍晚', place: '旅馆门口', atmosphere: '雨刚停' },
       perceived: [],
       sceneLines: [],
       heard: [],

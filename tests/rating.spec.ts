@@ -50,7 +50,7 @@ function bundle(): ContextBundle {
     pcName: '我',
     counterpartProfile: '站在门口没动',
     presentNames: ['我', '林砚'],
-    scene: { time: '傍晚', place: '城南茶馆', atmosphere: '雨刚停', situation: '你推门进来', opening: [] },
+    scene: { time: '傍晚', place: '城南茶馆', atmosphere: '雨刚停' },
     perceived: [],
     sceneLines: [],
     heard: [],

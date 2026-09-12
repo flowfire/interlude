@@ -99,12 +99,25 @@ export const PERCEIVE_CHANNEL_LABEL: Record<PerceiveChannel, string> = {
   mind: '读到念头',
 }
 
-/** 某一个角色在这一轮里额外察觉到的东西 */
+/** 被分发的一条信息（引擎侧编号，供分发层引用） */
+export interface PerceiveCandidateRecord {
+  ref: number
+  kind: 'speech' | 'action' | 'scene' | 'ambient' | 'cue' | 'inner'
+  text: string
+  /** 谁说的 / 谁做的 */
+  from?: string
+}
+
+/** 某一个角色在这一轮里对信息的接收情况 */
 export interface PerceptionEntry {
   characterId: string
   name: string
-  /** 空数组 = 他没多察觉到什么，这是常见且正确的答案 */
-  perceived: { text: string; channel: PerceiveChannel; certainty: number }[]
+  /** 明确**没接收到**的（背对着、走神、不在场） */
+  missed: { ref: number; why: string }[]
+  /** 接收到了但**走了样**的（只听见半句、被理解成别的） */
+  distorted: { ref: number; as: string }[]
+  /** 在这些信息之外，**额外**察觉到的（超常感官 / 读心） */
+  extras: { text: string; channel: PerceiveChannel; certainty: number }[]
   note: string
 }
 
@@ -112,12 +125,17 @@ export interface PerceptionEntry {
  * 「信息分发」的结果：把这一轮实际发生的事，转化成每个角色各自接收到的版本。
  *
  * 存在的理由有两条：
- * 1. 判断「他能察觉到什么」和「扮演角色」不能是同一个调用 ——
+ * 1. 判断「他能接收到什么」和「扮演角色」不能是同一个调用 ——
  *    否则后者手里握着原文，说什么都约束不住。原文留在这一层，不外流。
  * 2. 判断「谁背对着谁」这类空间关系需要全局视角 ——
  *    所以一次调用分发给大家，而不是每个角色各判一次。
+ *
+ * 默认所有人接收到全部信息，分发层只报**偏差**（missed / distorted）——
+ * 这样输出短，台词原文也不会被模型转述走样。
  */
 export interface PerceptionOutcome {
+  /** 这一轮被分发出去的信息 */
+  candidates: PerceiveCandidateRecord[]
   entries: PerceptionEntry[]
   usedModel: boolean
   fallbackReason?: string
@@ -142,13 +160,15 @@ export interface ContextBundle {
   /** 对面的人（用户扮演的角色）呈现给你的样子 —— 只有看得见的部分 */
   counterpartProfile: string
   presentNames: string[]
-  /** 这一轮的场面设定 */
+  /**
+   * 这一轮的场面。
+   * 只保留客观环境（时间地点氛围）—— 「此刻正在发生什么」和开场画面都走信息分发，
+   * 因为它们可能包含某个角色看不见的东西。
+   */
   scene: {
     time: string
     place: string
     atmosphere: string
-    situation: string
-    opening: string[]
   }
   /**
    * 按时间顺序发生的事。

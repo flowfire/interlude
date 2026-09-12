@@ -24,7 +24,7 @@ export function buildMemoryEntry(input: MemoryBuildInput): MemoryEntry {
   const heard = bundle.heard.map((item) => `${item.from}：「${item.text}」`)
   const said = roleplay.beats.filter((beat) => beat.kind === 'speech').map((beat) => beat.text)
   const did = roleplay.beats.filter((beat) => beat.kind !== 'speech').map((beat) => beat.text)
-  const scene = [...bundle.scene.opening, ...bundle.sceneLines].slice(0, 4)
+  const scene = bundle.sceneLines.slice(0, 4)
   const noticed = bundle.pcCues.map((cue) => cue.visible)
 
   const fragments: string[] = []
