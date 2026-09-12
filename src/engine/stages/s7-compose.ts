@@ -2,6 +2,7 @@ import type { CharacterCard, ComposedScene, ReactionCard, RoleplayOutput, SceneB
 import type { PcCue, PcExposure } from '@/types/exposure'
 import type { SceneSetup } from '@/types/scene'
 import type { Segment } from '@/types/segment'
+import type { SituationState } from '@/types/situation'
 
 export interface ComposeInput {
   sceneSetup: SceneSetup
@@ -11,6 +12,8 @@ export interface ComposeInput {
   pcName: string
   /** 你这一轮内心外化的结果 —— 只有现象会进到舞台上 */
   exposure?: PcExposure
+  /** 这一轮「世界」自己发生的事 */
+  situation?: SituationState
 }
 
 /** 这些类型在舞台上表现为「环境」 */
@@ -45,7 +48,7 @@ function clampIndex(value: number, length: number): number {
  * 这里刻意不调用模型：编排是确定性的，花钱让模型排序不划算，也容易改坏你的台词。
  */
 export function composeScene(input: ComposeInput): ComposedScene {
-  const { sceneSetup, segments, cards, roleplays, pcName, exposure } = input
+  const { sceneSetup, segments, cards, roleplays, pcName, exposure, situation } = input
   const blocks: SceneBlock[] = []
   let order = 1
 
@@ -189,7 +192,15 @@ export function composeScene(input: ComposeInput): ComposedScene {
     push({ kind: 'pc-cue', characterName: pcName, text, locked: true })
   }
 
-  // 7. 各角色 AI 的新反应（发生在上面这一切之后）
+  // 7. 世界自己发生的事 —— 排在你写的内容之后、角色反应之前。
+  //    它是「离了用户剧情也能继续走」的那一步：狼扑上来、火灭了、对方失去耐心。
+  for (const event of situation?.events ?? []) {
+    const text = event.text.trim()
+    if (!text) continue
+    push({ kind: 'world', text })
+  }
+
+  // 8. 各角色 AI 的新反应（发生在上面这一切之后）
   for (const roleplay of roleplays) {
     for (const beat of roleplay.beats) {
       push({

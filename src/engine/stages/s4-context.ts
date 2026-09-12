@@ -31,6 +31,8 @@ export interface ContextBuildInput {
   recap?: string
   /** 这个角色亲身经历过的往事，一轮一段，按时间顺序累加 */
   history?: HistoryRound[]
+  /** 这一轮的局面（世界自己往前走的那一步） */
+  situation?: { pressure: string; escalation: string }
   /** 这一轮被分发出去的信息（带编号） */
   candidates?: PerceiveCandidateRecord[]
   /** 这个角色对上面这些信息的接收情况 */
@@ -136,6 +138,7 @@ export function buildContextBundle(input: ContextBuildInput): ContextBundle {
     reception,
     recap = '',
     history = [],
+    situation,
   } = input
   void cards
 
@@ -201,6 +204,8 @@ export function buildContextBundle(input: ContextBuildInput): ContextBundle {
     presentNames,
     recap,
     history,
+    pressure: situation?.pressure ?? '',
+    escalation: situation?.escalation ?? '',
     scene: {
       time: sceneSetup.time,
       place: sceneSetup.place,

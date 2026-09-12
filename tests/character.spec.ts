@@ -35,6 +35,7 @@ function card(name: string, appears = true): CharacterCard {
     source: 'material',
     persona: {
       summary: `${name} 的一句话简介`,
+      drive: '',
       speechStyle: '话少',
       temperament: ['克制'],
       habits: ['说话前会顿一下'],
@@ -91,6 +92,8 @@ function bundleOf(name: string): ContextBundle {
     doesNotKnow: [],
     recalled: [],
     recap: '',
+    pressure: '',
+    escalation: '',
     roundIndex: 2,
     history: [],
   }

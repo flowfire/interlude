@@ -49,6 +49,14 @@ export interface CharacterCard {
   mindReading: string
   persona: {
     summary: string
+    /**
+     * **他想要什么。**
+     *
+     * 这是驱动他行动的东西，不是性格描述 —— 性格决定他*怎么*做，
+     * 它决定他*去做什么*。没有这一条，角色就只能对着用户的话做姿态，
+     * 永远不会自己往前走。
+     */
+    drive: string
     speechStyle: string
     temperament: string[]
     habits: string[]
@@ -165,6 +173,9 @@ export interface HistoryRound {
   place: string
   /** 当时的场面信息（与当前轮用同一套写法，才能逐字节对齐） */
   atmosphere: string
+  /** 当时那个「局面」的判断 */
+  pressure: string
+  escalation: string
   /** 当时「你对面的人」呈现出来的样子 */
   pcProfile: string
   /** 当时在场的人 */
@@ -202,6 +213,10 @@ export interface ContextBundle {
    * 重放时逐字节可复现，绝不因为后来发生的事而改写。
    */
   history: HistoryRound[]
+  /** 这一轮的局面：正在逼近什么（世界自己的判断，所有角色都看得到） */
+  pressure: string
+  /** 如果没有任何人干预，接下去会发生什么 */
+  escalation: string
   /**
    * 这一轮的场面。
    * 只保留客观环境（时间地点氛围）—— 「此刻正在发生什么」和开场画面都走信息分发，
@@ -276,7 +291,7 @@ export interface ReactionCard {
 
 export interface SceneBlock {
   order: number
-  kind: 'scene' | 'pc-action' | 'pc-speech' | 'pc-cue' | 'action' | 'speech' | 'cue'
+  kind: 'scene' | 'world' | 'pc-action' | 'pc-speech' | 'pc-cue' | 'action' | 'speech' | 'cue'
   characterId?: string
   characterName?: string
   text: string
@@ -293,6 +308,7 @@ export interface ComposedScene {
 
 export const BLOCK_KIND_LABEL: Record<SceneBlock['kind'], string> = {
   scene: '场景',
+  world: '局面',
   'pc-action': '你的动作',
   'pc-speech': '你的台词',
   'pc-cue': '你的流露',

@@ -77,6 +77,7 @@ const CAST = {
       name: '林砚',
       tier: 'major',
       summary: '话少的人',
+      drive: '',
       speechStyle: '句子很短',
       temperament: ['克制'],
       habits: ['说话前会顿一下'],

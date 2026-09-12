@@ -24,6 +24,7 @@ function bundleOf(name: string): ContextBundle {
       mindReading: '',
       persona: {
         summary: '',
+        drive: '',
         speechStyle: '',
         temperament: [],
         habits: [],
@@ -56,6 +57,8 @@ function bundleOf(name: string): ContextBundle {
     doesNotKnow: [],
     recalled: [],
     recap: '',
+    pressure: '',
+    escalation: '',
     roundIndex: 2,
     history: [],
   }

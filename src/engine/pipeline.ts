@@ -7,6 +7,7 @@ import { runSegmentStage, type SegmentStageOutput } from './stages/s1-segment'
 import { runSceneStage } from './stages/s2-scene'
 import { runExposureStage } from './stages/s2b-exposure'
 import { runPerceiveStage } from './stages/s3b-perceive'
+import { runSituationStage } from './stages/s3c-situation'
 import { runCastStage, type CastStageOutput } from './stages/s3-cast'
 import { buildContextBundle } from './stages/s4-context'
 import { runRoleplayStage } from './stages/s5-roleplay'
@@ -16,6 +17,7 @@ import { getCastLibrary, getMemories, recallFor, toKnownCast } from './memory/li
 import { HISTORY_MAX_CHARS, collectHistory, renderSharedRecap } from './history'
 import type { ComposedScene, ContextBundle, KnownCastEntry, PerceptionOutcome, RoleplayOutput } from '@/types/character'
 import type { ObservedCue, PcExposure } from '@/types/exposure'
+import type { SituationState } from '@/types/situation'
 import type { SceneSetup } from '@/types/scene'
 import type { Round, Step, StepStage } from '@/types/step'
 import type { ProjectSettings } from '@/types/settings'
@@ -148,6 +150,24 @@ function buildRecap(ctx: PipelineContext): string {
   return `（更早的 ${start} 轮已经太长，这里从第 ${previousRounds[start].index} 轮开始）\n${text}`
 }
 
+/**
+ * 上一轮的局面状态（同一个对话内）。
+ *
+ * 「压力」是跨轮累积的东西：上一轮埋下的隐患，这一轮该兑现一部分。
+ */
+function previousSituation(ctx: PipelineContext): { pressure: string; escalation: string } | null {
+  const ids = sessionRoundIds(ctx)
+  const step = Object.values(ctx.steps)
+    .filter((item) => item.stage === 'situation' && item.status === 'done')
+    .filter((item) => (!ids || ids.has(item.roundId)) && item.roundId !== ctx.round.id)
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+    .pop()
+
+  const state = step?.output as SituationState | undefined
+  if (!state) return null
+  return { pressure: state.pressure, escalation: state.escalation }
+}
+
 function emptyCost() {
   return { calls: 0, tokensIn: 0, tokensOut: 0, ms: 0 }
 }
@@ -251,6 +271,28 @@ async function executeStep(ctx: PipelineContext, step: Step): Promise<Step> {
       return done(step, output, { model: result?.model, cost: costOf(result, startedAt) })
     }
 
+    case 'situation': {
+      const doc = findUpstreamByStage(ctx.steps, step.id, 'normalize')?.output as NormalizedDoc | undefined
+      const segments =
+        (findUpstreamByStage(ctx.steps, step.id, 'segment')?.output as SegmentStageOutput | undefined)?.segments ?? []
+      const sceneSetup = findUpstreamByStage(ctx.steps, step.id, 'scene')?.output as SceneSetup | undefined
+      const castOut = findUpstreamByStage(ctx.steps, step.id, 'cast')?.output as CastStageOutput | undefined
+      if (!doc) throw new Error('缺少上游的规范化结果')
+      if (!sceneSetup) throw new Error('缺少上游的场景构建结果')
+
+      const { output, result } = await runSituationStage(ctx.client, {
+        doc,
+        segments,
+        sceneSetup,
+        cards: castOut?.characters ?? [],
+        pcName: ctx.project.pcName,
+        storyTitle: ctx.project.storyTitle,
+        previousRecap: buildRecap(ctx),
+        previous: previousSituation(ctx),
+      })
+      return done(step, output, { model: result?.model, cost: costOf(result, startedAt) })
+    }
+
     case 'perceive': {
       const castOut = findUpstreamByStage(ctx.steps, step.id, 'cast')?.output as CastStageOutput | undefined
       const segments =
@@ -266,12 +308,15 @@ async function executeStep(ctx: PipelineContext, step: Step): Promise<Step> {
         if (matched) positions[matched.id] = [item.role, item.brief].filter(Boolean).join('，') || '（未说明）'
       }
 
+      const situation = findUpstreamByStage(ctx.steps, step.id, 'situation')?.output as SituationState | undefined
+
       const { output, result } = await runPerceiveStage(ctx.client, {
         cards,
         segments,
         exposure,
         sceneSetup,
         pcName: ctx.project.pcName,
+        situation,
         positions,
       })
       return done(step, output, { model: result?.model, cost: costOf(result, startedAt) })
@@ -310,6 +355,7 @@ async function executeStep(ctx: PipelineContext, step: Step): Promise<Step> {
         pcName: ctx.project.pcName,
         sceneSetup,
         recap: buildRecap(ctx),
+        situation: findUpstreamByStage(ctx.steps, step.id, 'situation')?.output as SituationState | undefined,
         history: collectHistory({
           rounds: ctx.rounds ?? [],
           steps: ctx.steps,
@@ -348,6 +394,7 @@ async function executeStep(ctx: PipelineContext, step: Step): Promise<Step> {
         .map((item) => item.output as RoleplayOutput)
         .filter(Boolean)
       const exposure = findUpstreamByStage(ctx.steps, step.id, 'exposure')?.output as PcExposure | undefined
+      const situation = findUpstreamByStage(ctx.steps, step.id, 'situation')?.output as SituationState | undefined
 
       const output = composeScene({
         sceneSetup,
@@ -356,6 +403,7 @@ async function executeStep(ctx: PipelineContext, step: Step): Promise<Step> {
         roleplays,
         pcName: ctx.project.pcName,
         exposure,
+        situation,
       })
       return done(step, output, { cost: elapsed(startedAt) })
     }
@@ -532,12 +580,25 @@ export async function runFullRound(ctx: PipelineContext): Promise<FullRoundResul
   const castOutput = steps[castStep.id]?.output as CastStageOutput | undefined
   const actors = castOutput?.characters ?? []
 
+  // S3c 局面推进：一次调用，让「世界」自己往前走一步。
+  // 它排在信息分发之前，所以这一轮新发生的事也会被分发出去。
+  const situationStep = createStep<SituationState>({
+    roundId: ctx.round.id,
+    stage: 'situation',
+    label: '局面推进',
+    deps: [castStep.id, segmentStep.id, sceneStep.id],
+  })
+  steps = { ...steps, [situationStep.id]: situationStep }
+  result = await runSteps({ ...ctx, steps, ledger }, [situationStep.id])
+  steps = result.steps
+  emit()
+
   // 信息分发：一次调用，把这一轮转化成「每个人各自接收到的版本」
   const perceiveStep = createStep<PerceptionOutcome>({
     roundId: ctx.round.id,
     stage: 'perceive',
     label: '信息分发',
-    deps: [castStep.id, segmentStep.id, exposureStep.id],
+    deps: [castStep.id, segmentStep.id, exposureStep.id, situationStep.id],
   })
 
   const contextSteps: Step[] = []
@@ -579,7 +640,14 @@ export async function runFullRound(ctx: PipelineContext): Promise<FullRoundResul
     roundId: ctx.round.id,
     stage: 'compose',
     label: '编排',
-    deps: [segmentStep.id, sceneStep.id, exposureStep.id, castStep.id, ...roleplaySteps.map((step) => step.id)],
+    deps: [
+      segmentStep.id,
+      sceneStep.id,
+      exposureStep.id,
+      castStep.id,
+      situationStep.id,
+      ...roleplaySteps.map((step) => step.id),
+    ],
   })
   steps = { ...steps, [composeStep.id]: composeStep }
   result = await runSteps({ ...ctx, steps, ledger }, [composeStep.id])

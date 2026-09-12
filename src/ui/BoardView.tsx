@@ -4,7 +4,15 @@ import { SEGMENT_KIND_LABEL, type Segment, type SegmentKind } from '@/types/segm
 import { SCENE_MODE_LABEL } from '@/types/scene'
 import { RATING_LABEL, type ContentRating, type Round } from '@/types/step'
 import { isRoundDraftDirty } from '@/utils/roundDraft'
-import { getComposeOfRound, getExposureOfRound, getSceneOfRound, getSegmentsOfRound, regenerateRoundFromInput, replayFromRound } from './usePipelineActions'
+import {
+  getComposeOfRound,
+  getExposureOfRound,
+  getSceneOfRound,
+  getSegmentsOfRound,
+  getSituationOfRound,
+  regenerateRoundFromInput,
+  replayFromRound,
+} from './usePipelineActions'
 import SegmentList from './SegmentList'
 import ReactionCardView from './ReactionCardView'
 
@@ -58,6 +66,7 @@ function RoundBlock({ round, isLast, demo }: { round: Round; isLast: boolean; de
   const segmentsData = getSegmentsOfRound(round.id)
   const sceneData = getSceneOfRound(round.id)
   const composeData = getComposeOfRound(round.id)
+  const situationData = getSituationOfRound(round.id)
   const exposureData = getExposureOfRound(round.id)
   const reactions = composeData?.scene.reactions ?? []
   const setup = sceneData?.setup
@@ -109,6 +118,13 @@ function RoundBlock({ round, isLast, demo }: { round: Round; isLast: boolean; de
           )}
 
           {setup.situation ? <div className="scene-situation">▸ {setup.situation}</div> : null}
+
+          {situationData?.state.pressure ? (
+            <div className="scene-pressure">
+              <span className="hint">局面：</span>
+              {situationData.state.pressure}
+            </div>
+          ) : null}
 
           {setup.present.length ? (
             <div className="scene-cast">
@@ -251,6 +267,26 @@ function RoundBlock({ round, isLast, demo }: { round: Round; isLast: boolean; de
             </div>
           ))}
           {exposureData.exposure.note ? <div className="hint">{exposureData.exposure.note}</div> : null}
+        </div>
+      ) : null}
+
+      {/* 2.5 世界自己往前走的那一步 —— 不是任何人的话，是局面的变化 */}
+      {situationData?.state.events.length ? (
+        <div className="situation-block">
+          <div className="situation-head">
+            <span className="who-badge who-world">局面</span>
+            <span className="hint">
+              {situationData.state.usedModel ? '这一步不是任何人说的话，是世界自己在动' : '局面推进降级了'}
+            </span>
+          </div>
+          {situationData.state.events.map((event, index) => (
+            <div key={index} className={`situation-event situation-event-${event.kind}`}>
+              {event.text}
+            </div>
+          ))}
+          {situationData.state.escalation ? (
+            <div className="situation-escalation">如果没人动：{situationData.state.escalation}</div>
+          ) : null}
         </div>
       ) : null}
 

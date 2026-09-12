@@ -880,6 +880,45 @@ pre.code {
   color: #9fd0c9;
   font-style: italic;
 }
+.scene-pressure {
+  margin-top: 6px;
+  color: #e0c07a;
+  font-size: 12.5px;
+}
+/* 局面：世界自己往前走的那一步。刻意做得和角色卡片不一样 ——
+   它不是谁说的话，所以给它一条竖线和「局面」徽章。 */
+.situation-block {
+  margin: 10px 0;
+  padding: 10px 12px;
+  border-left: 3px solid #b8873c;
+  background: rgba(184, 135, 60, 0.07);
+  border-radius: 0 6px 6px 0;
+}
+.situation-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.who-world {
+  background: #b8873c;
+  color: #1b1409;
+}
+.situation-event {
+  line-height: 1.8;
+  color: #e6d3ab;
+}
+.situation-event-ambient {
+  color: #cbb894;
+  font-style: italic;
+}
+.situation-escalation {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px dashed rgba(184, 135, 60, 0.35);
+  color: #d8a85f;
+  font-size: 12.5px;
+}
 .scene-fallback {
   margin-top: 8px;
   padding: 6px 9px;

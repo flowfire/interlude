@@ -182,9 +182,9 @@ export default function SettingsDialog() {
               value={project.freedomLevel}
               onChange={(event) => setProject({ freedomLevel: event.target.value as typeof project.freedomLevel })}
             >
-              <option value="low">低 —— 严格贴着我写的走</option>
-              <option value="medium">中 —— 可以加台词和动作，不改剧情走向</option>
-              <option value="high">高 —— 允许角色主动推动剧情</option>
+              <option value="low">低 —— 只对眼前的事做反应</option>
+              <option value="medium">中 —— 会为自己的目标行动</option>
+              <option value="high">高 —— 会主动把局面推向他要的方向</option>
             </select>
           </div>
 

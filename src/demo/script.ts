@@ -146,6 +146,7 @@ const ROUND1_CAST = {
       canonical: false,
       franchise: '',
       summary: '把话都收在动作里的人，和「我」有几年说不清的旧账',
+      drive: '想让「我」把那三年里没说清的话自己说出口；他不打算先问。',
       speechStyle: '句子短，常用「嗯」「还行」这类含糊的词挡回去；被问到关键处会先停半拍',
       temperament: ['克制', '不主动示弱', '对熟人有一种笨拙的耐心'],
       habits: ['说话前右手会在桌沿上顿一下', '笑的时候只动嘴角，眼睛不动'],
@@ -166,6 +167,7 @@ const ROUND1_CAST = {
       canonical: false,
       franchise: '',
       summary: '茶馆的伙计，存在感很低但什么都看在眼里',
+      drive: '把今晚这壶茶伺候好，别让这两位在这儿闹出动静来。',
       speechStyle: '话极少，能用一个字就不用两个字',
       temperament: ['不好奇', '手脚麻利'],
       habits: ['一直擦同一个杯子'],
@@ -272,11 +274,43 @@ const ROUND2_ROLEPLAY_LINYAN = {
   mood: '被那句半截话拽回三年前',
 }
 
+const ROUND1_SITUATION = {
+  pressure: '林砚等了三天，他今天是有话要说的；柜台后面的阿七并不只是个擦杯子的伙计。',
+  escalation: '如果你一直站着不坐下，林砚会先开口——他等不下去了。',
+  events: [
+    { kind: 'ambient', text: '门框上的铃铛还在轻轻晃，柜台那边传来杯沿碰在一起的一声轻响。' },
+  ],
+  note: '',
+}
+
+const ROUND2_SITUATION = {
+  pressure: '林砚那盏茶已经见底了，他今天不是来叙旧的；阿七擦杯子的手停在了半空。',
+  escalation: '你再不把话说完，林砚就会替你说破。',
+  events: [
+    { kind: 'scene', text: '灯芯爆了一下，屋里暗了半瞬，又亮起来。' },
+    { kind: 'ambient', text: '柜台那边传来一声很轻的响动——阿七把手里的杯子放在了木头上。' },
+  ],
+  note: '',
+}
+
+const ROUND1_PERCEIVE = {
+  entries: [
+    { name: '林砚', missed: [], distorted: [], extras: [], note: '' },
+    { name: '阿七', missed: [], distorted: [], extras: [], note: '' },
+  ],
+}
+
+const ROUND2_PERCEIVE = {
+  entries: [{ name: '林砚', missed: [], distorted: [], extras: [], note: '' }],
+}
+
 export const ROUND1_SCRIPT: Record<string, unknown> = {
   segment: ROUND1_SEGMENT,
   scene: ROUND1_SCENE,
   exposure: ROUND1_EXPOSURE,
   cast: ROUND1_CAST,
+  perceive: ROUND1_PERCEIVE,
+  situation: ROUND1_SITUATION,
   'roleplay:林砚': ROUND1_ROLEPLAY_LINYAN,
   'roleplay:阿七': ROUND1_ROLEPLAY_AQI,
 }
@@ -285,5 +319,7 @@ export const ROUND2_SCRIPT: Record<string, unknown> = {
   segment: ROUND2_SEGMENT,
   scene: ROUND2_SCENE,
   exposure: ROUND2_EXPOSURE,
+  perceive: ROUND2_PERCEIVE,
+  situation: ROUND2_SITUATION,
   'roleplay:林砚': ROUND2_ROLEPLAY_LINYAN,
 }

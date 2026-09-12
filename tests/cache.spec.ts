@@ -30,6 +30,7 @@ function card(name: string): CharacterCard {
     mindReading: '',
     persona: {
       summary: `${name}的概述`,
+      drive: '',
       speechStyle: '句子很短',
       temperament: ['克制'],
       habits: [],
@@ -54,6 +55,8 @@ function historyRound(index: number): HistoryRound {
     time: '傍晚',
     place: '城南茶馆',
     atmosphere: '雨刚停',
+    pressure: `第 ${index} 轮的局势`,
+    escalation: `第 ${index} 轮的下一步`,
     pcProfile: '站在门口没动',
     presentNames: ['我', '林砚', '阿七'],
     sceneLines: [`第 ${index} 轮的环境`],
@@ -84,6 +87,8 @@ function bundleFor(name: string, roundIndex: number, history: HistoryRound[]): C
     doesNotKnow: ['我的真实想法'],
     recalled: [],
     recap: '',
+    pressure: `第 ${roundIndex} 轮的局势`,
+    escalation: `第 ${roundIndex} 轮的下一步`,
     history,
   }
 }
@@ -184,6 +189,8 @@ describe('真跑起来也是累加的', () => {
         time: `第${round}天的傍晚`,
         place: '城南茶馆',
         atmosphere: '雨刚停',
+        pressure: '狼群在二十步外',
+        escalation: '再有两三息它们就会扑上来',
         opening: [`第${round}轮的开场画面`],
         situation: `第${round}轮正在发生的事`,
         pcProfile: '站在门口没动。',

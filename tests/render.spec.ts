@@ -35,6 +35,7 @@ function makeBundle(history: ContextBundle['history']): ContextBundle {
       mindReading: '',
       persona: {
         summary: '',
+        drive: '',
         speechStyle: '',
         temperament: [],
         habits: [],
@@ -68,6 +69,8 @@ function makeBundle(history: ContextBundle['history']): ContextBundle {
     doesNotKnow: ['我的真实想法'],
     recalled: [],
     recap: '',
+    pressure: '',
+    escalation: '',
     history,
   }
 }
@@ -80,6 +83,8 @@ describe('上下文面板', () => {
         time: '傍晚',
         place: '城南茶馆',
         atmosphere: '雨刚停',
+        pressure: '狼群在二十步外',
+        escalation: '再有两三息它们就会扑上来',
         pcProfile: '站在门口没动',
         presentNames: ['我', '林砚'],
         sceneLines: ['雨刚停'],

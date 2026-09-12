@@ -64,6 +64,7 @@ function card(overrides: Partial<CharacterCard> & { name: string }): CharacterCa
     mindReading: '',
     persona: {
       summary: '一句话简介',
+      drive: '',
       speechStyle: '',
       temperament: [],
       habits: [],

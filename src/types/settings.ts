@@ -21,7 +21,7 @@ export interface ProjectSettings {
   /** 你自己的设定：身份、性格、外貌、此刻的状态……会注入每个阶段 */
   pcPersona: string
   storyTitle: string
-  /** 演绎自由度：AI 可以在多大程度上改写非锁定内容 */
+  /** 演绎自由度：角色能在多大程度上为自己的目标行动、推动局面 */
   freedomLevel: 'low' | 'medium' | 'high'
   /** 时间跳跃时是否自动补全各角色在空白期的经历 */
   interludeFill: boolean

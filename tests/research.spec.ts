@@ -24,6 +24,7 @@ function rawWolverine(): RawCastResult {
         canonical: true,
         franchise: '《X战警》',
         summary: '一个活得太久、什么都不太在乎的变种人',
+        drive: '',
         speechStyle: '句子短，常用反问和带刺的玩笑，很少解释自己',
         temperament: ['嘴硬', '对弱者笨拙地耐心'],
         habits: ['动手前先活动一下脖子'],
@@ -193,6 +194,8 @@ describe('资料会进入提示词', () => {
       doesNotKnow: [],
       recalled: [],
       recap: '',
+    pressure: '',
+    escalation: '',
     roundIndex: 2,
     history: [],
     }

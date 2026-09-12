@@ -5,6 +5,7 @@ export type StepStage =
   | 'scene'
   | 'exposure'
   | 'cast'
+  | 'situation'
   | 'perceive'
   | 'context'
   | 'roleplay'
@@ -18,6 +19,7 @@ export const STAGE_LABEL: Record<StepStage, string> = {
   scene: '场景构建',
   exposure: '你的外化',
   cast: '阵容解析',
+  situation: '局面推进',
   perceive: '信息分发',
   context: '上下文分配',
   roleplay: '角色反应',

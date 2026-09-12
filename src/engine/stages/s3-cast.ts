@@ -130,6 +130,7 @@ export function normalizeCastResult(
         : undefined,
       persona: {
         summary: asText(item.summary) || '（素材里没有更多说明）',
+        drive: asText(item.drive),
         speechStyle: asText(item.speechStyle) || '（按性格自然发挥）',
         temperament: asTextArray(item.temperament),
         habits: asTextArray(item.habits),
@@ -169,6 +170,7 @@ function thinCard(item: ScenePresent): CharacterCard {
     mindReading: '',
     persona: {
       summary: item.role || '（场景里出现的人）',
+      drive: '',
       speechStyle: '（按性格自然发挥）',
       temperament: [],
       habits: [],

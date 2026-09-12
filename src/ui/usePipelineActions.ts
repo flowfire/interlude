@@ -12,6 +12,7 @@ import type { NormalizedDoc } from '@/engine/stages/s0-normalize'
 import type { SegmentStageOutput } from '@/engine/stages/s1-segment'
 import type { CastStageOutput } from '@/engine/stages/s3-cast'
 import type { CharacterCard, ComposedScene, ContextBundle } from '@/types/character'
+import type { SituationState } from '@/types/situation'
 import type { PcExposure } from '@/types/exposure'
 import type { ContentRating } from '@/types/step'
 import type { SceneSetup } from '@/types/scene'
@@ -266,6 +267,15 @@ export function getComposeOfRound(roundId: string): { stepId: string; scene: Com
   const scene = step?.output as ComposedScene | undefined
   if (!step || !scene?.blocks) return null
   return { stepId: step.id, scene }
+}
+
+/** 这一轮「世界」自己往前走的那一步 */
+export function getSituationOfRound(roundId: string): { stepId: string; state: SituationState } | null {
+  const steps = useAppStore.getState().steps
+  const step = Object.values(steps).find((item) => item.roundId === roundId && item.stage === 'situation')
+  const state = step?.output as SituationState | undefined
+  if (!step || !state) return null
+  return { stepId: step.id, state }
 }
 
 export function getCastOfRound(roundId: string): { stepId: string; cards: CharacterCard[]; usedModel: boolean } | null {

@@ -10,6 +10,7 @@ import type {
 import type { PcExposure } from '@/types/exposure'
 import type { SceneSetup } from '@/types/scene'
 import type { Segment } from '@/types/segment'
+import type { SituationState } from '@/types/situation'
 import { asArray, asRecord, asText } from '@/utils/record'
 import { clamp } from '@/utils/time'
 import { buildPerceiveMessages, type PerceiveActor } from '../prompts/perceive'
@@ -27,6 +28,8 @@ export interface PerceiveStageInput {
   exposure?: PcExposure
   sceneSetup?: SceneSetup
   pcName: string
+  /** 这一轮「世界」自己发生的事 —— 也要分发给每个角色，谁没看见就是没看见 */
+  situation?: SituationState
   /** 每个角色此刻在哪、注意力放在哪（key = characterId） */
   positions?: Record<string, string>
 }
@@ -40,7 +43,7 @@ export interface PerceiveStageInput {
  * 而且下面还会对没有该能力的角色强制标记为 missed（双保险）。
  */
 export function buildPerceiveCandidates(input: PerceiveStageInput): PerceiveCandidateRecord[] {
-  const { cards, segments, exposure, sceneSetup, pcName } = input
+  const { cards, segments, exposure, sceneSetup, pcName, situation } = input
   const out: PerceiveCandidateRecord[] = []
   let ref = 0
 
@@ -103,6 +106,14 @@ export function buildPerceiveCandidates(input: PerceiveStageInput): PerceiveCand
 
   for (const cue of exposure?.cues ?? []) {
     push({ kind: 'cue', text: cue.visible, from: pcName })
+  }
+
+  // 世界自己发生的事排在最后 —— 它是这一轮的推进，不是谁的言行。
+  // 但它一样要经过分发：背对着的人就是没看见。
+  for (const event of situation?.events ?? []) {
+    const text = event.text.trim()
+    if (!text) continue
+    push({ kind: event.kind === 'scene' ? 'scene' : 'ambient', text })
   }
 
   return out

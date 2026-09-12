@@ -9,6 +9,7 @@ import type {
   SceneBlock,
 } from '@/types/character'
 import type { SceneSetup } from '@/types/scene'
+import type { SituationState } from '@/types/situation'
 import type { Round, Step } from '@/types/step'
 import type { Reception } from './stages/s4-context'
 
@@ -95,6 +96,7 @@ function eventOf(name: string, self: boolean, kind: PerceivedEvent['kind'], text
 function rebuildRound(input: {
   round: Round
   sceneSetup?: SceneSetup
+  situation?: SituationState
   scene?: ComposedScene
   candidates: PerceiveCandidateRecord[]
   reception?: Reception
@@ -102,7 +104,7 @@ function rebuildRound(input: {
   cardName: string
   pcName: string
 }): HistoryRound {
-  const { round, sceneSetup, scene, candidates, reception, roleplay, cardName, pcName } = input
+  const { round, sceneSetup, situation, scene, candidates, reception, roleplay, cardName, pcName } = input
   const overrides = overridesOf(candidates, reception)
 
   const sceneLines: string[] = []
@@ -131,8 +133,9 @@ function rebuildRound(input: {
       if (outcome.dropped) continue
       const text = outcome.text
 
-      if (block.kind === 'scene') {
-        if (opening.has(block.text)) continue
+      // 世界自己发生的事也属于「当时的环境」—— 他记得狼扑上来了
+      if (block.kind === 'scene' || block.kind === 'world') {
+        if (block.kind === 'scene' && opening.has(block.text)) continue
         sceneLines.push(text)
         continue
       }
@@ -156,6 +159,8 @@ function rebuildRound(input: {
     time: sceneSetup?.time ?? '',
     place: sceneSetup?.place ?? '',
     atmosphere: sceneSetup?.atmosphere ?? '',
+    pressure: situation?.pressure ?? '',
+    escalation: situation?.escalation ?? '',
     pcProfile: sceneSetup?.pcProfile ?? '',
     presentNames: presentNamesOf(sceneSetup, pcName),
     sceneLines,
@@ -196,6 +201,7 @@ export function collectHistory(input: HistoryInput): HistoryRound[] {
       rebuildRound({
         round,
         sceneSetup: findStep(steps, round.id, 'scene')?.output as SceneSetup | undefined,
+        situation: findStep(steps, round.id, 'situation')?.output as SituationState | undefined,
         scene: findStep(steps, round.id, 'compose')?.output as ComposedScene | undefined,
         candidates: perception?.candidates ?? [],
         reception: perception?.entries.find((entry) => entry.characterId === card.id),
@@ -243,6 +249,8 @@ export function renderRoundBody(round: {
   time: string
   place: string
   atmosphere?: string
+  pressure?: string
+  escalation?: string
   pcProfile?: string
   presentNames?: string[]
   pcName?: string
@@ -253,6 +261,8 @@ export function renderRoundBody(round: {
   const parts: string[] = [`── 第 ${round.index} 轮${where ? ` · ${where}` : ''} ──`]
 
   if (round.atmosphere) parts.push(`【气氛】${round.atmosphere}`)
+  if (round.pressure) parts.push(`【局面】${round.pressure}`)
+  if (round.escalation) parts.push(`【如果没人动，接下去会发生什么】${round.escalation}`)
   if (round.pcProfile?.trim()) parts.push(`【你对面的人】「${round.pcName ?? '你对面的人'}」—— ${round.pcProfile}`)
   if (round.presentNames?.length) parts.push(`【在场的人】${round.presentNames.join('、')}`)
 
@@ -291,6 +301,8 @@ function renderBlockForRecap(block: SceneBlock): string {
   switch (block.kind) {
     case 'scene':
       return `〔场景〕${block.text}`
+    case 'world':
+      return `〔局面〕${block.text}`
     case 'pc-speech':
       return `我：「${block.text}」`
     case 'pc-action':

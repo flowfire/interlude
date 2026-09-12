@@ -24,6 +24,7 @@ function card(): CharacterCard {
     mindReading: '',
     persona: {
       summary: '话少的人',
+      drive: '',
       speechStyle: '句子很短',
       temperament: ['克制'],
       habits: ['答话前先停半拍'],
@@ -63,6 +64,8 @@ function bundle(): ContextBundle {
     doesNotKnow: [],
     recalled: [],
     recap: '',
+    pressure: '',
+    escalation: '',
     roundIndex: 2,
     history: [],
   }
