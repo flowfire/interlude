@@ -172,7 +172,8 @@ export async function replayFromRound(roundId: string): Promise<void> {
   if (!round) return
 
   const later = store.rounds.filter((item) => item.sessionId === round.sessionId && item.index > round.index)
-  if (later.length) store.saveUndo(`重演这一轮，丢弃 ${later.length} 轮`)
+  // 重演本身就会换掉这一轮的内容，所以哪怕没有后续轮次可丢，也要留一个撤销点
+  store.saveUndo(later.length ? `重演这一轮，丢弃 ${later.length} 轮` : '重演这一轮')
   store.truncateAfterRound(roundId)
 
   try {
