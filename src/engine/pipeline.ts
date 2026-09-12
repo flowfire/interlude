@@ -6,14 +6,14 @@ import { normalizeInput, type NormalizedDoc } from './stages/s0-normalize'
 import { runSegmentStage, type SegmentStageOutput } from './stages/s1-segment'
 import { runSceneStage } from './stages/s2-scene'
 import { runExposureStage } from './stages/s2b-exposure'
-import { runMindReadStage } from './stages/s3b-mindread'
+import { runPerceiveStage } from './stages/s3b-perceive'
 import { runCastStage, type CastStageOutput } from './stages/s3-cast'
 import { buildContextBundle } from './stages/s4-context'
 import { runRoleplayStage } from './stages/s5-roleplay'
 import { composeScene } from './stages/s7-compose'
 import { buildRoundMemories, describeWhere, type MemoryBuildInput } from './stages/s8-memory'
 import { getCastLibrary, getMemories, recallFor, toKnownCast } from './memory/library'
-import type { ComposedScene, ContextBundle, KnownCastEntry, MindReadOutcome, RoleplayOutput } from '@/types/character'
+import type { ComposedScene, ContextBundle, KnownCastEntry, PerceptionOutcome, RoleplayOutput } from '@/types/character'
 import type { ObservedCue, PcExposure } from '@/types/exposure'
 import type { SceneSetup } from '@/types/scene'
 import type { Round, Step, StepStage } from '@/types/step'
@@ -270,22 +270,27 @@ async function executeStep(ctx: PipelineContext, step: Step): Promise<Step> {
       return done(step, output, { model: result?.model, cost: costOf(result, startedAt) })
     }
 
-    case 'mindread': {
+    case 'perceive': {
       const characterId = String(step.meta?.characterId ?? '')
       const castOut = findUpstreamByStage(ctx.steps, step.id, 'cast')?.output as CastStageOutput | undefined
       const segments =
         (findUpstreamByStage(ctx.steps, step.id, 'segment')?.output as SegmentStageOutput | undefined)?.segments ?? []
       const exposure = findUpstreamByStage(ctx.steps, step.id, 'exposure')?.output as PcExposure | undefined
+      const sceneSetup = findUpstreamByStage(ctx.steps, step.id, 'scene')?.output as SceneSetup | undefined
       const card = castOut?.characters.find((item) => item.id === characterId)
       if (!card) throw new Error(`阵容里找不到角色 ${characterId}`)
 
-      const { output, result } = await runMindReadStage(ctx.client, {
+      const position = [card.state.location, card.state.mood].filter(Boolean).join('，') || '（未说明）'
+
+      const { output, result } = await runPerceiveStage(ctx.client, {
         card,
         name: card.name,
         segments,
         exposure,
         pcName: ctx.project.pcName,
+        position,
       })
+      void sceneSetup
       return done(step, output, { model: result?.model, cost: costOf(result, startedAt) })
     }
 
@@ -310,9 +315,9 @@ async function executeStep(ctx: PipelineContext, step: Step): Promise<Step> {
         fromIndex: cue.fromIndex,
         leakage: cue.leakage,
       }))
-      // 他实际读到的内容 —— 由独立的读取判定阶段给出，对方的原文不在这里
-      const mindReadOutcome = findUpstreamByStage(ctx.steps, step.id, 'mindread')?.output as MindReadOutcome | undefined
-      const mindRead = mindReadOutcome?.characterId === card.id ? mindReadOutcome.readings : []
+      // 他额外察觉到的东西 —— 由独立的感知判定阶段给出，原文不在这里
+      const perception = findUpstreamByStage(ctx.steps, step.id, 'perceive')?.output as PerceptionOutcome | undefined
+      const extras = perception?.characterId === card.id ? perception.perceived : []
 
       const output = buildContextBundle({
         card,
@@ -322,7 +327,7 @@ async function executeStep(ctx: PipelineContext, step: Step): Promise<Step> {
         sceneSetup,
         memories,
         pcCues,
-        mindRead,
+        extras,
       })
       return done(step, output, { cost: elapsed(startedAt) })
     }
@@ -534,16 +539,17 @@ export async function runFullRound(ctx: PipelineContext): Promise<FullRoundResul
   const actors = castOutput?.characters ?? []
 
   // 每个在场角色：一条「上下文 → 反应」分支
-  // 有读取能力的角色，中间还要插一步独立的「读取判定」
-  const mindReadSteps = new Map<string, Step>()
+  // 有超常感官或读取能力的角色，中间还要插一步独立的「感知判定」
+  const perceiveSteps = new Map<string, Step>()
   for (const card of actors) {
-    if (!card.mindReading?.trim()) continue
-    mindReadSteps.set(
+    const hasExtraSense = Boolean(card.persona.perception?.length || card.mindReading?.trim())
+    if (!hasExtraSense) continue
+    perceiveSteps.set(
       card.id,
-      createStep<MindReadOutcome>({
+      createStep<PerceptionOutcome>({
         roundId: ctx.round.id,
-        stage: 'mindread',
-        label: `「${card.name}」读到了什么`,
+        stage: 'perceive',
+        label: `「${card.name}」察觉到了什么`,
         deps: [castStep.id, segmentStep.id, exposureStep.id],
         meta: { characterId: card.id, characterName: card.name },
       }),
@@ -553,12 +559,12 @@ export async function runFullRound(ctx: PipelineContext): Promise<FullRoundResul
   const contextSteps: Step[] = []
   const roleplaySteps: Step[] = []
   for (const card of actors) {
-    const mindReadStep = mindReadSteps.get(card.id)
+    const perceiveStep = perceiveSteps.get(card.id)
     const contextStep = createStep<ContextBundle>({
       roundId: ctx.round.id,
       stage: 'context',
       label: `给「${card.name}」的上下文`,
-      deps: [castStep.id, exposureStep.id, ...(mindReadStep ? [mindReadStep.id] : [])],
+      deps: [castStep.id, exposureStep.id, ...(perceiveStep ? [perceiveStep.id] : [])],
       meta: { characterId: card.id, characterName: card.name },
     })
     const roleplayStep = createStep<RoleplayOutput>({
@@ -572,7 +578,7 @@ export async function runFullRound(ctx: PipelineContext): Promise<FullRoundResul
     roleplaySteps.push(roleplayStep)
   }
 
-  for (const step of [...mindReadSteps.values(), ...contextSteps, ...roleplaySteps]) {
+  for (const step of [...perceiveSteps.values(), ...contextSteps, ...roleplaySteps]) {
     steps = { ...steps, [step.id]: step }
   }
 
@@ -580,7 +586,7 @@ export async function runFullRound(ctx: PipelineContext): Promise<FullRoundResul
     result = await runSteps(
       { ...ctx, steps, ledger },
       [
-        ...[...mindReadSteps.values()].map((step) => step.id),
+        ...[...perceiveSteps.values()].map((step) => step.id),
         ...contextSteps.map((step) => step.id),
         ...roleplaySteps.map((step) => step.id),
       ],

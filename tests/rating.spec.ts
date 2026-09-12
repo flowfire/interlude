@@ -57,7 +57,7 @@ function bundle(): ContextBundle {
     seen: [],
     ownThoughts: [],
     ownPriorLines: [],
-    mindRead: [],
+    extras: [],
     pcCues: [],
     knownFacts: [],
     doesNotKnow: [],

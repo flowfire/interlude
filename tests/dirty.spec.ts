@@ -50,7 +50,7 @@ function bundleOf(name: string): ContextBundle {
     seen: [],
     ownThoughts: [],
     ownPriorLines: [],
-    mindRead: [],
+    extras: [],
     pcCues: [],
     knownFacts: [],
     doesNotKnow: [],

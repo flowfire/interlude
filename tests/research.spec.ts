@@ -187,7 +187,7 @@ describe('资料会进入提示词', () => {
       seen: [],
       ownThoughts: [],
       ownPriorLines: [],
-      mindRead: [],
+      extras: [],
       pcCues: [],
       knownFacts: [],
       doesNotKnow: [],

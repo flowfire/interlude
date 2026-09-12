@@ -87,19 +87,38 @@ export interface KnownCastEntry {
   hooks?: string[]
 }
 
+/** 额外感知是通过哪条通道来的 */
+export type PerceiveChannel = 'sight' | 'hearing' | 'smell' | 'touch' | 'intuition' | 'mind'
+
+export const PERCEIVE_CHANNEL_LABEL: Record<PerceiveChannel, string> = {
+  sight: '看到',
+  hearing: '听到',
+  smell: '闻到',
+  touch: '触到',
+  intuition: '直觉',
+  mind: '读到念头',
+}
+
 /**
- * 一次「读取判定」的结果。
+ * 一次「感知判定」的结果。
  *
- * 存在的理由：判断「能读到多少」和「扮演角色」不能是同一个调用 ——
- * 否则后者手里握着原文，说什么都约束不住。所以先独立判一次，
- * 扮演环节只拿到这份结果，原文根本不会进它的上下文。
+ * 存在的理由：判断「他能察觉到什么」和「扮演角色」不能是同一个调用 ——
+ * 否则后者手里握着原文，说什么都约束不住。
+ *
+ * 它同时覆盖两类东西：
+ * - 超常感官：眼观六路、耳听八方、异于常人的嗅觉……
+ * - 读取内心：读心只是「感知」的一个特例（channel = 'mind'）
  */
-export interface MindReadOutcome {
+export interface PerceptionOutcome {
   characterId: string
   name: string
-  /** 他**实际读到**的内容。空数组 = 什么都没读到 */
-  readings: { text: string; certainty: number }[]
-  /** 一句话说明他这一轮读到了多少 */
+  /**
+   * 他**额外**察觉到的东西。
+   * 明面上的台词与动作不在这里 —— 那些引擎会直接给他。
+   * 空数组 = 他什么都没多察觉到，这是常见且正确的答案。
+   */
+  perceived: { text: string; channel: PerceiveChannel; certainty: number }[]
+  /** 一句话说明他这一轮察觉到多少 */
   note: string
   usedModel: boolean
   fallbackReason?: string
@@ -148,10 +167,13 @@ export interface ContextBundle {
   /** 素材里已经属于他的表现：他刚才说过什么、做过什么 */
   ownPriorLines: string[]
   /**
-   * 他**实际读到**的内心 —— 由「读取判定」阶段独立给出。
-   * 注意这里没有对方的原始内心：原文留在判定阶段，不会进他的上下文。
+   * 他**额外**察觉到的东西 —— 由「感知判定」阶段独立给出。
+   *
+   * 「额外」的意思是：明面上的台词和动作不在这里（那些直接给他），
+   * 这里是他超出常人范围感知到的部分。别人的原始内心也不在这里 ——
+   * 原文留在判定阶段，不会进他的上下文。
    */
-  mindRead: { text: string; certainty: number }[]
+  extras: { text: string; channel: PerceiveChannel; certainty: number }[]
   /** 他注意到的、从「你」的内心外化出来的可见表现 —— 只有现象，没有你的真实想法 */
   pcCues: ObservedCue[]
   /** 他记得的、以前轮次发生过的事（按时间顺序，最近的排在最后） */

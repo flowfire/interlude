@@ -1,5 +1,6 @@
 import type { ChatMessage } from '@/types/llm'
-import type { ContextBundle } from '@/types/character'
+import type { ContextBundle, PerceiveChannel } from '@/types/character'
+import { PERCEIVE_CHANNEL_LABEL } from '@/types/character'
 import type { ContentRating } from '@/types/step'
 import type { ProjectSettings } from '@/types/settings'
 
@@ -127,15 +128,17 @@ function renderBundle(bundle: ContextBundle): string {
     parts.push(`【你自己此刻在想什么（只有你知道）】\n${bundle.ownThoughts.map((line) => `· ${line}`).join('\n')}`)
   }
 
-  if (bundle.mindRead.length) {
-    const lines = bundle.mindRead.map(
-      (item) => `· ${item.text}${item.certainty < 0.7 ? `（你的把握只有 ${Math.round(item.certainty * 100)}%）` : ''}`,
-    )
+  if (bundle.extras.length) {
+    const lines = bundle.extras.map((item) => {
+      const label = PERCEIVE_CHANNEL_LABEL[item.channel] ?? '察觉'
+      const certainty = item.certainty < 0.7 ? `（把握 ${Math.round(item.certainty * 100)}%）` : ''
+      return `· ${label}：${item.text}${certainty}`
+    })
 
     parts.push(
-      `【你读到的】\n${lines.join('\n')}\n\n` +
-        '这是你的能力**实际读到**的东西 —— 读不到的部分已经被滤掉了，所以这就是你这次的收获。\n' +
-        '把握不高时，你可以表现得不确定，也可能读错。不要表现得比你实际读到的更全知。',
+      `【你额外察觉到的】\n${lines.join('\n')}\n\n` +
+        '这是你的感官**实际捕捉到**的东西 —— 没捕捉到的部分已经被滤掉了，所以这就是你这次的收获。\n' +
+        '把握不高时，你可以表现得不确定，也可能误判。不要表现得比你实际察觉到的更全知。',
     )
   }
 

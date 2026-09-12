@@ -1,4 +1,4 @@
-import type { CharacterCard, ContextBundle, PerceivedEvent } from '@/types/character'
+import type { CharacterCard, ContextBundle, PerceiveChannel, PerceivedEvent } from '@/types/character'
 import type { ObservedCue } from '@/types/exposure'
 import type { MemoryEntry } from '@/types/memory'
 import type { SceneSetup } from '@/types/scene'
@@ -13,10 +13,10 @@ export interface ContextBuildInput {
   /** 从「你」的内心外化出来的可见表现（不含你的真实想法） */
   pcCues?: ObservedCue[]
   /**
-   * 他**实际读到**的内心 —— 由独立的「读取判定」阶段给出。
-   * 注意这里传进来的是判定结果，不是对方的原始内心。
+   * 他**额外**察觉到的东西 —— 由独立的「感知判定」阶段给出。
+   * 明面上的台词动作不在这里（那些直接给他），别人的原始内心也不在这里。
    */
-  mindRead?: { text: string; certainty: number }[]
+  extras?: { text: string; channel: PerceiveChannel; certainty: number }[]
   /** 这个角色以前轮次留下的记忆（按时间顺序） */
   memories?: MemoryEntry[]
 }
@@ -38,7 +38,7 @@ function mentionsSelf(segment: Segment, name: string): boolean {
  * 5. **感知按时间顺序排列** —— 用户是按顺序写的，角色也该按顺序经历
  */
 export function buildContextBundle(input: ContextBuildInput): ContextBundle {
-  const { card, segments, cards, pcName, sceneSetup, memories = [], pcCues = [], mindRead = [] } = input
+  const { card, segments, cards, pcName, sceneSetup, memories = [], pcCues = [], extras = [] } = input
   void cards
 
   const presentNames = [pcName, ...sceneSetup.present.map((item) => item.name)].filter(
@@ -161,7 +161,7 @@ export function buildContextBundle(input: ContextBuildInput): ContextBundle {
     seen,
     ownThoughts,
     ownPriorLines,
-    mindRead,
+    extras,
     pcCues,
     knownFacts,
     doesNotKnow: [...doesNotKnow],
