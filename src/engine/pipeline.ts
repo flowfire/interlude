@@ -125,12 +125,14 @@ async function executeStep(ctx: PipelineContext, step: Step): Promise<Step> {
 
     case 'scene': {
       const doc = findUpstreamByStage(ctx.steps, step.id, 'normalize')?.output as NormalizedDoc | undefined
-      const segments = (findUpstreamByStage(ctx.steps, step.id, 'segment')?.output as SegmentStageOutput | undefined)?.segments ?? []
+      const segmentOutput = findUpstreamByStage(ctx.steps, step.id, 'segment')?.output as SegmentStageOutput | undefined
+      const segments = segmentOutput?.segments ?? []
       if (!doc) throw new Error('缺少上游的规范化结果')
 
       const { output, result } = await runSceneStage(ctx.client, {
         doc,
         segments,
+        entities: segmentOutput?.entities ?? [],
         project: ctx.project,
         previousScene: findPreviousScene(ctx),
         rating: ctx.round.rating ?? 'general',
@@ -159,7 +161,11 @@ async function executeStep(ctx: PipelineContext, step: Step): Promise<Step> {
       if (!doc) throw new Error('缺少上游的规范化结果')
       if (!segments.length) throw new Error('上游拆解没有产出任何片段')
 
-      const present = (sceneSetup?.present ?? []).filter((item) => item.active)
+      // 只让「需要单独反应」的人建卡；但如果模型把所有人都标成了「只是背景」，
+      // 至少别一个人都不剩 —— 那会导致整轮被判定为「不需要交互」
+      const allPresent = sceneSetup?.present ?? []
+      const activePresent = allPresent.filter((item) => item.active)
+      const present = activePresent.length ? activePresent : allPresent
       // 跨轮角色库：以前出场过的角色直接复用他的卡，保持人设一致，也省一次调用
       // 但限定在当前对话内，并排除本轮自己和之前的产出（重跑时要能重新生成）
       const library = getCastLibrary(ctx.steps, {

@@ -8,7 +8,7 @@ import {
   type ScenePresent,
   type SceneSetup,
 } from '@/types/scene'
-import type { Segment } from '@/types/segment'
+import type { EntityMention, Segment } from '@/types/segment'
 import type { ContentRating } from '@/types/step'
 import type { ProjectSettings } from '@/types/settings'
 import { buildSceneMessages } from '../prompts/scene'
@@ -17,6 +17,8 @@ import type { NormalizedDoc } from './s0-normalize'
 export interface SceneStageInput {
   doc: NormalizedDoc
   segments: Segment[]
+  /** 拆解阶段标出来的实体 —— 概要式输入常常只在这里留下人名 */
+  entities?: EntityMention[]
   project: ProjectSettings
   previousScene?: { place: string; situation: string; summary: string } | null
   /** 这一轮的分级 */
@@ -54,15 +56,37 @@ function toStringArray(input: unknown): string[] {
   return []
 }
 
-/** 从拆解结果里用规则抓人名，作为「绝不允许漏掉在场者」的保险 */
-export function extractNamesFromSegments(segments: Segment[], pcName: string): string[] {
+/**
+ * 从拆解结果里用规则抓人名，作为「绝不允许漏掉在场者」的保险。
+ *
+ * 三个来源都要看：
+ * - 说话人
+ * - 动作主体
+ * - 拆解阶段标出来的实体表 —— 「我遇到了金刚狼」这种概要式输入
+ *   往往既没有说话人也没有动作主体，名字只留在实体表里
+ */
+export function extractNamesFromSegments(
+  segments: Segment[],
+  pcName: string,
+  entities: EntityMention[] = [],
+): string[] {
   const names = new Set<string>()
+
   for (const segment of segments) {
     if (segment.speaker && segment.speaker !== pcName) names.add(segment.speaker.trim())
     for (const subject of segment.subject ?? []) {
       if (subject && subject !== pcName) names.add(subject.trim())
     }
   }
+
+  for (const entity of entities) {
+    if (entity.kind !== 'person') continue
+    if (entity.mention === pcName) continue
+    // 「只是被提到」的人不进在场名单，否则会把不在场的人硬拉进来
+    if (entity.role === 'mentioned') continue
+    names.add(entity.mention.trim())
+  }
+
   return [...names].filter((name) => {
     if (!name || name.length > 8) return false
     return /^[\u4e00-\u9fa5A-Za-z·\s]+$/.test(name)
@@ -77,12 +101,17 @@ export function ensurePresentHasActors(
   present: ScenePresent[],
   segments: Segment[],
   pcName: string,
+  entities: EntityMention[] = [],
 ): ScenePresent[] {
   const hasActor = present.some((item) => item.active && item.kind === 'character' && item.name !== pcName)
   if (hasActor) return present
 
-  const merged = [...present.filter((item) => item.name !== pcName)]
-  for (const name of extractNamesFromSegments(segments, pcName)) {
+  // 已经列出来但被标成「只是背景」的，先把他们提升为参与者
+  const merged = present
+    .filter((item) => item.name !== pcName)
+    .map((item) => (item.kind === 'character' ? { ...item, active: true } : item))
+
+  for (const name of extractNamesFromSegments(segments, pcName, entities)) {
     const existing = merged.find((item) => item.name === name)
     if (existing) {
       existing.active = true
@@ -153,6 +182,7 @@ export function buildSceneFromRules(
   segments: Segment[],
   project: ProjectSettings,
   fallbackReason: string,
+  entities: EntityMention[] = [],
 ): SceneSetup {
   const opening = segments
     .filter((segment) => ['scene', 'ambient', 'narration'].includes(segment.kind))
@@ -166,7 +196,7 @@ export function buildSceneFromRules(
       text: segment.text,
     }))
 
-  const present: ScenePresent[] = extractNamesFromSegments(segments, project.pcName).map((name) => ({
+  const present: ScenePresent[] = extractNamesFromSegments(segments, project.pcName, entities).map((name) => ({
     name,
     role: '（从素材推断）',
     brief: '（素材里没有更多描写）',
@@ -195,7 +225,7 @@ export async function runSceneStage(
   client: LlmClient,
   input: SceneStageInput,
 ): Promise<{ output: SceneSetup; result: ChatResult | null }> {
-  const { doc, segments, project, previousScene, rating = 'general' } = input
+  const { doc, segments, project, previousScene, rating = 'general', entities = [] } = input
 
   const messages = buildSceneMessages({
     doc,
@@ -217,7 +247,7 @@ export async function runSceneStage(
     })
 
     const normalized = normalizeSceneSetup(data, project.pcName)
-    const present = ensurePresentHasActors(normalized.present, segments, project.pcName)
+    const present = ensurePresentHasActors(normalized.present, segments, project.pcName, entities)
 
     return {
       output: { ...normalized, present, usedModel: true },
@@ -225,7 +255,13 @@ export async function runSceneStage(
     }
   } catch (error) {
     return {
-      output: buildSceneFromRules(doc, segments, project, error instanceof Error ? error.message : String(error)),
+      output: buildSceneFromRules(
+        doc,
+        segments,
+        project,
+        error instanceof Error ? error.message : String(error),
+        entities,
+      ),
       result: null,
     }
   }
