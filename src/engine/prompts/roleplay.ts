@@ -199,6 +199,8 @@ function renderCurrentRound(bundle: ContextBundle): string {
       time: bundle.scene.time,
       place: bundle.scene.place,
       atmosphere: bundle.scene.atmosphere,
+      interludeSummary: bundle.interlude?.summary,
+      interludeMine: bundle.interlude?.mine,
       pressure: bundle.pressure,
       escalation: bundle.escalation,
       pcProfile: bundle.counterpartProfile,

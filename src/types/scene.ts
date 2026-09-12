@@ -27,6 +27,19 @@ export interface SceneBeat {
  * 它的职责是把「（我遇到了金刚狼）」这种概要，展开成一个可以立刻开演的场面：
  * 什么地方、什么时候、什么氛围、此刻正在发生什么、有哪些人在场。
  */
+/**
+ * 时间跳跃期间发生了什么。
+ *
+ * 用户写「三天后」时，这三天是空白的 —— 而角色是活人，他们在这三天里
+ * 各自过了日子。补全就是把这层空白填上：主角回来时，世界不是原地冻结的。
+ */
+export interface SceneInterlude {
+  /** 这段时间里场面/世界上发生的事（所有人都知道） */
+  summary: string
+  /** 每个人各自经历了什么（各自只看到自己那条） */
+  each: { who: string; what: string }[]
+}
+
 export interface SceneSetup {
   inputMode: SceneInputMode
   /** 绝对或相对时间描述，例如「三天后的傍晚」 */
@@ -44,6 +57,8 @@ export interface SceneSetup {
   establishedBeats: SceneBeat[]
   /** 本轮的时间跳跃描述（如果有） */
   timeSkip?: string
+  /** 时间跳跃期间发生了什么（只有真的跳了、且开关打开时才有） */
+  interlude?: SceneInterlude
   usedModel: boolean
   fallbackReason?: string
 }
@@ -67,6 +82,7 @@ export const RawSceneSetupSchema = z.object({
   situation: looseText,
   pcProfile: looseText,
   timeSkip: looseText,
+  interlude: z.union([z.record(z.string(), z.unknown()), z.null()]).optional(),
   present: looseArray,
   establishedBeats: looseArray,
 })

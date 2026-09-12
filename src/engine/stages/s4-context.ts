@@ -229,6 +229,12 @@ export function buildContextBundle(input: ContextBuildInput): ContextBundle {
     recap,
     history,
     nudge,
+    interlude: sceneSetup.interlude
+      ? {
+          summary: sceneSetup.interlude.summary,
+          mine: sceneSetup.interlude.each.find((item) => item.who === card.name)?.what,
+        }
+      : undefined,
     pressure: situation?.pressure ?? '',
     escalation: situation?.escalation ?? '',
     scene: {

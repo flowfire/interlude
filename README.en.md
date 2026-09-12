@@ -112,6 +112,17 @@ Character cards are reused across rounds as well. You do not have to worry about
 
 ---
 
+## A time skip is not a blank
+
+Write "three days later" and those three days are not frozen for everyone else. The engine fills them in:
+
+- **The layer everyone can see**: what became of the place (the teahouse stayed open; the table by the back wall just stayed empty)
+- **One line per person**: what they did during those three days and how their state changed. Each character only sees their own line
+
+That fill-in travels with the characters into the next round — when you come back, they are not the people from three days ago, they are people who each lived three days. You can turn it off in settings.
+
+---
+
 ## Named characters do not get generic personalities
 
 Write `(I run into Wolverine)` and the engine will:
@@ -239,7 +250,7 @@ Edit "B's context" and only what comes after B is recomputed; A is reused as-is.
 
 ## What is not here yet
 
-- **A real clock**: "three days later" is currently just text that scene building reads. It does not advance a clock or fill in what happened during those three days.
+- **A real clock**: time advances through what you write ("three days later"); the engine keeps no calendar of its own. What happened during the gap does get filled in, but that is a narrative fill, not a time system.
 - **Interruption and talking over each other**: characters react one at a time in the order the director set. There is no genuine simultaneity yet — nobody gets cut off mid-sentence.
 - **Per-observer misreading**: cues carry a readability number, but the engine does not yet compute what each individual character read it as.
 - **Lorebooks / regex / presets**: SillyTavern has all of these; Interlude does not, and does not intend to copy them wholesale.

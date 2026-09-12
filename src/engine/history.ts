@@ -47,6 +47,8 @@ function absentRound(index: number): HistoryRound {
     atmosphere: '',
     pressure: '',
     escalation: '',
+    interludeSummary: '',
+    interludeMine: '',
     pcProfile: '',
     presentNames: [],
     sceneLines: [],
@@ -83,6 +85,8 @@ function roundFromBundle(input: {
     time: bundle.scene.time,
     place: bundle.scene.place,
     atmosphere: bundle.scene.atmosphere,
+    interludeSummary: bundle.interlude?.summary ?? '',
+    interludeMine: bundle.interlude?.mine ?? '',
     pressure: bundle.pressure ?? '',
     escalation: bundle.escalation ?? '',
     pcProfile: bundle.counterpartProfile,
@@ -240,6 +244,8 @@ export function renderRoundBody(round: {
   time: string
   place: string
   atmosphere?: string
+  interludeSummary?: string
+  interludeMine?: string
   pressure?: string
   escalation?: string
   pcProfile?: string
@@ -251,6 +257,8 @@ export function renderRoundBody(round: {
   const where = [round.time, round.place].filter(Boolean).join(' · ')
   const parts: string[] = [`── 第 ${round.index} 轮${where ? ` · ${where}` : ''} ──`]
 
+  if (round.interludeSummary?.trim()) parts.push(`【这之前】${round.interludeSummary.trim()}`)
+  if (round.interludeMine?.trim()) parts.push(`【这段时间你在做什么】${round.interludeMine.trim()}`)
   if (round.atmosphere) parts.push(`【气氛】${round.atmosphere}`)
   if (round.pressure) parts.push(`【局面】${round.pressure}`)
   if (round.escalation) parts.push(`【如果没人动，接下去会发生什么】${round.escalation}`)

@@ -889,6 +889,17 @@ pre.code {
   color: #9fd0c9;
   font-style: italic;
 }
+.scene-interlude {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed rgba(94, 176, 168, 0.3);
+  color: #a8c4c0;
+  font-size: 12.5px;
+  line-height: 1.7;
+}
+.scene-interlude-each {
+  color: var(--text-faint);
+}
 .scene-pressure {
   margin-top: 6px;
   color: #e0c07a;

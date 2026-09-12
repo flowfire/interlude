@@ -185,6 +185,9 @@ export interface HistoryRound {
   /** 当时那个「局面」的判断 */
   pressure: string
   escalation: string
+  /** 那一轮之前的空白期（时间跳跃补全） */
+  interludeSummary: string
+  interludeMine: string
   /** 当时「你对面的人」呈现出来的样子 */
   pcProfile: string
   /** 当时在场的人 */
@@ -229,6 +232,13 @@ export interface ContextBundle {
    * 到「做了什么」为止 —— 怎么说、什么表情、什么节奏，仍然是这个角色自己的事。
    */
   nudge?: { push: string; act?: string }
+  /**
+   * 时间跳跃期间发生了什么。
+   *
+   * `summary` 是所有人都知道的那层；`mine` 只属于他自己。
+   * 主角不在场的空白不是冻结的 —— 别人照样在过日子。
+   */
+  interlude?: { summary: string; mine?: string }
   /** 这一轮的局面：正在逼近什么（世界自己的判断，所有角色都看得到） */
   pressure: string
   /** 如果没有任何人干预，接下去会发生什么 */

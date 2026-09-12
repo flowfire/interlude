@@ -5,6 +5,7 @@ import {
   type RawSceneSetup,
   type SceneBeat,
   type SceneInputMode,
+  type SceneInterlude,
   type ScenePresent,
   type SceneSetup,
 } from '@/types/scene'
@@ -30,6 +31,8 @@ export interface SceneStageInput {
   knownCast?: KnownCastEntry[]
   /** 前面已经演过的剧情 */
   previousRecap?: string
+  /** 时间跳跃时是否自动补全这段时间 */
+  interludeFill?: boolean
 }
 
 const INPUT_MODES: SceneInputMode[] = ['dialogue', 'outline', 'mixed']
@@ -214,7 +217,27 @@ export function normalizeSceneSetup(raw: RawSceneSetup, pcName: string): Omit<Sc
     present,
     establishedBeats,
     timeSkip: raw.timeSkip ? String(raw.timeSkip).trim() : undefined,
+    interlude: parseInterlude(raw.interlude),
   }
+}
+
+/** 时间跳跃期间的补全：共享的一段 + 每个人各自的一条 */
+function parseInterlude(raw: unknown): SceneInterlude | undefined {
+  const record = asRecord(raw)
+  if (!record) return undefined
+
+  const summary = asText(record.summary).trim()
+  const each: { who: string; what: string }[] = []
+  for (const item of asArray(record.each)) {
+    const entry = asRecord(item)
+    const who = asText(entry?.who).trim()
+    const what = asText(entry?.what).trim()
+    if (!who || !what) continue
+    each.push({ who, what })
+  }
+
+  if (!summary && !each.length) return undefined
+  return { summary, each }
 }
 
 /** 模型不可用时的降级：素材写到哪算哪，不编造场面 */
@@ -304,7 +327,17 @@ export async function runSceneStage(
   client: LlmClient,
   input: SceneStageInput,
 ): Promise<{ output: SceneSetup; result: ChatResult | null }> {
-  const { doc, segments, project, previousScene, rating = 'general', entities = [], knownCast, previousRecap } = input
+  const {
+    doc,
+    segments,
+    project,
+    previousScene,
+    rating = 'general',
+    entities = [],
+    knownCast,
+    previousRecap,
+    interludeFill = project.interludeFill,
+  } = input
 
   const messages = buildSceneMessages({
     doc,
@@ -316,6 +349,7 @@ export async function runSceneStage(
     rating,
     knownCast,
     previousRecap,
+    interludeFill,
   })
 
   try {

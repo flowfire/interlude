@@ -305,6 +305,8 @@ describe('角色得有自己的驱动力', () => {
         atmosphere: '',
         pressure: '远处有狼嚎',
         escalation: '它们会顺着味道找过来',
+        interludeSummary: '',
+        interludeMine: '',
         pcProfile: '',
         presentNames: [],
         sceneLines: [],

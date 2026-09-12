@@ -57,6 +57,8 @@ function historyRound(index: number): HistoryRound {
     atmosphere: '雨刚停',
     pressure: `第 ${index} 轮的局势`,
     escalation: `第 ${index} 轮的下一步`,
+    interludeSummary: '',
+    interludeMine: '',
     pcProfile: '站在门口没动',
     presentNames: ['我', '林砚', '阿七'],
     sceneLines: [`第 ${index} 轮的环境`],

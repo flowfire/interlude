@@ -18,6 +18,8 @@ export interface ScenePromptInput {
   knownCast?: KnownCastEntry[]
   /** 前面已经演过的剧情 —— 判断「前面那个人」是谁的主要依据 */
   previousRecap?: string
+  /** 时间跳跃时是否自动补全这段时间 */
+  interludeFill?: boolean
 }
 
 const SYSTEM = `你是「幕间」的场景构建器。用户会给你一段剧情素材以及它的拆解结果，你要把这段素材变成**一个可以立刻开演的场面**。
@@ -40,6 +42,8 @@ const SYSTEM = `你是「幕间」的场景构建器。用户会给你一段剧�
 - 补齐时间、地点、氛围
 - opening 可以写得更完整，但必须与素材一致，不要凭空加戏
 
+${'__INTERLUDE__'}
+
 【硬性规则】
 1. 用户明确提到的人一律进 present，哪怕素材里只是「遇到了」「看见」「走向」。
    绝对不要因为"没有台词"就判定他不出场。
@@ -58,6 +62,12 @@ const SYSTEM = `你是「幕间」的场景构建器。用户会给你一段剧�
 【输出格式】
 {
   "inputMode": "outline",
+  "interlude": {
+    "summary": "这段时间里场面/世界上发生了什么（一句话，所有人都知道）",
+    "each": [
+      { "who": "在场某个人的名字", "what": "他在这段时间里做了什么、状态变成什么样" }
+    ]
+  },
   "time": "三天后的傍晚",
   "place": "城郊废弃的汽车旅馆门口",
   "atmosphere": "雨刚停，路灯坏了一半",
@@ -79,7 +89,18 @@ const SYSTEM = `你是「幕间」的场景构建器。用户会给你一段剧�
 只输出这一个 JSON 对象，不要解释文字，不要 Markdown 围栏。`
 
 export function buildSceneMessages(input: ScenePromptInput): ChatMessage[] {
-  const { doc, segments, pcName, pcPersona, storyTitle, previousScene, rating = 'general', knownCast, previousRecap } = input
+  const {
+    doc,
+    segments,
+    pcName,
+    pcPersona,
+    storyTitle,
+    previousScene,
+    rating = 'general',
+    knownCast,
+    previousRecap,
+    interludeFill = true,
+  } = input
 
   const segmentLines = segments
     .map((segment) => {
@@ -141,8 +162,21 @@ ${ratingLine}
 ${hookGuide}
 请判断用户写的是具体演出还是概要，并输出这一轮的场面设定。`
 
+  const interludeGuide = interludeFill
+    ? `【如果素材里有时间跳跃：把空白补上】
+素材里可能出现「三天后」「第二天早上」「一个月过去了」这类说法。
+主角不在场的这段时间**不是冻结的** —— 别人照样在过日子。
+如果你判断这一轮确实有时间跳跃，就在 interlude 里补上这段时间：
+· summary：一句话说清这段时间里场面变成什么样了（所有人都看得见的那部分）
+· each：这段时间里在场的每个人各自做了什么。一个人一条，只写他这条
+  别人看不见的部分也可以写（他这段时间是自己过的）。
+· 补全要**顺着已有的设定和关系**走，不要凭空加新角色、新事件、新矛盾 ——
+  你填的是"他们照常过日子"的那一层，不是新开一条剧情线。
+· 如果这一轮素材里没有时间跳跃，interlude 留空。`
+    : `这一轮不要补全任何时间跳跃期间的事，interlude 留空。`
+
   return [
-    { role: 'system', content: SYSTEM.replaceAll('__PC_NAME__', pcName) },
+    { role: 'system', content: SYSTEM.replaceAll('__PC_NAME__', pcName).replaceAll('__INTERLUDE__', interludeGuide) },
     { role: 'user', content: user },
   ]
 }

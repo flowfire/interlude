@@ -119,6 +119,17 @@ function RoundBlock({ round, isLast, demo }: { round: Round; isLast: boolean; de
 
           {setup.situation ? <div className="scene-situation">▸ {setup.situation}</div> : null}
 
+          {setup.interlude ? (
+            <div className="scene-interlude">
+              {setup.interlude.summary ? <div>〔这之前〕{setup.interlude.summary}</div> : null}
+              {setup.interlude.each.map((item) => (
+                <div key={item.who} className="scene-interlude-each">
+                  {item.who}：{item.what}
+                </div>
+              ))}
+            </div>
+          ) : null}
+
           {situationData?.state.pressure ? (
             <div className="scene-pressure">
               <span className="hint">局面：</span>
