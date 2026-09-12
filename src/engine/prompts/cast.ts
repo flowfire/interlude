@@ -1,8 +1,10 @@
 import type { ChatMessage } from '@/types/llm'
+import type { KnownCastEntry } from '@/types/character'
 import type { NormalizedDoc } from '../stages/s0-normalize'
 import type { WikiLookup } from '../research/wiki'
 import type { Segment } from '@/types/segment'
 import type { ScenePresent } from '@/types/scene'
+import { renderKnownCast } from './segmenter'
 
 export interface CastPromptInput {
   doc: NormalizedDoc
@@ -12,6 +14,8 @@ export interface CastPromptInput {
   present: ScenePresent[]
   /** 名字 → 查到的维基资料 */
   research: Record<string, WikiLookup>
+  /** 这个故事里已经出场过的人 */
+  knownCast?: KnownCastEntry[]
 }
 
 const SYSTEM = `你是「幕间」的角色卡生成器。场景构建器已经确定了这一轮有哪些人在场，你要为名单上的每一个人写一份角色卡。
@@ -89,7 +93,7 @@ tier 取值：major（主要角色）、minor（次要）、extra（只有一两
 只输出这一个 JSON 对象，不要任何解释文字、不要 Markdown 围栏。`
 
 export function buildCastMessages(input: CastPromptInput): ChatMessage[] {
-  const { doc, segments, pcName, storyTitle, present, research } = input
+  const { doc, segments, pcName, storyTitle, present, research, knownCast } = input
 
   const presentList = present
     .map((item) => {
@@ -115,6 +119,8 @@ export function buildCastMessages(input: CastPromptInput): ChatMessage[] {
   const user = `故事：《${storyTitle}》
 视角角色（用户扮演）：「${pcName}」
 
+${renderKnownCast(knownCast)}
+
 【必须建卡的名单】
 ${presentList || '（名单是空的，这时请从素材里自己判断有哪些人在场）'}
 
@@ -124,7 +130,9 @@ ${doc.text}
 【拆解结果】
 ${segmentLines}
 
-请严格按名单建卡。有参考资料的就依据资料，没有资料但你认识的就把卡写具体，完全不认识的只按素材写薄卡。`
+请严格按名单建卡。有参考资料的就依据资料，没有资料但你认识的就把卡写具体，完全不认识的只按素材写薄卡。
+如果名单里的某个称呼其实是上面「已经出场过的人」之一（比如「前面的人」就是金刚狼），
+把 name 写成那个已有的名字，不要新建一张卡。`
 
   return [
     { role: 'system', content: SYSTEM.replaceAll('__PC_NAME__', pcName) },

@@ -1,7 +1,9 @@
 import type { ChatMessage } from '@/types/llm'
+import type { KnownCastEntry } from '@/types/character'
 import type { NormalizedDoc } from '../stages/s0-normalize'
 import type { Segment } from '@/types/segment'
 import type { ContentRating } from '@/types/step'
+import { renderKnownCast } from './segmenter'
 
 export interface ScenePromptInput {
   doc: NormalizedDoc
@@ -12,6 +14,8 @@ export interface ScenePromptInput {
   previousScene?: { place: string; situation: string; summary: string } | null
   /** 这一轮的分级，由用户在发送时单独选择 */
   rating?: ContentRating
+  /** 这个故事里已经出场过的人，用来解析指代词 */
+  knownCast?: KnownCastEntry[]
 }
 
 const SYSTEM = `你是「幕间」的场景构建器。用户会给你一段剧情素材以及它的拆解结果，你要把这段素材变成**一个可以立刻开演的场面**。
@@ -73,7 +77,7 @@ const SYSTEM = `你是「幕间」的场景构建器。用户会给你一段剧�
 只输出这一个 JSON 对象，不要解释文字，不要 Markdown 围栏。`
 
 export function buildSceneMessages(input: ScenePromptInput): ChatMessage[] {
-  const { doc, segments, pcName, pcPersona, storyTitle, previousScene, rating = 'general' } = input
+  const { doc, segments, pcName, pcPersona, storyTitle, previousScene, rating = 'general', knownCast } = input
 
   const segmentLines = segments
     .map((segment) => {
@@ -106,12 +110,19 @@ ${personaLine}
 
 ${previous}
 
+${renderKnownCast(knownCast)}
+
 【原文】
 ${doc.text}
 
 【拆解结果】
 ${segmentLines}
 ${ratingLine}
+【关于指代词 —— 很容易出错的地方】
+素材里如果出现「前面那个人」「他」「那家伙」这类说法，先对照上面的「已经出场过的人」判断它指谁，
+然后在 present 里**写那个人的真名**。
+绝对不要把「前面的人」这种称呼当成一个新角色列进 present —— 那会凭空多出一个人设。
+
 请判断用户写的是具体演出还是概要，并输出这一轮的场面设定。`
 
   return [

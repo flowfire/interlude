@@ -10,6 +10,7 @@ import {
   type RawSegmenterResult,
 } from '@/types/segment'
 import type { ProjectSettings } from '@/types/settings'
+import type { KnownCastEntry } from '@/types/character'
 import { asArray, asRecord, asText, asTextArray } from '@/utils/record'
 import { clamp } from '@/utils/time'
 import { buildSegmenterMessages } from '../prompts/segmenter'
@@ -233,6 +234,8 @@ export function buildSegmentsFromRules(doc: NormalizedDoc, pcName: string): Norm
 export interface SegmentStageInput {
   doc: NormalizedDoc
   project: ProjectSettings
+  /** 这个故事里已经出场过的人，用来解析「他」「前面那个人」这类指代 */
+  knownCast?: KnownCastEntry[]
 }
 
 export interface SegmentStageOutput extends SegmenterResult {
@@ -252,6 +255,7 @@ export async function runSegmentStage(
     pcPersona: project.pcPersona,
     storyTitle: project.storyTitle,
     freedomLevel: project.freedomLevel,
+    knownCast: input.knownCast,
   })
 
   try {

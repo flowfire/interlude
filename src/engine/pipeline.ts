@@ -11,8 +11,8 @@ import { buildContextBundle } from './stages/s4-context'
 import { runRoleplayStage } from './stages/s5-roleplay'
 import { composeScene } from './stages/s7-compose'
 import { buildRoundMemories, describeWhere, type MemoryBuildInput } from './stages/s8-memory'
-import { getCastLibrary, getMemories, recallFor } from './memory/library'
-import type { ContextBundle, RoleplayOutput } from '@/types/character'
+import { getCastLibrary, getMemories, recallFor, toKnownCast } from './memory/library'
+import type { ContextBundle, KnownCastEntry, RoleplayOutput } from '@/types/character'
 import type { ObservedCue, PcExposure } from '@/types/exposure'
 import type { SceneSetup } from '@/types/scene'
 import type { Round, Step, StepStage } from '@/types/step'
@@ -89,6 +89,22 @@ function findPreviousScene(ctx: PipelineContext): { place: string; situation: st
   }
 }
 
+/**
+ * 当前对话里已经出场过的人。
+ *
+ * 拆解、场景构建、阵容解析三个阶段都要用它来消歧 ——
+ * 用户写「我跟着前面那个人」时，「前面的人」指的是上一轮的金刚狼，
+ * 不该被当成一个新人设。
+ */
+function knownCastOf(ctx: PipelineContext): KnownCastEntry[] {
+  return toKnownCast(
+    getCastLibrary(ctx.steps, {
+      roundIds: sessionRoundIds(ctx),
+      excludeRoundId: ctx.round.id,
+    }),
+  )
+}
+
 function emptyCost() {
   return { calls: 0, tokensIn: 0, tokensOut: 0, ms: 0 }
 }
@@ -119,7 +135,11 @@ async function executeStep(ctx: PipelineContext, step: Step): Promise<Step> {
     case 'segment': {
       const upstream = findUpstreamByStage(ctx.steps, step.id, 'normalize')
       const doc = (upstream?.output as NormalizedDoc | undefined) ?? normalizeInput(ctx.round.userInput)
-      const { output, result } = await runSegmentStage(ctx.client, { doc, project: ctx.project })
+      const { output, result } = await runSegmentStage(ctx.client, {
+        doc,
+        project: ctx.project,
+        knownCast: knownCastOf(ctx),
+      })
       return done(step, output, { model: result?.model, cost: costOf(result, startedAt) })
     }
 
@@ -136,6 +156,7 @@ async function executeStep(ctx: PipelineContext, step: Step): Promise<Step> {
         project: ctx.project,
         previousScene: findPreviousScene(ctx),
         rating: ctx.round.rating ?? 'general',
+        knownCast: knownCastOf(ctx),
       })
       return done(step, output, { model: result?.model, cost: costOf(result, startedAt) })
     }
@@ -179,6 +200,7 @@ async function executeStep(ctx: PipelineContext, step: Step): Promise<Step> {
         present,
         library,
         enableResearch: ctx.project.researchEnabled,
+        knownCast: toKnownCast(library),
       })
       return done(step, output, { model: result?.model, cost: costOf(result, startedAt) })
     }

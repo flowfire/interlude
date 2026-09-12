@@ -1,6 +1,6 @@
 import type { CastStageOutput } from '@/engine/stages/s3-cast'
 import type { StepIndex } from '@/engine/graph/stepGraph'
-import type { CharacterCard } from '@/types/character'
+import type { CharacterCard, KnownCastEntry } from '@/types/character'
 import type { MemoryEntry } from '@/types/memory'
 
 /**
@@ -91,4 +91,29 @@ export function findInLibrary(
     if (card.aliases.includes(trimmed)) return card
   }
   return undefined
+}
+
+/** 压成一份给提示词用的「已知角色」名单 */
+export function toKnownCast(library: Record<string, CharacterCard>): KnownCastEntry[] {
+  return Object.values(library).map((card) => ({
+    name: card.name,
+    aliases: card.aliases,
+    brief: card.persona.summary,
+  }))
+}
+
+/**
+ * 把一个称呼解析到已知角色。
+ *
+ * 用户写「我跟着前面那个人」时，「前面的人」这一轮里可能被模型当成了一个新称呼；
+ * 如果它正好命中已有角色的名字或别名，就归并回去，不要凭空多出一个人设。
+ */
+export function resolveKnownName(name: string, known: KnownCastEntry[]): KnownCastEntry | null {
+  const trimmed = name.trim()
+  if (!trimmed) return null
+  for (const entry of known) {
+    if (entry.name === trimmed) return entry
+    if (entry.aliases.includes(trimmed)) return entry
+  }
+  return null
 }

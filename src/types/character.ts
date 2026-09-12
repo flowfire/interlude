@@ -63,6 +63,13 @@ export interface CharacterCard {
   evidence: string
 }
 
+/** 已经出场过的角色，用来解析「他」「前面那个人」这类指代 */
+export interface KnownCastEntry {
+  name: string
+  aliases: string[]
+  brief: string
+}
+
 /** 角色感知到的一件事，按时间顺序排列 */
 export interface PerceivedEvent {
   kind: 'speech' | 'action' | 'cue'

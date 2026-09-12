@@ -19,6 +19,8 @@ export interface ComposerState {
 export const DEFAULT_COMPOSER_STATE: ComposerState = { rating: 'general' }
 
 function readJson<T>(key: string): Partial<T> | null {
+  // 服务端渲染 / 测试环境里没有 localStorage
+  if (typeof localStorage === 'undefined') return null
   try {
     const raw = localStorage.getItem(key)
     if (!raw) return null
@@ -31,6 +33,7 @@ function readJson<T>(key: string): Partial<T> | null {
 }
 
 function writeJson(key: string, value: unknown): void {
+  if (typeof localStorage === 'undefined') return
   try {
     localStorage.setItem(key, JSON.stringify(value))
   } catch (error) {

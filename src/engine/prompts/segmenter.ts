@@ -1,4 +1,5 @@
 import type { ChatMessage } from '@/types/llm'
+import type { KnownCastEntry } from '@/types/character'
 import { SEGMENT_KIND_HINT, SEGMENT_KIND_LABEL } from '@/types/segment'
 import type { NormalizedDoc } from '../stages/s0-normalize'
 
@@ -12,6 +13,19 @@ export interface SegmenterPromptInput {
   pcPersona: string
   storyTitle: string
   freedomLevel: 'low' | 'medium' | 'high'
+  /** 这个故事里已经出场过的人，用来解析指代词 */
+  knownCast?: KnownCastEntry[]
+}
+
+/** 渲染「已经出场过的人」名单，给三个需要消歧的阶段共用 */
+export function renderKnownCast(knownCast: KnownCastEntry[] | undefined): string {
+  if (!knownCast?.length) return '【已经出场过的人】\n（这是第一轮，还没有已知角色）'
+  return `【已经出场过的人】\n${knownCast
+    .map((entry) => {
+      const alias = entry.aliases.length ? `（也叫 ${entry.aliases.join('、')}）` : ''
+      return `- ${entry.name}${alias}：${entry.brief || '（没有更多说明）'}`
+    })
+    .join('\n')}`
 }
 
 const SYSTEM = `你是「幕间」的拆解器。你唯一的工作是把用户给的一段剧情素材，拆成带类型标签的最小片段，并标出涉及的实体与时间标记。
@@ -40,6 +54,9 @@ ${KIND_TABLE}
 12. **不要因为没有引号就判成心理或旁白**。视角角色明显说出口的话（带省略号、语气词、
     被停顿切开、有「我说」「我开口」之类的提示）一律判成 speech。
     心理活动只包括三种：括号里的情绪状态、明确的「心想/暗想/心中」，以及真正没说出口的念头。
+13. **素材里出现「他」「那个人」「前面的人」「那家伙」这类指代时**，先结合下面给出的
+    【已经出场过的人】判断它指的是谁，然后**直接写那个人的名字**。
+    不要把指代词照抄成 speaker 或 subject —— 那会凭空多出一个人设。
 
 【输出格式】
 {
@@ -70,7 +87,7 @@ timeMarkers 的 kind 取值：absolute（绝对时间）、relative（相对时�
 visibility：只有 inner 用 "private"，其余用 "public"。`
 
 export function buildSegmenterMessages(input: SegmenterPromptInput): ChatMessage[] {
-  const { doc, pcName, pcPersona, storyTitle, freedomLevel } = input
+  const { doc, pcName, pcPersona, storyTitle, freedomLevel, knownCast } = input
 
   const blockLines = doc.blocks
     .map((block) => {
@@ -90,6 +107,8 @@ export function buildSegmenterMessages(input: SegmenterPromptInput): ChatMessage
 
 【用户填写的自我人设】
 ${pcPersona.trim() || '（用户没有填写，请从素材里推断）'}
+
+${renderKnownCast(knownCast)}
 
 演绎自由度：${freedomLevel}（只影响后续环节，不影响你的拆解）
 

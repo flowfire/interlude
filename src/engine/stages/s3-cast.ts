@@ -7,6 +7,7 @@ import {
   type CardSource,
   type CastTier,
   type CharacterCard,
+  type KnownCastEntry,
   type RawCastResult,
 } from '@/types/character'
 import type { ScenePresent } from '@/types/scene'
@@ -26,6 +27,8 @@ export interface CastStageInput {
   library?: Record<string, CharacterCard>
   /** 是否联网给新角色查资料（维基百科，免 key） */
   enableResearch?: boolean
+  /** 这个故事里已经出场过的人，用来把「前面的人」这类称呼归并回去 */
+  knownCast?: KnownCastEntry[]
 }
 
 export interface CastStageOutput {
@@ -203,7 +206,7 @@ export async function runCastStage(
   client: LlmClient,
   input: CastStageInput,
 ): Promise<{ output: CastStageOutput; result: ChatResult | null }> {
-  const { doc, segments, project, present, library = {}, enableResearch = true } = input
+  const { doc, segments, project, present, library = {}, enableResearch = true, knownCast } = input
   const activePresent = present.filter((item) => item.name !== project.pcName)
 
   if (!activePresent.length) {
@@ -255,6 +258,7 @@ export async function runCastStage(
     storyTitle: project.storyTitle,
     present: fresh,
     research,
+    knownCast,
   })
 
   try {

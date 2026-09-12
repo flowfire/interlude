@@ -9,8 +9,10 @@ import {
   type SceneSetup,
 } from '@/types/scene'
 import type { EntityMention, Segment } from '@/types/segment'
+import type { KnownCastEntry } from '@/types/character'
 import type { ContentRating } from '@/types/step'
 import type { ProjectSettings } from '@/types/settings'
+import { resolveKnownName } from '@/engine/memory/library'
 import { asArray, asRecord, asText } from '@/utils/record'
 import { buildSceneMessages } from '../prompts/scene'
 import type { NormalizedDoc } from './s0-normalize'
@@ -24,6 +26,8 @@ export interface SceneStageInput {
   previousScene?: { place: string; situation: string; summary: string } | null
   /** 这一轮的分级 */
   rating?: ContentRating
+  /** 这个故事里已经出场过的人，用来解析「他」「前面那个人」这类指代 */
+  knownCast?: KnownCastEntry[]
 }
 
 const INPUT_MODES: SceneInputMode[] = ['dialogue', 'outline', 'mixed']
@@ -256,11 +260,49 @@ export function buildSceneFromRules(
   }
 }
 
+/** 「前面的人」「那家伙」这类指代，不该变成一个新角色 */
+const PRONOUN_RE = /(那个人|这个人|那人|这人|对方|前面的人|后面的人|身旁的人|身边的人|那个男人|那个女人|他|她)/
+
+function looksLikePronoun(name: string): boolean {
+  return name.length <= 6 && PRONOUN_RE.test(name)
+}
+
+/**
+ * 把「前面的人」这类称呼归并回已知角色。
+ *
+ * 主要靠提示词让模型自己解析；这里是代码侧的兜底：
+ * 1. 名字正好命中已知角色的名字或别名 → 归并
+ * 2. 明确是个指代，且这个故事里**只有一个**已知角色 → 那就多半是他
+ */
+export function mergeIntoKnownCast(present: ScenePresent[], knownCast: KnownCastEntry[]): ScenePresent[] {
+  if (!knownCast.length) return present
+
+  const out: ScenePresent[] = []
+  const taken = new Set<string>()
+
+  for (const item of present) {
+    const known = resolveKnownName(item.name, knownCast)
+    const fallback =
+      !known && looksLikePronoun(item.name) && knownCast.length === 1 ? knownCast[0] : null
+    const target = known ?? fallback
+
+    if (!target) {
+      out.push(item)
+      continue
+    }
+    if (taken.has(target.name) || out.some((existing) => existing.name === target.name)) continue
+    taken.add(target.name)
+    out.push({ ...item, name: target.name })
+  }
+
+  return out
+}
+
 export async function runSceneStage(
   client: LlmClient,
   input: SceneStageInput,
 ): Promise<{ output: SceneSetup; result: ChatResult | null }> {
-  const { doc, segments, project, previousScene, rating = 'general', entities = [] } = input
+  const { doc, segments, project, previousScene, rating = 'general', entities = [], knownCast } = input
 
   const messages = buildSceneMessages({
     doc,
@@ -270,6 +312,7 @@ export async function runSceneStage(
     storyTitle: project.storyTitle,
     previousScene,
     rating,
+    knownCast,
   })
 
   try {
@@ -282,7 +325,8 @@ export async function runSceneStage(
     })
 
     const normalized = normalizeSceneSetup(data, project.pcName)
-    const present = ensurePresentHasActors(normalized.present, segments, project.pcName, entities)
+    const withActors = ensurePresentHasActors(normalized.present, segments, project.pcName, entities)
+    const present = mergeIntoKnownCast(withActors, knownCast ?? [])
 
     return {
       output: { ...normalized, present, usedModel: true },
