@@ -21,7 +21,7 @@ const situation: SituationState = {
     { kind: 'scene', text: '最前面那两头伏低了身子' },
   ],
   pace: 'escalate',
-  nudges: [],
+  directions: [],
   order: ['金刚狼', '阿七'],
   usedModel: true,
 }
@@ -127,7 +127,7 @@ describe('局面推进：世界自己会往前走', () => {
     const pushed = buildRoleplayMessages({
       bundle: {
         ...bundle(),
-        nudge: {
+        direction: {
           push: '狼群已经贴到三步之内，站在你身后那个人会是第一个被扑倒的。',
           act: '他动了 —— 第一头狼刚扑上来就被他按进了泥里。',
         },
@@ -135,21 +135,21 @@ describe('局面推进：世界自己会往前走', () => {
       project: DEFAULT_PROJECT_SETTINGS,
     })[1].content
 
-    expect(pushed).toContain('【导演指令】')
+    expect(pushed).toContain('【导演给你的这一轮】')
     expect(pushed).toContain('狼群已经贴到三步之内')
     expect(pushed).toContain('第一头狼刚扑上来就被他按进了泥里')
     // 导演给的是剧情，怎么演是演员的事
     expect(pushed).toContain('怎么发生由你演')
 
     const plain = buildRoleplayMessages({ bundle: bundle(), project: DEFAULT_PROJECT_SETTINGS })[1].content
-    expect(plain).not.toContain('【导演指令】')
+    expect(plain).not.toContain('【导演给你的这一轮】')
   })
 
   it('导演可以明确指示「这一轮不要跟用户交互」', () => {
     const pushed = buildRoleplayMessages({
       bundle: {
         ...bundle(),
-        nudge: { push: '狼群已经贴到三步之内', act: '他把第一头狼按进了泥里', noInteract: true },
+        direction: { push: '狼群已经贴到三步之内', act: '他把第一头狼按进了泥里', noInteract: true },
       },
       project: DEFAULT_PROJECT_SETTINGS,
     })[1].content
@@ -160,10 +160,29 @@ describe('局面推进：世界自己会往前走', () => {
     expect(pushed).toContain('不能变成对他的交代')
 
     const without = buildRoleplayMessages({
-      bundle: { ...bundle(), nudge: { push: '狼群已经贴到三步之内' } },
+      bundle: { ...bundle(), direction: { push: '狼群已经贴到三步之内' } },
       project: DEFAULT_PROJECT_SETTINGS,
     })[1].content
     expect(without).not.toContain('这一轮不要跟用户交互')
+  })
+
+  it('导演每一轮都可以派任务，不是只有僵局才派', () => {
+    const [system] = buildSituationMessages({
+      storyTitle: '测试',
+      pcName: '我',
+      doc: normalizeInput('我推门进来。'),
+      segments: [],
+      sceneSetup: setup,
+      drives: [],
+    })
+
+    // 三层定位
+    expect(system.content).toContain('必须被采纳')
+    expect(system.content).toContain('不要把决定权让出去')
+    expect(system.content).toContain('他们只负责演')
+    // 派任务是本职，不限于僵局
+    expect(system.content).toContain('每一轮都可以派，不是只有僵局才派')
+    expect(system.content).toContain('用户扮演的角色永远不在名单里')
   })
 
   it('导演知道最近几轮的节奏，用来判断该不该收场', () => {
@@ -203,9 +222,11 @@ describe('局面推进：世界自己会往前走', () => {
       drives: [{ name: '金刚狼', drive: '把这孩子活着带出去', brief: '挡在前面' }],
     })
     expect(system.content).toContain('绝对不要碰用户扮演的角色')
-    expect(system.content).toContain('用户扮演的角色永远不在点名范围内')
-    expect(system.content).toContain('同样的权限')
-    expect(system.content).toContain('"nudges"')
+    expect(system.content).toContain('用户扮演的角色永远不在名单里')
+    // 导演和演员的权限关系写在新版三层定位里
+    expect(system.content).toContain('不要把决定权让出去')
+    expect(system.content).toContain('【directions —— 你给角色的任务】')
+    expect(system.content).toContain('每一轮都可以派，不是只有僵局才派')
   })
 
   it('用户主动交棒的那一轮，导演收到的是强刺激而不是空输入', () => {
@@ -223,7 +244,7 @@ describe('局面推进：世界自己会往前走', () => {
     expect(system.content).toContain('用户主动交棒的那一轮')
     expect(system.content).toContain('只有你知道')
     expect(system.content).toContain('必须给 act')
-    expect(system.content).toContain('允许你点多个人')
+    expect(system.content).toContain('多派几个人')
     expect(system.content).toContain('不要写成一段平静的过渡')
     // 交棒这件事只有导演知道：它不能被转达给角色
     expect(system.content).toContain('不能把这个信息转达给任何人')
@@ -256,7 +277,7 @@ describe('局面推进：世界自己会往前走', () => {
 
     expect(output.usedModel).toBe(false)
     expect(output.events).toEqual([])
-    expect(output.nudges).toEqual([])
+    expect(output.directions).toEqual([])
     expect(output.pressure).toBe('上一轮的压力')
   })
 })
@@ -344,10 +365,9 @@ describe('角色得有自己的驱动力', () => {
   it('不再强迫角色开口说话', () => {
     const [system] = buildRoleplayMessages({ bundle: bundle(), project: DEFAULT_PROJECT_SETTINGS })
     expect(system.content).not.toContain('至少要说一句话')
-    expect(system.content).toContain('你要回应的是局势，不是用户')
-    expect(system.content).toContain('世界也在自己往前走')
+    expect(system.content).toContain('不是编剧')
     // 角色该去处理真正要紧的事，而不是回头指挥用户
-    expect(system.content).toContain('你完全可以整轮不对用户说一个字')
+    expect(system.content).toContain('如果真正该做的是动手，那就动手')
   })
 
   it('往事里也带着当时的局面，回看得到', () => {

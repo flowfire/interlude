@@ -34,7 +34,8 @@ export interface ContextBuildInput {
   /** 这一轮的局面（世界自己往前走的那一步） */
   situation?: { pressure: string; escalation: string }
   /** 导演点到他头上的指令（只在僵局时出现） */
-  nudge?: { push: string; act?: string }
+  /** 导演交给他的这一轮任务 */
+  direction?: { push: string; act?: string; noInteract?: boolean }
   /**
    * 这一轮**在他之前**行动的人已经说了什么、做了什么。
    *
@@ -160,7 +161,7 @@ export function buildContextBundle(input: ContextBuildInput): ContextBundle {
     recap = '',
     history = [],
     situation,
-    nudge,
+    direction,
   } = input
   void cards
 
@@ -232,7 +233,7 @@ export function buildContextBundle(input: ContextBuildInput): ContextBundle {
     presentNames,
     recap,
     history,
-    nudge,
+    direction,
     interlude: sceneSetup.interlude
       ? {
           summary: sceneSetup.interlude.summary,

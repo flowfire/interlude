@@ -1,7 +1,7 @@
 import type { LlmClient } from '@/engine/llm/client'
 import type { ChatResult } from '@/types/llm'
 import type { CharacterCard } from '@/types/character'
-import type { SituationEvent, SituationNudge, SituationPace, SituationState } from '@/types/situation'
+import type { SituationEvent, SituationDirection, SituationPace, SituationState } from '@/types/situation'
 import { RawSituationSchema } from '@/types/situation'
 import type { SceneSetup } from '@/types/scene'
 import type { Segment } from '@/types/segment'
@@ -23,6 +23,7 @@ export interface SituationStageInput {
 }
 
 const MAX_EVENTS = 3
+const MAX_DIRECTIONS = 3
 
 const PACES: SituationPace[] = ['build', 'escalate', 'climax', 'settle']
 
@@ -49,7 +50,7 @@ function normalizeOrder(raw: unknown, cards: CharacterCard[]): string[] {
   return out
 }
 
-function normalizeNudges(raw: unknown, cards: CharacterCard[], pcName: string, idle = false): SituationNudge[] {
+function normalizeDirections(raw: unknown, cards: CharacterCard[], pcName: string): SituationDirection[] {
   const byName = new Map<string, string>()
   for (const card of cards) {
     if (card.name === pcName) continue
@@ -57,18 +58,20 @@ function normalizeNudges(raw: unknown, cards: CharacterCard[], pcName: string, i
     for (const alias of card.aliases ?? []) byName.set(alias, card.name)
   }
 
-  const out: SituationNudge[] = []
+  const out: SituationDirection[] = []
   for (const item of asArray(raw)) {
     const record = asRecord(item)
-    const push = asText(record?.push).trim()
     const who = byName.get(asText(record?.who).trim())
-    if (!who || !push || out.some((entry) => entry.who === who)) continue
+    if (!who || out.some((entry) => entry.who === who)) continue
+    const push = asText(record?.push).trim()
     const act = asText(record?.act).trim()
     const noInteract =
       record?.noInteract === true || asText(record?.noInteract).toLowerCase() === 'true'
+    // push 和 act 至少要有一样 —— 只有名字的任务是空任务
+    if (!push && !act && !noInteract) continue
     out.push({ who, push, act: act || undefined, noInteract: noInteract || undefined })
-    // 交棒轮里用户不推，导演可以多点几个人把这一轮撑起来
-    if (out.length >= (idle ? 3 : 2)) break
+    // 导演每一轮都可以派人，最多三个：不要把人全点一遍
+    if (out.length >= MAX_DIRECTIONS) break
   }
   return out
 }
@@ -136,7 +139,7 @@ export async function runSituationStage(
       escalation?: unknown
       events?: unknown
       order?: unknown
-      nudges?: unknown
+      directions?: unknown
       note?: unknown
     }
     return {
@@ -146,7 +149,7 @@ export async function runSituationStage(
         escalation: asText(parsed.escalation).trim(),
         events: normalizeEvents(parsed.events, pcName),
         order: normalizeOrder(parsed.order, cards),
-        nudges: normalizeNudges(parsed.nudges, cards, pcName, idle),
+        directions: normalizeDirections(parsed.directions, cards, pcName),
         note: asText(parsed.note) || undefined,
         usedModel: true,
       },
@@ -160,7 +163,7 @@ export async function runSituationStage(
         escalation: previous?.escalation ?? '',
         events: [],
         order: [],
-        nudges: [],
+        directions: [],
         note: '（局面推进失败，这一轮世界原地不动）',
         usedModel: false,
         fallbackReason: error instanceof Error ? error.message : String(error),

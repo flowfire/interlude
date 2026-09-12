@@ -28,19 +28,23 @@ Interlude is aiming at something else: **you write the story, the engine does th
 | **Seeing what happened** | You only see the final output | Click any character to see **exactly what it received** this round |
 | **Breaking something** | Delete the message and retry | Every step is editable, and **only the affected branch re-runs** |
 | **Keeping the plot moving** | Nothing happens until you write | A separate actor — the **director** — decides how the world moves and who moves first |
-| **Character motivation** | Described through their personality | Every card carries a hard **"what they want"**; each round they decide what to do about it, without waiting on you |
+| **Who directs** | You. Every word you write has to carry the whole scene | You only supply the **beats**; a **director** decides what else happens, who does what, where it goes |
 | **Structure** | One chat log | Multiple "conversations" (switchable storylines) plus linear rounds |
 | **Settings** | A pile of samplers, presets and regexes | Three switches |
 
 And the biggest difference of all: **in Interlude, the AI cannot rewrite what you said.** In SillyTavern what you type is usually just input for the model. Here it is a script that gets performed — your spoken lines appear on stage verbatim, and the AI can only add actions, micro-expressions, and its own words.
 
-### Characters do not orbit you
+### Three layers: you supply the beats, the director directs
 
 This is where the two feel most different in practice.
 
-In SillyTavern the story advances **one message at a time**: you do not send anything and it stops; you describe your own state and the AI can only react to that one line. Interlude has an actor that **is not any character** — the director. Every round it asks itself one question: **if nobody does anything, what happens next?** Then it moves the world a step: the wolves close in a little more, the fire collapses, the other side's patience runs out.
+In SillyTavern the story advances **one message at a time**: you do not send anything and it stops. You are effectively the writer, the director and the lead at once — tiring, and easy to stall.
 
-At the same time, every card carries a **"what they want"** — not a personality trait, a goal — and each round the character decides for themselves what to do about it. So when you write "I stay still like he told me to", Wolverine can go fight the wolves, because his goal was never "talk to you" — it was "get this kid out alive".
+Interlude splits that into three layers:
+
+- **You** only supply the **beats** — a line, an action, a thought. But a beat **must be honoured**: it is something that will happen this round, and nothing may quietly drop it. Beyond that, none of it is your problem.
+- **The director** (an actor in the engine that is not any character) has **full autonomy**: what else happens this round, who does what, how fast it moves, where the scene is heading. What you did not write is not "something that should not happen" — it is **the director's job to arrange it**. Every round it asks itself one question: **if nobody does anything, what happens next?** Then it moves the world a step: the wolves close in a little more, the fire collapses, the other side's patience runs out.
+- **Characters** only perform. The director hands them a blueprint (who, doing what this round) and they play the details according to their own persona — the same event comes out completely different from different people.
 
 And if it still deadlocks — your persona simply is not someone who acts, and every character has their own reason to wait — the director **calls someone out**: it picks whoever most needs to move and tells them what happens this round ("the pack is three steps away and the one standing behind you gets taken first; he moved — the first wolf was in the mud before it finished its leap"). The director reads the whole script and has the same authority as the actors — it just only uses it when things are stuck. The instruction stops at plot: how it happens, what is said, at what pace, is still that character's own performance. **The character you play is never on that list** — what you wrote is what happens, and nobody moves you.
 

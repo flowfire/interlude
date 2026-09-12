@@ -415,7 +415,7 @@ async function executeStep(ctx: PipelineContext, step: Step): Promise<Step> {
         sceneSetup,
         recap: buildRecap(ctx),
         situation: situation,
-        nudge: situation?.nudges?.find((item) => item.who === card.name),
+        direction: situation?.directions?.find((item) => item.who === card.name),
         history: collectHistory({
           rounds: ctx.rounds ?? [],
           steps: ctx.steps,

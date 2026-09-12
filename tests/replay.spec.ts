@@ -48,7 +48,7 @@ vi.mock('@/engine/llm/instance', () => {
       return { entries: [{ name: '金刚狼', missed: [], distorted: [], extras: [], note: '' }] }
     }
     if (label === 'situation') {
-      return { pressure: '', escalation: '', events: [], order: ['金刚狼'], nudges: [], note: '' }
+      return { pressure: '', escalation: '', events: [], order: ['金刚狼'], directions: [], note: '' }
     }
     if (label.startsWith('roleplay:')) {
       return { beats: [{ kind: 'speech', text: `${label} 的回应` }], inner: '在想事情' }

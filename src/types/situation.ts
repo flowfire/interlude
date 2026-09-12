@@ -9,23 +9,26 @@ export interface SituationEvent {
 }
 
 /**
- * 僵局时，导演点名某个角色，让他这一轮动起来。
+ * 导演交给某一个角色的**这一轮的任务**。
  *
- * 导演**通读台本**，和演员有同样的权限 —— 他可以决定某个角色这一轮做了什么
- * （「金刚狼动手了」）。这是剧情层面的指令，不是替他写台词：
- * 被点名的人收到指令后，由他自己演出细节 —— 怎么动、说什么、什么节奏。
+ * 这是这一场戏的层级决定的：用户只提出「点」，导演负责把整场戏安排出来，
+ * 角色只负责按人设把分到的那部分演出来。
+ *
+ * 所以导演每一轮都可以派任务，不限于僵局 —— 僵局只是它**必须**派任务的情形。
+ * 这是剧情层面的指令（「他动手了」），不是替他写台词：
+ * 接到任务的人自己决定怎么说、什么表情、什么节奏。
  *
  * 用户扮演的角色永远不会出现在这里：用户写什么就是什么，谁也不能替他动。
  */
-export interface SituationNudge {
+export interface SituationDirection {
   /** 被点名的角色（必须是在场的人） */
   who: string
-  /** 为什么现在必须动（砸在他的目标或处境上） */
+  /** 为什么这一轮该他做这件事（砸在他的目标或处境上） */
   push: string
   /**
    * 导演指定的剧情动作，例如「他动了 —— 第一头狼刚扑上来就被他按进了泥里」。
    *
-   * 只在僵局时给。它到「剧情」这一层为止：做了什么，而不是怎么演、说什么。
+   * 它到「剧情」这一层为止：做了什么，而不是怎么演、说什么。
    */
   act?: string
   /**
@@ -72,8 +75,13 @@ export interface SituationState {
   escalation: string
   /** 这一轮在节奏上的位置 */
   pace: SituationPace
-  /** 僵局时点名的角色（通常为空） */
-  nudges: SituationNudge[]
+  /**
+   * 导演给每个角色的这一轮任务。
+   *
+   * 不是"僵局才点名" —— 导演每一轮都在安排这一场戏，这里是他安排的结果。
+   * 没有要特别指派的时候可以是空数组。
+   */
+  directions: SituationDirection[]
   /** 这一轮客观发生的事，按顺序（会进时间线，也会进信息分发） */
   events: SituationEvent[]
   /**
@@ -94,6 +102,6 @@ export const RawSituationSchema = z.object({
   escalation: z.union([z.string(), z.number(), z.null()]).optional(),
   events: z.union([z.array(z.unknown()), z.string(), z.null()]).optional(),
   order: z.union([z.array(z.unknown()), z.string(), z.null()]).optional(),
-  nudges: z.union([z.array(z.unknown()), z.string(), z.null()]).optional(),
+  directions: z.union([z.array(z.unknown()), z.string(), z.null()]).optional(),
   note: z.union([z.string(), z.number(), z.null()]).optional(),
 })

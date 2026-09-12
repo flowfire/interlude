@@ -58,7 +58,7 @@ const situation: SituationState = {
     { kind: 'scene', text: '最前面那两头伏低了身子' },
   ],
   order: ['金刚狼'],
-  nudges: [],
+  directions: [],
   usedModel: true,
 }
 
@@ -153,18 +153,17 @@ describe('交棒是只有导演知道的 meta 信息', () => {
   })
 })
 
-describe('角色提示词以局势为中心', () => {
-  it('system 里写死了「你要回应的是局势」', () => {
+describe('角色是演员，导演才是导演', () => {
+  it('system 里写死了「你不是编剧」', () => {
     const [system] = buildRoleplayMessages({ bundle: bundle(), project: DEFAULT_PROJECT_SETTINGS })
-    expect(system.content).toContain('你要回应的是局势，不是用户')
-    expect(system.content).toContain('你完全可以整轮不对用户说一个字')
-    // 「别动」「待在我身后」这类话要先自我怀疑一下
-    expect(system.content).toContain('如果真正该做的是动手，那就动手')
+    expect(system.content).toContain('不是编剧')
+    expect(system.content).toContain('按这个人的性格，把分到你的部分演出来')
+    expect(system.content).toContain('不要替导演做决定')
   })
 
-  it('任务说明也要求回应整个局势', () => {
+  it('任务说明要求演出一个具体的人，而不是推动剧情', () => {
     const user = buildRoleplayMessages({ bundle: bundle(), project: DEFAULT_PROJECT_SETTINGS })[1].content
-    expect(user).toContain('要回应的是**整个局势**，不是用户一个人')
-    expect(user).toContain('整轮不跟用户说一个字也完全可以')
+    expect(user).toContain('把这一轮演出来')
+    expect(user).toContain('让熟悉他的人一眼认出这就是他')
   })
 })
