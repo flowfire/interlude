@@ -58,19 +58,8 @@ export interface PcExposure {
 const looseNumber = z.union([z.number(), z.string()]).optional()
 
 export const RawExposureSchema = z.object({
-  cues: z
-    .array(
-      z.object({
-        fromIndex: looseNumber,
-        hidden: z.string().optional(),
-        visible: z.string(),
-        channel: z.string().optional(),
-        leakage: looseNumber,
-        readability: looseNumber,
-      }),
-    )
-    .optional(),
-  note: z.string().optional(),
+  cues: z.array(z.unknown()).optional(),
+  note: z.union([z.string(), z.number(), z.null()]).optional(),
 })
 
 export type RawExposure = z.infer<typeof RawExposureSchema>

@@ -10,6 +10,7 @@ import {
   type RawSegmenterResult,
 } from '@/types/segment'
 import type { ProjectSettings } from '@/types/settings'
+import { asArray, asRecord, asText, asTextArray } from '@/utils/record'
 import { clamp } from '@/utils/time'
 import { buildSegmenterMessages } from '../prompts/segmenter'
 import type { NormalizedDoc, TextBlock } from './s0-normalize'
@@ -118,14 +119,17 @@ export function normalizeSegmenterOutput(
   const cursors = new Map<number, number>()
   const segments: Segment[] = []
 
-  raw.segments.forEach((item, order) => {
-    const text = String(item.text ?? '').trim()
+  asArray(raw.segments).forEach((entry, order) => {
+    const item = asRecord(entry)
+    if (!item) return
+
+    const text = asText(item.text)
     if (!text) return
 
     const blockIndex = Number(item.blockIndex)
     const block = Number.isFinite(blockIndex) ? byIndex.get(blockIndex) : undefined
     const kind = normalizeKind(item.kind)
-    const speaker = kind === 'speech' ? normalizeSpeaker(item.speaker, pcName) : normalizeSpeaker(item.speaker, pcName)
+    const speaker = normalizeSpeaker(item.speaker, pcName)
     const confidenceRaw = Number(item.confidence)
     const confidence = Number.isFinite(confidenceRaw) ? clamp(confidenceRaw, 0, 1) : 0.6
     const visibility = kind === 'inner' ? 'private' : item.visibility === 'private' ? 'private' : 'public'
@@ -136,33 +140,36 @@ export function normalizeSegmenterOutput(
       kind,
       text,
       speaker,
-      addressee: normalizeStringArray(item.addressee),
-      subject: normalizeStringArray(item.subject),
-      location: item.location ? String(item.location) : null,
+      addressee: asTextArray(item.addressee),
+      subject: asTextArray(item.subject),
+      location: item.location ? asText(item.location) || null : null,
       isFact: isPcSpeech,
       lockedByUser: false,
       visibility,
       confidence,
       sourceRange: alignRange(text, block, cursors),
-      reason: item.reason ? String(item.reason) : undefined,
+      reason: item.reason ? asText(item.reason) || undefined : undefined,
       origin: 'model',
     })
   })
 
-  const entities: EntityMention[] = (raw.entities ?? [])
-    .map((entity) => {
-      const mention = String(entity.mention ?? '').trim()
-      const kindRaw = String(entity.kind ?? 'person').trim().toLowerCase()
-      const roleRaw = String(entity.role ?? 'unknown').trim().toLowerCase()
+  const entities: EntityMention[] = asArray(raw.entities)
+    .map((entry) => {
+      const item = asRecord(entry)
+      if (!item) return null
+      const mention = asText(item.mention)
+      if (!mention) return null
+      const kindRaw = asText(item.kind).toLowerCase() || 'person'
+      const roleRaw = asText(item.role).toLowerCase() || 'unknown'
       const kind = (['person', 'place', 'object', 'org', 'other'] as const).includes(kindRaw as never)
         ? (kindRaw as EntityMention['kind'])
         : 'other'
       const role = (['pc', 'present', 'mentioned', 'unknown'] as const).includes(roleRaw as never)
         ? (roleRaw as EntityMention['role'])
         : 'unknown'
-      return { mention, kind, role }
+      return { mention, kind, role } satisfies EntityMention
     })
-    .filter((entity) => entity.mention.length > 0)
+    .filter((entity): entity is EntityMention => entity !== null)
 
   // 视角角色必须出现在实体表里，否则后续阵容解析会漏掉
   if (!entities.some((entity) => entity.mention === pcName)) {
@@ -171,16 +178,19 @@ export function normalizeSegmenterOutput(
     for (const entity of entities) if (entity.mention === pcName) entity.role = 'pc'
   }
 
-  const timeMarkers: TimeMarker[] = (raw.timeMarkers ?? [])
-    .map((marker) => {
-      const text = String(marker.text ?? '').trim()
-      const kindRaw = String(marker.kind ?? 'unknown').trim().toLowerCase()
-      const kind = (['absolute', 'relative', 'elapsed', 'unknown'] as const).includes(kindRaw as never)
-        ? (kindRaw as TimeMarker['kind'])
-        : 'unknown'
-      return { text, kind, value: marker.value ? String(marker.value) : undefined }
-    })
-    .filter((marker) => marker.text.length > 0)
+  const timeMarkers: TimeMarker[] = []
+  for (const entry of asArray(raw.timeMarkers)) {
+    const item = asRecord(entry)
+    if (!item) continue
+    const text = asText(item.text)
+    if (!text) continue
+    const kindRaw = asText(item.kind).toLowerCase() || 'unknown'
+    const kind = (['absolute', 'relative', 'elapsed', 'unknown'] as const).includes(kindRaw as never)
+      ? (kindRaw as TimeMarker['kind'])
+      : 'unknown'
+    const value = item.value ? asText(item.value) : ''
+    timeMarkers.push(value ? { text, kind, value } : { text, kind })
+  }
 
   return { segments, entities, timeMarkers }
 }

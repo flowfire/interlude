@@ -880,6 +880,17 @@ pre.code {
   color: #9fd0c9;
   font-style: italic;
 }
+.scene-fallback {
+  margin-top: 8px;
+  padding: 6px 9px;
+  border-radius: var(--radius-sm);
+  background: rgba(224, 176, 96, 0.1);
+  border: 1px solid rgba(224, 176, 96, 0.3);
+  color: #e0b060;
+  font-size: 12px;
+  word-break: break-word;
+  white-space: pre-wrap;
+}
 .scene-cast {
   margin-top: 8px;
   display: flex;

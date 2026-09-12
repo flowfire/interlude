@@ -12,6 +12,7 @@ import {
 import type { ScenePresent } from '@/types/scene'
 import type { Segment } from '@/types/segment'
 import type { ProjectSettings } from '@/types/settings'
+import { asArray, asRecord, asText, asTextArray } from '@/utils/record'
 import { buildCastMessages } from '../prompts/cast'
 import type { NormalizedDoc } from './s0-normalize'
 
@@ -96,8 +97,11 @@ export function normalizeCastResult(
   const seen = new Set<string>()
   const cards: CharacterCard[] = []
 
-  for (const item of raw.characters ?? []) {
-    const name = String(item.name ?? '').trim()
+  for (const entry of asArray(raw.characters)) {
+    const item = asRecord(entry)
+    if (!item) continue
+
+    const name = asText(item.name)
     if (!name || !isLikelyName(name)) continue
     if (name === pcName) continue
     if (seen.has(name)) continue
@@ -110,32 +114,32 @@ export function normalizeCastResult(
     cards.push({
       id: stableCharacterId(name),
       name,
-      aliases: normalizeStringArray(item.aliases),
+      aliases: asTextArray(item.aliases),
       tier: normalizeTier(item.tier, appears ? 'major' : 'minor'),
       origin: 'generated',
       canonical,
-      franchise: String(item.franchise ?? '').trim(),
+      franchise: asText(item.franchise),
       source: pickSource(found, canonical),
       researchNote: found
         ? `【${found.lang === 'zh' ? '中文' : '英文'}维基 · ${found.title}】${found.extract}`
         : undefined,
       persona: {
-        summary: String(item.summary ?? '').trim() || '（素材里没有更多说明）',
-        speechStyle: String(item.speechStyle ?? '').trim() || '（按性格自然发挥）',
-        temperament: normalizeStringArray(item.temperament),
-        habits: normalizeStringArray(item.habits),
-        background: String(item.background ?? '').trim() || '（素材里没有更多说明）',
-        signature: normalizeStringArray(item.signature),
-        voiceSamples: normalizeStringArray(item.voiceSamples),
-        canonAnchors: normalizeStringArray(item.canonAnchors),
-        boundaries: normalizeStringArray(item.boundaries),
+        summary: asText(item.summary) || '（素材里没有更多说明）',
+        speechStyle: asText(item.speechStyle) || '（按性格自然发挥）',
+        temperament: asTextArray(item.temperament),
+        habits: asTextArray(item.habits),
+        background: asText(item.background) || '（素材里没有更多说明）',
+        signature: asTextArray(item.signature),
+        voiceSamples: asTextArray(item.voiceSamples),
+        canonAnchors: asTextArray(item.canonAnchors),
+        boundaries: asTextArray(item.boundaries),
       },
       state: {
-        mood: String(item.mood ?? '').trim() || '（未说明）',
-        location: String(item.location ?? '').trim() || '（未说明）',
+        mood: asText(item.mood) || '（未说明）',
+        location: asText(item.location) || '（未说明）',
       },
       appearsInInput: appears,
-      evidence: String(item.evidence ?? '').trim(),
+      evidence: asText(item.evidence),
     })
   }
 

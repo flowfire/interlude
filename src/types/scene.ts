@@ -54,38 +54,21 @@ export const SCENE_MODE_LABEL: Record<SceneInputMode, string> = {
   mixed: '演出 + 概要',
 }
 
-const looseStringArray = z.union([z.array(z.union([z.string(), z.number()])), z.string(), z.null()]).optional()
-const looseBool = z.union([z.boolean(), z.string(), z.number()]).optional()
+const looseText = z.union([z.string(), z.number(), z.null()]).optional()
+/** 只保证「是个数组」—— 元素长什么样交给归一化去清理，别让一个脏元素毁掉整步 */
+const looseArray = z.union([z.array(z.unknown()), z.string(), z.null()]).optional()
 
 export const RawSceneSetupSchema = z.object({
-  inputMode: z.string().optional(),
-  time: z.string().optional(),
-  place: z.string().optional(),
-  atmosphere: z.string().optional(),
-  opening: looseStringArray,
-  situation: z.string().optional(),
-  pcProfile: z.string().optional(),
-  timeSkip: z.string().optional(),
-  present: z
-    .array(
-      z.object({
-        name: z.string(),
-        role: z.string().optional(),
-        brief: z.string().optional(),
-        kind: z.string().optional(),
-        active: looseBool,
-      }),
-    )
-    .optional(),
-  establishedBeats: z
-    .array(
-      z.object({
-        kind: z.string().optional(),
-        character: z.string().optional(),
-        text: z.string(),
-      }),
-    )
-    .optional(),
+  inputMode: looseText,
+  time: looseText,
+  place: looseText,
+  atmosphere: looseText,
+  opening: looseArray,
+  situation: looseText,
+  pcProfile: looseText,
+  timeSkip: looseText,
+  present: looseArray,
+  establishedBeats: looseArray,
 })
 
 export type RawSceneSetup = z.infer<typeof RawSceneSetupSchema>

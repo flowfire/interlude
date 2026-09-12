@@ -11,6 +11,7 @@ import {
 import type { EntityMention, Segment } from '@/types/segment'
 import type { ContentRating } from '@/types/step'
 import type { ProjectSettings } from '@/types/settings'
+import { asArray, asRecord, asText } from '@/utils/record'
 import { buildSceneMessages } from '../prompts/scene'
 import type { NormalizedDoc } from './s0-normalize'
 
@@ -133,34 +134,38 @@ export function normalizeSceneSetup(raw: RawSceneSetup, pcName: string): Omit<Sc
   const present: ScenePresent[] = []
   const seen = new Set<string>()
 
-  for (const item of raw.present ?? []) {
-    const name = String(item.name ?? '').trim()
+  for (const item of asArray(raw.present)) {
+    const record = asRecord(item)
+    if (!record) continue
+    const name = String(record.name ?? '').trim()
     if (!name || name === pcName || seen.has(name)) continue
     seen.add(name)
-    const kindRaw = String(item.kind ?? '').trim().toLowerCase()
+    const kindRaw = String(record.kind ?? '').trim().toLowerCase()
     const kind: ScenePresent['kind'] = ['extra', '路人', 'bystander', 'background'].includes(kindRaw) ? 'extra' : 'character'
     present.push({
       name,
-      role: String(item.role ?? '').trim(),
-      brief: String(item.brief ?? '').trim(),
+      role: String(record.role ?? '').trim(),
+      brief: String(record.brief ?? '').trim(),
       kind,
-      active: normalizeBool(item.active, kind === 'character'),
+      active: normalizeBool(record.active, kind === 'character'),
     })
   }
 
-  const establishedBeats: SceneBeat[] = (raw.establishedBeats ?? [])
-    .map((beat) => {
-      const text = String(beat.text ?? '').trim()
-      const kindRaw = String(beat.kind ?? 'action').trim().toLowerCase()
-      const kind: SceneBeat['kind'] = ['speech', '台词', '对话'].includes(kindRaw)
-        ? 'speech'
-        : ['scene', '场景', '环境'].includes(kindRaw)
-          ? 'scene'
-          : 'action'
-      const character = beat.character ? String(beat.character).trim() : undefined
-      return { kind, text, character: character === pcName ? pcName : character }
-    })
-    .filter((beat) => beat.text.length > 0)
+  const establishedBeats: SceneBeat[] = []
+  for (const entry of asArray(raw.establishedBeats)) {
+    const record = asRecord(entry)
+    if (!record) continue
+    const text = asText(record.text)
+    if (!text) continue
+    const kindRaw = asText(record.kind).toLowerCase()
+    const kind: SceneBeat['kind'] = ['speech', '台词', '对话'].includes(kindRaw)
+      ? 'speech'
+      : ['scene', '场景', '环境'].includes(kindRaw)
+        ? 'scene'
+        : 'action'
+    const character = asText(record.character)
+    establishedBeats.push(character ? { kind, text, character } : { kind, text })
+  }
 
   return {
     inputMode: normalizeInputMode(raw.inputMode),

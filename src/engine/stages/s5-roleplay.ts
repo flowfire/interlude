@@ -9,6 +9,7 @@ import {
 } from '@/types/character'
 import type { ContentRating } from '@/types/step'
 import type { ProjectSettings } from '@/types/settings'
+import { asArray, asRecord, asText, asTextArray } from '@/utils/record'
 import { buildRoleplayMessages } from '../prompts/roleplay'
 
 const BEAT_KINDS: Beat['kind'][] = ['speech', 'action', 'cue']
@@ -36,25 +37,27 @@ function normalizeStringArray(input: unknown): string[] {
 export function normalizeRoleplayOutput(raw: RawRoleplay, bundle: ContextBundle): RoleplayOutput {
   const beats: Beat[] = []
 
-  for (const item of raw.beats ?? []) {
-    const text = String(item.text ?? '').trim()
+  for (const entry of asArray(raw.beats)) {
+    const item = asRecord(entry)
+    if (!item) continue
+    const text = asText(item.text)
     if (!text) continue
     beats.push({
       kind: normalizeBeatKind(item.kind),
       text,
-      addressee: normalizeStringArray(item.addressee),
+      addressee: asTextArray(item.addressee),
     })
   }
 
   const hasSpeech = beats.some((beat) => beat.kind === 'speech')
-  const silentReason = raw.silentReason ? String(raw.silentReason).trim() : undefined
+  const silentReason = asText(raw.silentReason) || undefined
 
   return {
     characterId: bundle.characterId,
     name: bundle.name,
     beats,
-    inner: raw.inner ? String(raw.inner).trim() : undefined,
-    mood: raw.mood ? String(raw.mood).trim() : undefined,
+    inner: asText(raw.inner) || undefined,
+    mood: asText(raw.mood) || undefined,
     silentReason: hasSpeech ? silentReason : (silentReason ?? '（这一轮没有说话）'),
   }
 }

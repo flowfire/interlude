@@ -173,47 +173,22 @@ export const BLOCK_KIND_LABEL: Record<SceneBlock['kind'], string> = {
 
 /* ---------------- 模型原始输出的宽松 schema ---------------- */
 
+const looseString = z.union([z.string(), z.number(), z.null()]).optional()
 const looseStringArray = z.union([z.array(z.union([z.string(), z.number()])), z.string(), z.null()]).optional()
 const looseBool = z.union([z.boolean(), z.string(), z.number()]).optional()
 
-export const RawCharacterSchema = z.object({
-  name: z.string(),
-  aliases: looseStringArray,
-  tier: z.string().optional(),
-  canonical: looseBool,
-  franchise: z.string().optional(),
-  summary: z.string().optional(),
-  speechStyle: z.string().optional(),
-  temperament: looseStringArray,
-  habits: looseStringArray,
-  background: z.string().optional(),
-  signature: looseStringArray,
-  voiceSamples: looseStringArray,
-  canonAnchors: looseStringArray,
-  boundaries: looseStringArray,
-  mood: z.string().optional(),
-  location: z.string().optional(),
-  appearsInInput: looseBool,
-  evidence: z.string().optional(),
-})
-
+/** 同样只保证「是个数组」，元素交给归一化清理 */
 export const RawCastResultSchema = z.object({
-  characters: z.array(RawCharacterSchema),
+  characters: z.array(z.unknown()).optional(),
 })
 
 export type RawCastResult = z.infer<typeof RawCastResultSchema>
 
-export const RawBeatSchema = z.object({
-  kind: z.string().optional(),
-  text: z.string(),
-  addressee: looseStringArray,
-})
-
 export const RawRoleplaySchema = z.object({
-  beats: z.array(RawBeatSchema).optional(),
-  inner: z.string().optional(),
-  mood: z.string().optional(),
-  silentReason: z.string().optional(),
+  beats: z.array(z.unknown()).optional(),
+  inner: looseString,
+  mood: looseString,
+  silentReason: looseString,
 })
 
 export type RawRoleplay = z.infer<typeof RawRoleplaySchema>

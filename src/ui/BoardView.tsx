@@ -117,6 +117,12 @@ function RoundBlock({ round, isLast, demo }: { round: Round; isLast: boolean; de
               ))}
             </div>
           ) : null}
+
+          {!setup.usedModel ? (
+            <div className="scene-fallback">
+              场景构建降级了（没有调用模型）。原因：{setup.fallbackReason || '未知'}
+            </div>
+          ) : null}
         </div>
       ) : null}
 

@@ -88,40 +88,17 @@ export interface SegmenterResult {
 const looseString = z.union([z.string(), z.number(), z.null()]).optional()
 const looseStringArray = z.union([z.array(z.union([z.string(), z.number()])), z.string(), z.null()]).optional()
 
-export const RawSegmentSchema = z.object({
-  /** 来源文本块编号（引擎按块切分后交给模型打标签，保证能对齐回原文） */
-  blockIndex: z.union([z.number(), z.string()]).optional(),
-  kind: z.string().optional(),
-  text: z.string(),
-  speaker: looseString,
-  addressee: looseStringArray,
-  subject: looseStringArray,
-  location: looseString,
-  confidence: z.union([z.number(), z.string()]).optional(),
-  visibility: z.string().optional(),
-  reason: looseString,
-})
-
+/**
+ * 宽松到「只要是个数组」。
+ *
+ * 之前这里对每个片段都做严格校验，结果是模型少写一个 `text`、
+ * 或者某个字段返回 null，整步拆解就直接降级成规则预标注 ——
+ * 一个脏元素毁掉整步。现在元素长什么样交给归一化去清理。
+ */
 export const RawSegmenterResultSchema = z.object({
-  segments: z.array(RawSegmentSchema),
-  entities: z
-    .array(
-      z.object({
-        mention: z.string(),
-        kind: z.string().optional(),
-        role: z.string().optional(),
-      }),
-    )
-    .optional(),
-  timeMarkers: z
-    .array(
-      z.object({
-        text: z.string(),
-        kind: z.string().optional(),
-        value: looseString,
-      }),
-    )
-    .optional(),
+  segments: z.array(z.unknown()).optional(),
+  entities: z.array(z.unknown()).optional(),
+  timeMarkers: z.array(z.unknown()).optional(),
 })
 
 export type RawSegmenterResult = z.infer<typeof RawSegmenterResultSchema>

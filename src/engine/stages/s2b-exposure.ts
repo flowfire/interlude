@@ -12,6 +12,7 @@ import type { Segment } from '@/types/segment'
 import type { ContentRating } from '@/types/step'
 import type { ProjectSettings } from '@/types/settings'
 import { makeId } from '@/utils/id'
+import { asArray, asRecord, asText } from '@/utils/record'
 import { clamp } from '@/utils/time'
 import { buildExposureMessages } from '../prompts/exposure'
 
@@ -45,11 +46,14 @@ export function findPcInnerLines(segments: Segment[], pcName: string): string[] 
 export function normalizeExposure(raw: RawExposure): PcCue[] {
   const cues: PcCue[] = []
 
-  for (const item of raw.cues ?? []) {
-    const visible = String(item.visible ?? '').trim()
+  for (const entry of asArray(raw.cues)) {
+    const item = asRecord(entry)
+    if (!item) continue
+
+    const visible = asText(item.visible)
     if (!visible) continue
 
-    const channelRaw = String(item.channel ?? '').trim().toLowerCase()
+    const channelRaw = asText(item.channel).toLowerCase()
     const channel = (CHANNELS.includes(channelRaw as CueChannel) ? channelRaw : 'body') as CueChannel
 
     const fromIndexRaw = Number(item.fromIndex)
@@ -57,7 +61,7 @@ export function normalizeExposure(raw: RawExposure): PcCue[] {
 
     cues.push({
       id: makeId('cue'),
-      hidden: String(item.hidden ?? '').trim(),
+      hidden: asText(item.hidden),
       visible,
       channel,
       leakage: clamp(Number(item.leakage ?? 0.5), 0, 1),
