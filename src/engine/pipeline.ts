@@ -15,7 +15,15 @@ import { composeScene } from './stages/s7-compose'
 import { buildRoundMemories, describeWhere, type MemoryBuildInput } from './stages/s8-memory'
 import { getCastLibrary, getMemories, recallFor, toKnownCast } from './memory/library'
 import { HISTORY_MAX_CHARS, collectHistory, renderSharedRecap } from './history'
-import type { ComposedScene, ContextBundle, KnownCastEntry, PerceptionOutcome, RoleplayOutput } from '@/types/character'
+import type {
+  CharacterCard,
+  ComposedScene,
+  ContextBundle,
+  KnownCastEntry,
+  PerceivedEvent,
+  PerceptionOutcome,
+  RoleplayOutput,
+} from '@/types/character'
 import type { ObservedCue, PcExposure } from '@/types/exposure'
 import type { SituationState } from '@/types/situation'
 import type { SceneSetup } from '@/types/scene'
@@ -166,6 +174,30 @@ function previousSituation(ctx: PipelineContext): { pressure: string; escalation
   const state = step?.output as SituationState | undefined
   if (!state) return null
   return { pressure: state.pressure, escalation: state.escalation }
+}
+
+/**
+ * 按「局面」给出的顺序排列这一轮需要反应的人。
+ *
+ * 顺序是叙事的一部分（后动的人看得见先动的人），所以引擎只做兜底：
+ * 名单里多出来的名字丢掉，漏掉的人按原来的阵容顺序补在最后。
+ */
+function orderActors(actors: CharacterCard[], order: string[]): CharacterCard[] {
+  if (!order.length) return actors
+
+  const byName = new Map<string, CharacterCard>()
+  for (const card of actors) {
+    byName.set(card.name, card)
+    for (const alias of card.aliases ?? []) byName.set(alias, card)
+  }
+
+  const out: CharacterCard[] = []
+  for (const name of order) {
+    const card = byName.get(name)
+    if (card && !out.includes(card)) out.push(card)
+  }
+  for (const card of actors) if (!out.includes(card)) out.push(card)
+  return out
 }
 
 function emptyCost() {
@@ -347,9 +379,22 @@ async function executeStep(ctx: PipelineContext, step: Step): Promise<Step> {
       const perception = findUpstreamByStage(ctx.steps, step.id, 'perceive')?.output as PerceptionOutcome | undefined
       const reception = perception?.entries.find((entry) => entry.characterId === card.id)
 
+      // 这一轮在他之前行动的人已经说了什么做了什么 —— 他就在旁边，听得见
+      const earlierBeats: PerceivedEvent[] = []
+      for (const step_ of upstreamStepsByStage(ctx.steps, step.id, 'roleplay')) {
+        const output = step_.output as RoleplayOutput | undefined
+        const speaker = String(step_.meta?.characterName ?? output?.name ?? '有人')
+        for (const beat of output?.beats ?? []) {
+          const text = beat.text.trim()
+          if (!text) continue
+          earlierBeats.push({ kind: beat.kind, from: speaker, text, self: speaker === card.name })
+        }
+      }
+
       const output = buildContextBundle({
         card,
         roundIndex: ctx.round.index,
+        earlierBeats,
         segments: segments ?? [],
         cards: castOut.characters,
         pcName: ctx.project.pcName,
@@ -578,9 +623,9 @@ export async function runFullRound(ctx: PipelineContext): Promise<FullRoundResul
   emit()
 
   const castOutput = steps[castStep.id]?.output as CastStageOutput | undefined
-  const actors = castOutput?.characters ?? []
+  const castActors = castOutput?.characters ?? []
 
-  // S3c 局面推进：一次调用，让「世界」自己往前走一步。
+  // S3c 局面推进：一次调用，让「世界」自己往前走一步，并由它决定这一轮谁先动。
   // 它排在信息分发之前，所以这一轮新发生的事也会被分发出去。
   const situationStep = createStep<SituationState>({
     roundId: ctx.round.id,
@@ -593,6 +638,10 @@ export async function runFullRound(ctx: PipelineContext): Promise<FullRoundResul
   steps = result.steps
   emit()
 
+  // 出场顺序由「局面」决定；它没给或者给漏了，就退回阵容顺序补齐
+  const situationOutput = steps[situationStep.id]?.output as SituationState | undefined
+  const actors = orderActors(castActors, situationOutput?.order ?? [])
+
   // 信息分发：一次调用，把这一轮转化成「每个人各自接收到的版本」
   const perceiveStep = createStep<PerceptionOutcome>({
     roundId: ctx.round.id,
@@ -601,6 +650,9 @@ export async function runFullRound(ctx: PipelineContext): Promise<FullRoundResul
     deps: [castStep.id, segmentStep.id, exposureStep.id, situationStep.id],
   })
 
+  // 角色按「局面」定下的顺序**逐个**演绎：后开口的人看得到先开口的人已经说了什么。
+  // 这不是性能取舍 —— 时间顺序上 A 先说了话，B 就在旁边，他当然听得见。
+  // 依赖链（context_i 依赖 roleplay_0..i-1）会让调度器自然地串起来。
   const contextSteps: Step[] = []
   const roleplaySteps: Step[] = []
   for (const card of actors) {
@@ -608,7 +660,7 @@ export async function runFullRound(ctx: PipelineContext): Promise<FullRoundResul
       roundId: ctx.round.id,
       stage: 'context',
       label: `给「${card.name}」的上下文`,
-      deps: [castStep.id, exposureStep.id, perceiveStep.id],
+      deps: [castStep.id, exposureStep.id, perceiveStep.id, ...roleplaySteps.map((step) => step.id)],
       meta: { characterId: card.id, characterName: card.name },
     })
     const roleplayStep = createStep<RoleplayOutput>({

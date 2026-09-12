@@ -284,6 +284,11 @@ function RoundBlock({ round, isLast, demo }: { round: Round; isLast: boolean; de
               {event.text}
             </div>
           ))}
+          {situationData.state.order?.length ? (
+            <div className="situation-order">
+              出场顺序（后动的人看得见先动的人）：{situationData.state.order.join(' → ')}
+            </div>
+          ) : null}
           {situationData.state.escalation ? (
             <div className="situation-escalation">如果没人动：{situationData.state.escalation}</div>
           ) : null}

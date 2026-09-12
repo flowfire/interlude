@@ -65,8 +65,14 @@ function absentRound(index: number): HistoryRound {
  * 唯一要补的是**他自己当时说的话、做的事** —— 那是一定知道的，
  * 而它不在感知候选池里（AI 的反应是并发生成的）。
  */
-function roundFromBundle(input: { round: Round; bundle: ContextBundle; roleplay?: RoleplayOutput }): HistoryRound {
-  const { round, bundle, roleplay } = input
+function roundFromBundle(input: {
+  round: Round
+  bundle: ContextBundle
+  roleplay?: RoleplayOutput
+  /** 这一轮在他**之后**行动的人说了什么做了什么 */
+  laterBeats?: PerceivedEvent[]
+}): HistoryRound {
+  const { round, bundle, roleplay, laterBeats = [] } = input
 
   const ownBeats: PerceivedEvent[] = (roleplay?.beats ?? [])
     .map((beat) => ({ kind: beat.kind, from: bundle.name, text: beat.text, self: true }))
@@ -82,7 +88,9 @@ function roundFromBundle(input: { round: Round; bundle: ContextBundle; roleplay?
     pcProfile: bundle.counterpartProfile,
     presentNames: bundle.presentNames,
     sceneLines: bundle.sceneLines,
-    events: [...bundle.perceived, ...ownBeats],
+    // 顺序就是时间顺序：他之前发生的事（已在 perceived 里）→ 他自己 → 他之后的人。
+    // 他当时就在场，所以后面那些人的言行他也看见了 —— 只是当时还没轮到他们。
+    events: [...bundle.perceived, ...ownBeats, ...laterBeats],
     inner: roleplay?.inner?.trim() ?? '',
   }
 }
@@ -95,6 +103,45 @@ export interface HistoryInput {
   sessionId: string
   currentRoundId: string
   maxChars?: number
+}
+
+/**
+ * 同一个人这一轮里，**在他之后**行动的那些人的言行。
+ *
+ * 同一轮里角色是按在场的顺序逐个演绎的：他看得见排在他后面的人做了什么，
+ * 因为那些人也是当着大家的面做的 —— 只是那一刻还没轮到他们而已。
+ * 他自己之前的人不用在这里补：那些已经进过他的上下文了。
+ */
+function laterBeatsOf(steps: Record<string, Step>, roundId: string, characterId: string): PerceivedEvent[] {
+  const cast = Object.values(steps)
+    .filter((step) => step.roundId === roundId && step.stage === 'cast' && step.status === 'done')
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+    .pop()
+  const order = ((cast?.output as { characters?: CharacterCard[] } | undefined)?.characters ?? []).map(
+    (item) => item.id,
+  )
+  const ownIndex = order.indexOf(characterId)
+  if (ownIndex < 0) return []
+
+  const later = Object.values(steps)
+    .filter((step) => step.roundId === roundId && step.stage === 'roleplay' && step.status === 'done')
+    .filter((step) => order.indexOf(String(step.meta?.characterId ?? '')) > ownIndex)
+    .sort(
+      (a, b) =>
+        order.indexOf(String(a.meta?.characterId ?? '')) - order.indexOf(String(b.meta?.characterId ?? '')),
+    )
+
+  const out: PerceivedEvent[] = []
+  for (const step of later) {
+    const output = step.output as RoleplayOutput | undefined
+    const name = String(step.meta?.characterName ?? output?.name ?? '有人')
+    for (const beat of output?.beats ?? []) {
+      const text = beat.text.trim()
+      if (!text) continue
+      out.push({ kind: beat.kind, from: name, text, self: false })
+    }
+  }
+  return out
 }
 
 /**
@@ -150,6 +197,7 @@ export function collectHistory(input: HistoryInput): HistoryRound[] {
         round,
         bundle,
         roleplay: findStep(steps, round.id, 'roleplay', card.id)?.output as RoleplayOutput | undefined,
+        laterBeats: laterBeatsOf(steps, round.id, card.id),
       }),
     )
   }

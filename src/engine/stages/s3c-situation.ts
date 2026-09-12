@@ -22,6 +22,24 @@ export interface SituationStageInput {
 
 const MAX_EVENTS = 3
 
+/** 出场顺序：只保留在场的名字，顺序照给 */
+function normalizeOrder(raw: unknown, cards: CharacterCard[]): string[] {
+  const known = new Map<string, string>()
+  for (const card of cards) {
+    known.set(card.name, card.name)
+    for (const alias of card.aliases ?? []) known.set(alias, card.name)
+  }
+
+  const out: string[] = []
+  for (const item of asArray(raw)) {
+    const name = asText(item).trim()
+    const resolved = known.get(name)
+    if (!resolved || out.includes(resolved)) continue
+    out.push(resolved)
+  }
+  return out
+}
+
 function normalizeEvents(raw: unknown): SituationEvent[] {
   const out: SituationEvent[] = []
   for (const item of asArray(raw)) {
@@ -77,12 +95,19 @@ export async function runSituationStage(
       parse: (raw) => RawSituationSchema.parse(raw),
     })
 
-    const parsed = data as { pressure?: unknown; escalation?: unknown; events?: unknown; note?: unknown }
+    const parsed = data as {
+      pressure?: unknown
+      escalation?: unknown
+      events?: unknown
+      order?: unknown
+      note?: unknown
+    }
     return {
       output: {
         pressure: asText(parsed.pressure).trim() || previous?.pressure || '',
         escalation: asText(parsed.escalation).trim(),
         events: normalizeEvents(parsed.events),
+        order: normalizeOrder(parsed.order, cards),
         note: asText(parsed.note) || undefined,
         usedModel: true,
       },
@@ -94,6 +119,7 @@ export async function runSituationStage(
         pressure: previous?.pressure ?? '',
         escalation: previous?.escalation ?? '',
         events: [],
+        order: [],
         note: '（局面推进失败，这一轮世界原地不动）',
         usedModel: false,
         fallbackReason: error instanceof Error ? error.message : String(error),

@@ -280,6 +280,7 @@ const ROUND1_SITUATION = {
   events: [
     { kind: 'ambient', text: '门框上的铃铛还在轻轻晃，柜台那边传来杯沿碰在一起的一声轻响。' },
   ],
+  order: ['林砚', '阿七'],
   note: '',
 }
 
@@ -290,6 +291,7 @@ const ROUND2_SITUATION = {
     { kind: 'scene', text: '灯芯爆了一下，屋里暗了半瞬，又亮起来。' },
     { kind: 'ambient', text: '柜台那边传来一声很轻的响动——阿七把手里的杯子放在了木头上。' },
   ],
+  order: ['林砚'],
   note: '',
 }
 

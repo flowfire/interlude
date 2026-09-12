@@ -912,6 +912,11 @@ pre.code {
   color: #cbb894;
   font-style: italic;
 }
+.situation-order {
+  margin-top: 6px;
+  color: #c9a86a;
+  font-size: 12px;
+}
 .situation-escalation {
   margin-top: 6px;
   padding-top: 6px;

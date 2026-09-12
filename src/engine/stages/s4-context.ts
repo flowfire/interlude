@@ -33,6 +33,13 @@ export interface ContextBuildInput {
   history?: HistoryRound[]
   /** 这一轮的局面（世界自己往前走的那一步） */
   situation?: { pressure: string; escalation: string }
+  /**
+   * 这一轮**在他之前**行动的人已经说了什么、做了什么。
+   *
+   * 同一轮里角色是逐个演绎的，所以后开口的人看得到先开口的人 ——
+   * 时间顺序上就是如此，这不是"泄漏"，是常识。
+   */
+  earlierBeats?: PerceivedEvent[]
   /** 这一轮被分发出去的信息（带编号） */
   candidates?: PerceiveCandidateRecord[]
   /** 这个角色对上面这些信息的接收情况 */
@@ -143,6 +150,7 @@ export function buildContextBundle(input: ContextBuildInput): ContextBundle {
     pcCues = [],
     candidates = [],
     reception,
+    earlierBeats = [],
     recap = '',
     history = [],
     situation,
@@ -170,6 +178,12 @@ export function buildContextBundle(input: ContextBuildInput): ContextBundle {
 
   const { perceived, sceneLines } = buildPerceived({ candidates, reception, card, pcName })
 
+  // 先发生的事在前，后面才是先开口的那些人 —— 时间顺序不能乱
+  const timeline: PerceivedEvent[] = [
+    ...perceived,
+    ...earlierBeats.map((event) => ({ ...event, self: event.from === card.name })),
+  ]
+
   // 分发层漏掉的内心，仍然要在「你不知道」里说明白
   const missedInner = new Set(
     (reception?.missed ?? [])
@@ -191,13 +205,13 @@ export function buildContextBundle(input: ContextBuildInput): ContextBundle {
   }
 
   // 从感知结果派生出的分类视图（UI 与记忆用）
-  const heard = perceived
+  const heard = timeline
     .filter((event) => event.kind === 'speech' && !event.self)
     .map((event) => ({ from: event.from, text: event.text }))
-  const seen = perceived
+  const seen = timeline
     .filter((event) => event.kind === 'action' && !event.self)
     .map((event) => ({ subject: event.from, text: event.text }))
-  const ownPriorLines = perceived
+  const ownPriorLines = timeline
     .filter((event) => event.self)
     .map((event) => (event.kind === 'speech' ? `你说过：「${event.text}」` : `你做过：${event.text}`))
 
@@ -218,7 +232,7 @@ export function buildContextBundle(input: ContextBuildInput): ContextBundle {
       place: sceneSetup.place,
       atmosphere: sceneSetup.atmosphere,
     },
-    perceived,
+    perceived: timeline,
     sceneLines,
     heard,
     seen,

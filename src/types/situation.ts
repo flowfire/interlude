@@ -27,6 +27,13 @@ export interface SituationState {
   escalation: string
   /** 这一轮客观发生的事，按顺序（会进时间线，也会进信息分发） */
   events: SituationEvent[]
+  /**
+   * 这一轮**谁先动、谁后动**。
+   *
+   * 同一轮里角色是逐个演绎的，后开口的人看得见先开口的人说了什么 ——
+   * 而先后由「局面」决定：它盯着此刻的局势，知道谁最可能先做出反应。
+   */
+  order: string[]
   note?: string
   usedModel: boolean
   fallbackReason?: string
@@ -36,5 +43,6 @@ export const RawSituationSchema = z.object({
   pressure: z.union([z.string(), z.number(), z.null()]).optional(),
   escalation: z.union([z.string(), z.number(), z.null()]).optional(),
   events: z.union([z.array(z.unknown()), z.string(), z.null()]).optional(),
+  order: z.union([z.array(z.unknown()), z.string(), z.null()]).optional(),
   note: z.union([z.string(), z.number(), z.null()]).optional(),
 })
