@@ -13,6 +13,7 @@ import type { SegmentStageOutput } from '@/engine/stages/s1-segment'
 import type { CastStageOutput } from '@/engine/stages/s3-cast'
 import type { CharacterCard, ComposedScene, ContextBundle } from '@/types/character'
 import type { PcExposure } from '@/types/exposure'
+import type { ContentRating } from '@/types/step'
 import type { SceneSetup } from '@/types/scene'
 import type { Segment } from '@/types/segment'
 import type { Step } from '@/types/step'
@@ -200,7 +201,11 @@ export async function replayFromRound(roundId: string): Promise<void> {
  * 整棵步骤树（拆解 → 场景 → 阵容 → 各角色反应）从头重建；
  * 这一轮之后的轮次同样全部丢弃。
  */
-export async function regenerateRoundFromInput(roundId: string, newInput: string): Promise<void> {
+export async function regenerateRoundFromInput(
+  roundId: string,
+  newInput: string,
+  rating?: ContentRating,
+): Promise<void> {
   const store = useAppStore.getState()
   if (store.busy) return
 
@@ -210,16 +215,21 @@ export async function regenerateRoundFromInput(roundId: string, newInput: string
   const round = store.rounds.find((item) => item.id === roundId)
   if (!round) return
 
+  const nextRating = rating ?? round.rating ?? 'general'
+  const ratingChanged = nextRating !== (round.rating ?? 'general')
+
   const later = store.rounds.filter((item) => item.sessionId === round.sessionId && item.index > round.index)
-  store.saveUndo(later.length ? `改原文重新生成，丢弃 ${later.length} 轮` : '改原文重新生成')
+  store.saveUndo(later.length ? `改这一轮，丢弃 ${later.length} 轮` : '改这一轮')
 
   // 1. 丢弃这一轮之后的轮次
   store.truncateAfterRound(roundId)
   // 2. 换上新写的原文
   useAppStore.getState().updateRoundInput(roundId, text)
-  // 3. 清掉这一轮的旧步骤（角色可能变了，结构要重建）
+  // 3. 分级也一起落下（只改了分级同样要重跑）
+  if (ratingChanged) useAppStore.getState().setRoundRating(roundId, nextRating)
+  // 4. 清掉这一轮的旧步骤（角色可能变了，结构要重建）
   useAppStore.getState().clearRoundSteps(roundId)
-  // 4. 整轮重跑
+  // 5. 整轮重跑
   await runRoundFor(roundId)
 }
 

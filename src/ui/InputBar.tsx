@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useAppStore } from '@/store/appStore'
+import { loadComposerState, saveComposerState } from '@/store/localSettings'
 import { runRoundFor } from './usePipelineActions'
 
 const SAMPLE = `三天后，傍晚。雨刚停，青石板上还积着水洼。
@@ -19,15 +20,19 @@ export default function InputBar() {
 
   const [draft, setDraft] = useState('')
   const [personaOpen, setPersonaOpen] = useState(false)
-  const [r18, setR18] = useState(false)
+  // 延续上一次的勾选（存在 localStorage 里），红色够显眼，不用每次重勾
+  const [r18, setR18] = useState(() => loadComposerState().rating === 'r18')
+
+  const handleR18Change = (value: boolean) => {
+    setR18(value)
+    saveComposerState({ rating: value ? 'r18' : 'general' })
+  }
 
   const handleSend = async () => {
     const text = draft.trim()
     if (!text || busy) return
     const round = newRound(text, r18 ? 'r18' : 'general')
     setDraft('')
-    // 分级是每轮单独选的，发送后归零，免得下一轮忘了取消
-    setR18(false)
     await runRoundFor(round.id)
   }
 
@@ -83,14 +88,14 @@ export default function InputBar() {
             '这一轮往成人向推进。\n' +
             '角色能自己控制的那部分（距离、触碰、语气、身体反应）会放开尺度，\n' +
             '但性格、说话方式、关系阶段不会变，也不会一步到位。\n' +
-            '只对这一次发送生效。'
+            '勾选会一直保留，直到你自己取消。'
           }
         >
           <input
             type="checkbox"
             checked={r18}
             disabled={busy}
-            onChange={(event) => setR18(event.target.checked)}
+            onChange={(event) => handleR18Change(event.target.checked)}
           />
           R18 倾向
         </label>

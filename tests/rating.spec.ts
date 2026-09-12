@@ -7,7 +7,9 @@ import { normalizeInput } from '@/engine/stages/s0-normalize'
 import { stableCharacterId } from '@/engine/stages/s3-cast'
 import type { CharacterCard, ContextBundle } from '@/types/character'
 import type { SceneSetup } from '@/types/scene'
+import type { ContentRating, Round } from '@/types/step'
 import { DEFAULT_PROJECT_SETTINGS } from '@/types/settings'
+import { isRoundDraftDirty } from '@/utils/roundDraft'
 
 function card(): CharacterCard {
   return {
@@ -145,5 +147,47 @@ describe('R18 分级', () => {
 
     expect(user).toContain('成人向')
     expect(user).toContain('泄漏程度仍然由人设决定')
+  })
+})
+
+describe('编辑一轮时，「分级变了」也算改动', () => {
+  const makeRound = (userInput: string, rating?: ContentRating): Round => ({
+    id: 'r1',
+    sessionId: 's1',
+    index: 1,
+    userInput,
+    rating,
+    stepIds: [],
+    rootStepIds: [],
+    status: 'done',
+    createdAt: '2024-01-01T00:00:00.000Z',
+    updatedAt: '2024-01-01T00:00:00.000Z',
+  })
+
+  it('内容和分级都没动 → 不算改动', () => {
+    expect(isRoundDraftDirty(makeRound('abc', 'general'), { userInput: 'abc', rating: 'general' })).toBe(false)
+  })
+
+  it('内容一个字没改，只把 R18 勾上 → 也算改动', () => {
+    expect(isRoundDraftDirty(makeRound('abc', 'general'), { userInput: 'abc', rating: 'r18' })).toBe(true)
+  })
+
+  it('反过来，取消 R18 同样算改动', () => {
+    expect(isRoundDraftDirty(makeRound('abc', 'r18'), { userInput: 'abc', rating: 'general' })).toBe(true)
+  })
+
+  it('只改了内容也算改动', () => {
+    expect(isRoundDraftDirty(makeRound('abc'), { userInput: 'abd', rating: 'general' })).toBe(true)
+  })
+
+  it('只有首尾空白不同 → 不算改动', () => {
+    expect(isRoundDraftDirty(makeRound('abc'), { userInput: '  abc\n', rating: 'general' })).toBe(false)
+  })
+
+  it('旧数据没有 rating 字段时按 general 处理', () => {
+    const legacy = makeRound('abc')
+    delete (legacy as { rating?: ContentRating }).rating
+    expect(isRoundDraftDirty(legacy, { userInput: 'abc', rating: 'general' })).toBe(false)
+    expect(isRoundDraftDirty(legacy, { userInput: 'abc', rating: 'r18' })).toBe(true)
   })
 })

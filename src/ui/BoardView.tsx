@@ -2,7 +2,8 @@ import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useAppStore } from '@/store/appStore'
 import { SEGMENT_KIND_LABEL, type Segment } from '@/types/segment'
 import { SCENE_MODE_LABEL } from '@/types/scene'
-import type { Round } from '@/types/step'
+import { RATING_LABEL, type ContentRating, type Round } from '@/types/step'
+import { isRoundDraftDirty } from '@/utils/roundDraft'
 import { getComposeOfRound, getExposureOfRound, getSceneOfRound, getSegmentsOfRound, regenerateRoundFromInput, replayFromRound } from './usePipelineActions'
 import SegmentList from './SegmentList'
 import ReactionCardView from './ReactionCardView'
@@ -40,15 +41,19 @@ function RoundBlock({ round, isLast, demo }: { round: Round; isLast: boolean; de
   const steps = useAppStore((state) => state.steps)
   const rounds = useAppStore((state) => state.rounds)
   const busy = useAppStore((state) => state.busy)
-  const setRoundRating = useAppStore((state) => state.setRoundRating)
   const [showSegments, setShowSegments] = useState(demo === 'segments')
   const [editing, setEditing] = useState(false)
   const [inputDraft, setInputDraft] = useState(round.userInput)
+  const [ratingDraft, setRatingDraft] = useState<ContentRating>(round.rating ?? 'general')
   void steps
 
   const laterCount = rounds.filter(
     (item) => item.sessionId === round.sessionId && item.index > round.index,
   ).length
+
+  const inputChanged = inputDraft.trim() !== round.userInput.trim()
+  const ratingChanged = ratingDraft !== (round.rating ?? 'general')
+  const dirty = isRoundDraftDirty(round, { userInput: inputDraft, rating: ratingDraft })
 
   const segmentsData = getSegmentsOfRound(round.id)
   const sceneData = getSceneOfRound(round.id)
@@ -142,10 +147,11 @@ function RoundBlock({ round, isLast, demo }: { round: Round; isLast: boolean; de
             <>
               <button
                 className="btn btn-sm"
-                title="直接改整段原文，然后重新生成"
+                title="直接改整段原文或分级，然后重新生成"
                 onClick={(event) => {
                   event.stopPropagation()
                   setInputDraft(round.userInput)
+                  setRatingDraft(round.rating ?? 'general')
                   setEditing(true)
                 }}
               >
@@ -168,14 +174,14 @@ function RoundBlock({ round, isLast, demo }: { round: Round; isLast: boolean; de
             <div className="input-editor-actions">
               <button
                 className="btn btn-primary"
-                disabled={busy || !inputDraft.trim() || inputDraft.trim() === round.userInput.trim()}
+                disabled={busy || !inputDraft.trim() || !dirty}
                 onClick={() => {
-                  // 立刻退出编辑态：生成进度在主看板顶部的状态条上，不需要把编辑框一直开着
+                  // 立刻退出编辑态：生成进度在主看板顶部的状态条上
                   setEditing(false)
                   document
                     .getElementById(`round-${round.id}`)
                     ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-                  void regenerateRoundFromInput(round.id, inputDraft)
+                  void regenerateRoundFromInput(round.id, inputDraft, ratingDraft)
                 }}
               >
                 {busy ? '生成中…' : '保存并重新生成'}
@@ -184,23 +190,26 @@ function RoundBlock({ round, isLast, demo }: { round: Round; isLast: boolean; de
                 取消
               </button>
               <label
-                className={`r18-toggle ${round.rating === 'r18' ? 'on' : ''}`}
+                className={`r18-toggle ${ratingDraft === 'r18' ? 'on' : ''}`}
                 title="这一轮往成人向推进 —— 只影响角色能自己控制的那部分，不改人设，也不一步到位"
               >
                 <input
                   type="checkbox"
-                  checked={round.rating === 'r18'}
+                  checked={ratingDraft === 'r18'}
                   disabled={busy}
-                  onChange={(event) =>
-                    setRoundRating(round.id, event.target.checked ? 'r18' : 'general')
-                  }
+                  onChange={(event) => setRatingDraft(event.target.checked ? 'r18' : 'general')}
                 />
                 R18 倾向
               </label>
               <span className="hint">
-                {inputDraft.trim() === round.userInput.trim()
-                  ? '内容没变'
-                  : '整轮会重新拆解、重新分发给每个角色'}
+                {!dirty
+                  ? '内容和分级都没变'
+                  : [
+                      inputChanged ? '整轮会重新拆解、重新分发给每个角色' : null,
+                      ratingChanged ? `分级改为 ${RATING_LABEL[ratingDraft]}` : null,
+                    ]
+                      .filter(Boolean)
+                      .join(' · ')}
                 {laterCount ? ` · 这一轮之后的 ${laterCount} 轮会被丢弃` : ''}
               </span>
             </div>

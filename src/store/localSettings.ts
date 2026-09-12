@@ -4,9 +4,19 @@ import {
   type LlmSettings,
   type ProjectSettings,
 } from '@/types/settings'
+import type { ContentRating } from '@/types/step'
 
 const LLM_KEY = 'interlude.llm'
 const PROJECT_KEY = 'interlude.project'
+const COMPOSER_KEY = 'interlude.composer'
+
+/** 输入区上的一些选择，跨刷新记住 */
+export interface ComposerState {
+  /** 上次发送时用的分级 —— 延续上一次的勾选，不用每次重勾 */
+  rating: ContentRating
+}
+
+export const DEFAULT_COMPOSER_STATE: ComposerState = { rating: 'general' }
 
 function readJson<T>(key: string): Partial<T> | null {
   try {
@@ -42,4 +52,12 @@ export function loadProjectSettings(): ProjectSettings {
 
 export function saveProjectSettings(settings: ProjectSettings): void {
   writeJson(PROJECT_KEY, settings)
+}
+
+export function loadComposerState(): ComposerState {
+  return { ...DEFAULT_COMPOSER_STATE, ...(readJson<ComposerState>(COMPOSER_KEY) ?? {}) }
+}
+
+export function saveComposerState(state: ComposerState): void {
+  writeJson(COMPOSER_KEY, state)
 }
