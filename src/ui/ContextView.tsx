@@ -81,7 +81,7 @@ export default function ContextView({ bundle, roundId }: Props) {
               ))}
               {round.events.map((event, index) => (
                 <div key={index} className={`ctx-event ctx-event-${event.kind}`}>
-                  <span className="ctx-from">{event.from}</span>
+                  <span className="ctx-from">{event.kind === 'event' ? '发生' : event.from}</span>
                   {event.kind === 'speech' ? `「${event.text}」` : event.text}
                 </div>
               ))}
@@ -97,7 +97,7 @@ export default function ContextView({ bundle, roundId }: Props) {
         <ol className="ctx-timeline">
           {bundle.perceived.map((event, index) => (
             <li key={index} className={`ctx-event ctx-event-${event.kind}`}>
-              <span className="ctx-from">{event.self ? '他自己' : event.from}</span>
+              <span className="ctx-from">{event.kind === 'event' ? '发生' : event.self ? '他自己' : event.from}</span>
               {event.kind === 'speech' ? `「${event.text}」` : event.text}
             </li>
           ))}

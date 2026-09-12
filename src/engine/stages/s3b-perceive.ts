@@ -113,7 +113,9 @@ export function buildPerceiveCandidates(input: PerceiveStageInput): PerceiveCand
   for (const event of situation?.events ?? []) {
     const text = event.text.trim()
     if (!text) continue
-    push({ kind: event.kind === 'scene' ? 'scene' : 'ambient', text })
+    // 标成 event 而不是 scene/ambient：它是**这一轮正在发生的事**，
+    // 要和 pc 的言行并列在同一条时间线上，而不是被塞进「眼前的环境」当背景。
+    push({ kind: 'event', text })
   }
 
   return out

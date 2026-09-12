@@ -1202,6 +1202,9 @@ pre.code {
   color: #9fb6c9;
   font-style: italic;
 }
+.ctx-event-event {
+  color: #e0c07a;
+}
 .ctx-event-speech {
   color: var(--text);
 }

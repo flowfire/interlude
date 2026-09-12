@@ -115,6 +115,8 @@ function kindLabel(kind: PerceiveCandidateRecord['kind']): string {
       return '氛围'
     case 'cue':
       return '细微表现'
+    case 'event':
+      return '正在发生的事'
     case 'inner':
       return '没说出口的'
     default:

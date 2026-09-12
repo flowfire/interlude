@@ -227,6 +227,7 @@ function trimToBudget(rounds: HistoryRound[], maxChars: number): HistoryRound[] 
 
 /** 舞台上的一条，渲染成人类读的句子 —— 往事与当前轮共用同一套写法 */
 export function renderEventLine(event: PerceivedEvent, order: number): string {
+  if (event.kind === 'event') return `${order}. 〔发生〕${event.text}`
   const who = event.self ? '你' : event.from
   if (event.kind === 'speech') return `${order}. ${who}：「${event.text}」`
   if (event.kind === 'action') return `${order}. ${who}：${event.text}`

@@ -110,7 +110,7 @@ export const PERCEIVE_CHANNEL_LABEL: Record<PerceiveChannel, string> = {
 /** 被分发的一条信息（引擎侧编号，供分发层引用） */
 export interface PerceiveCandidateRecord {
   ref: number
-  kind: 'speech' | 'action' | 'scene' | 'ambient' | 'cue' | 'inner'
+  kind: 'speech' | 'action' | 'scene' | 'ambient' | 'cue' | 'inner' | 'event'
   text: string
   /** 谁说的 / 谁做的 */
   from?: string
@@ -151,8 +151,8 @@ export interface PerceptionOutcome {
 
 /** 角色感知到的一件事，按时间顺序排列 */
 export interface PerceivedEvent {
-  kind: 'speech' | 'action' | 'cue'
-  /** 谁说的 / 谁做的 */
+  kind: 'speech' | 'action' | 'cue' | 'event'
+  /** 谁说的 / 谁做的。`event` 没有人称 —— 它是世界自己发生的事 */
   from: string
   text: string
   /** 是不是他自己做的 */
@@ -239,6 +239,8 @@ export interface ContextBundle {
    * 主角不在场的空白不是冻结的 —— 别人照样在过日子。
    */
   interlude?: { summary: string; mine?: string }
+  /** 用户这一轮主动交棒了（什么都没做） */
+  pcIdle?: boolean
   /** 这一轮的局面：正在逼近什么（世界自己的判断，所有角色都看得到） */
   pressure: string
   /** 如果没有任何人干预，接下去会发生什么 */

@@ -292,8 +292,10 @@ describe('角色得有自己的驱动力', () => {
   it('不再强迫角色开口说话', () => {
     const [system] = buildRoleplayMessages({ bundle: bundle(), project: DEFAULT_PROJECT_SETTINGS })
     expect(system.content).not.toContain('至少要说一句话')
-    expect(system.content).toContain('你不是在等用户')
+    expect(system.content).toContain('你要回应的是局势，不是用户')
     expect(system.content).toContain('世界也在自己往前走')
+    // 角色该去处理真正要紧的事，而不是回头指挥用户
+    expect(system.content).toContain('你完全可以整轮不对用户说一个字')
   })
 
   it('往事里也带着当时的局面，回看得到', () => {
