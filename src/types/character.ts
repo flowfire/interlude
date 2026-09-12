@@ -169,6 +169,15 @@ export interface PerceivedEvent {
  */
 export interface HistoryRound {
   index: number
+  /**
+   * 这一轮他**不在场**。
+   *
+   * 不在场的轮次只留一行「你不在这里」，内容一个字都不给 ——
+   * 他没经历过的事，不该出现在他的记忆里。
+   */
+  absent?: boolean
+  /** absent 时，这一串不在场一直持续到第几轮（用于合并成一行） */
+  absentThrough?: number
   time: string
   place: string
   /** 当时的场面信息（与当前轮用同一套写法，才能逐字节对齐） */

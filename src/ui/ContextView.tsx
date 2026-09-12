@@ -57,7 +57,18 @@ export default function ContextView({ bundle, roundId }: Props) {
         {!bundle.history?.length ? (
           <div className="hint">这是第一轮，他还没有往事。</div>
         ) : (
-          bundle.history.map((round) => (
+          bundle.history.map((round) =>
+            round.absent ? (
+              <div key={round.index} className="ctx-history-round ctx-history-absent">
+                <div className="ctx-round">
+                  第 {round.index} 轮
+                  {round.absentThrough && round.absentThrough > round.index
+                    ? ` ~ 第 ${round.absentThrough} 轮`
+                    : ''}
+                  ：他不在场（内容一个字都没给他）
+                </div>
+              </div>
+            ) : (
             <div key={round.index} className="ctx-history-round">
               <div className="ctx-round">
                 第 {round.index} 轮
@@ -78,7 +89,8 @@ export default function ContextView({ bundle, roundId }: Props) {
               ))}
               {round.inner ? <div className="ctx-inner">（他当时在想：{round.inner}）</div> : null}
             </div>
-          ))
+            ),
+          )
         )}
       </div>
 

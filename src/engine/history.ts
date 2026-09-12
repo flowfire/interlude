@@ -1,17 +1,14 @@
 import type {
   CharacterCard,
   ComposedScene,
+  ContextBundle,
   HistoryRound,
-  PerceiveCandidateRecord,
   PerceivedEvent,
-  PerceptionOutcome,
   RoleplayOutput,
   SceneBlock,
 } from '@/types/character'
 import type { SceneSetup } from '@/types/scene'
-import type { SituationState } from '@/types/situation'
 import type { Round, Step } from '@/types/step'
-import type { Reception } from './stages/s4-context'
 
 /**
  * 往事的总长度上限（字符数，粗算 1 字符 ≈ 0.6 token）。
@@ -21,53 +18,6 @@ import type { Reception } from './stages/s4-context'
  */
 export const HISTORY_MAX_CHARS = 24000
 
-/** 候选人池里的文本带着「谁：」或「谁：「」的壳，剥掉它才能和舞台上的原文对上 */
-function payloadOf(text: string): string {
-  const quoted = text.match(/^[^：\n]{1,24}：「([\s\S]*)」$/)
-  if (quoted) return quoted[1]
-  const plain = text.match(/^[^：\n]{1,24}：([\s\S]*)$/)
-  if (plain) return plain[1]
-  return text
-}
-
-interface Override {
-  missed?: boolean
-  as?: string
-}
-
-/**
- * 把「信息分发层对这一轮的判定」整理成一张按文本查的表。
- *
- * 舞台上的块和候选池里的条目来自同一段原文，所以按文本能对上：
- * 被判定为没接收到的就整块删掉，被判定为听岔的换成分发层给出的版本。
- */
-function overridesOf(candidates: PerceiveCandidateRecord[], reception?: Reception): Map<string, Override> {
-  const missed = new Set((reception?.missed ?? []).map((item) => item.ref))
-  const distorted = new Map((reception?.distorted ?? []).map((item) => [item.ref, item.as]))
-  const out = new Map<string, Override>()
-
-  for (const candidate of candidates) {
-    const keys = new Set([candidate.text, payloadOf(candidate.text)])
-    for (const key of keys) {
-      if (!key.trim()) continue
-      const current = out.get(key) ?? {}
-      if (missed.has(candidate.ref)) current.missed = true
-      const as = distorted.get(candidate.ref)
-      if (as) current.as = as
-      out.set(key, current)
-    }
-  }
-
-  return out
-}
-
-function applyOverride(text: string, overrides: Map<string, Override>): { dropped: boolean; text: string } {
-  const found = overrides.get(text) ?? overrides.get(payloadOf(text))
-  if (!found) return { dropped: false, text }
-  if (found.missed) return { dropped: true, text }
-  return { dropped: false, text: found.as ?? text }
-}
-
 function findStep(steps: Record<string, Step>, roundId: string, stage: Step['stage'], characterId?: string): Step | undefined {
   return Object.values(steps)
     .filter((step) => step.roundId === roundId && step.stage === stage && step.status === 'done')
@@ -76,95 +26,63 @@ function findStep(steps: Record<string, Step>, roundId: string, stage: Step['sta
     .pop()
 }
 
-/** 当时在场的人 —— 与当前轮的算法保持一致（pc 打头，去重） */
-function presentNamesOf(sceneSetup: SceneSetup | undefined, pcName: string): string[] {
-  return [pcName, ...(sceneSetup?.present ?? []).map((item) => item.name)].filter(
-    (name, index, list) => name && list.indexOf(name) === index,
-  )
+/**
+ * 他当时在不在场。
+ *
+ * 判断依据是**那一轮的场面**，不是"有没有跑过给他组装上下文的步骤"——
+ * 后者会被重跑、清空影响，而场面是已经定下来的事实。
+ */
+function wasPresent(sceneSetup: SceneSetup | undefined, card: CharacterCard): boolean {
+  if (!sceneSetup) return false
+  const names = new Set([card.name, ...(card.aliases ?? [])])
+  return (sceneSetup.present ?? []).some((item) => names.has(item.name))
 }
 
-function eventOf(name: string, self: boolean, kind: PerceivedEvent['kind'], text: string): PerceivedEvent {
-  return { kind, from: name, text, self }
+function absentRound(index: number): HistoryRound {
+  return {
+    index,
+    absent: true,
+    time: '',
+    place: '',
+    atmosphere: '',
+    pressure: '',
+    escalation: '',
+    pcProfile: '',
+    presentNames: [],
+    sceneLines: [],
+    events: [],
+    inner: '',
+  }
 }
 
 /**
- * 从一轮已经跑完的步骤里，重建**某一个角色**当时经历的那一幕。
+ * 把「那一轮真正发给他的那一份上下文」变成往事的一段。
  *
- * 素材全部来自那一轮的步骤产物，所以重放多少次都是逐字节一样的 ——
- * 这是「同一个角色跨轮命中前缀」的前提。
+ * 注意这里用的是 **context 步骤的产物**，而不是编排出来的完整剧本：
+ * 那份上下文里已经包含了当时的感知判定（谁的话他听到了、什么他漏看了），
+ * 也**只有他该知道的东西**。别人的言行从来不在里面，所以不会混进他的记忆。
+ *
+ * 唯一要补的是**他自己当时说的话、做的事** —— 那是一定知道的，
+ * 而它不在感知候选池里（AI 的反应是并发生成的）。
  */
-function rebuildRound(input: {
-  round: Round
-  sceneSetup?: SceneSetup
-  situation?: SituationState
-  scene?: ComposedScene
-  candidates: PerceiveCandidateRecord[]
-  reception?: Reception
-  roleplay?: RoleplayOutput
-  cardName: string
-  pcName: string
-}): HistoryRound {
-  const { round, sceneSetup, situation, scene, candidates, reception, roleplay, cardName, pcName } = input
-  const overrides = overridesOf(candidates, reception)
+function roundFromBundle(input: { round: Round; bundle: ContextBundle; roleplay?: RoleplayOutput }): HistoryRound {
+  const { round, bundle, roleplay } = input
 
-  const sceneLines: string[] = []
-  const events: PerceivedEvent[] = []
-
-  // 开场画面与「正在发生什么」也属于环境，而且它们在候选池里排在环境的最前面。
-  // 编排结果里只有开场画面、没有 situation，所以这里按同一顺序补齐，
-  // 保证「当时发出去的那一段」和「后来回看的那一段」逐字节一致。
-  const opening = new Set<string>()
-  for (const line of sceneSetup?.opening ?? []) {
-    const text = line.trim()
-    if (!text) continue
-    opening.add(text)
-    const outcome = applyOverride(text, overrides)
-    if (!outcome.dropped) sceneLines.push(outcome.text)
-  }
-  if (sceneSetup?.situation?.trim()) {
-    const situation = sceneSetup.situation.trim()
-    const outcome = applyOverride(situation, overrides)
-    if (!outcome.dropped) sceneLines.push(outcome.text)
-  }
-
-  if (scene?.blocks?.length) {
-    for (const block of scene.blocks) {
-      const outcome = applyOverride(block.text, overrides)
-      if (outcome.dropped) continue
-      const text = outcome.text
-
-      // 世界自己发生的事也属于「当时的环境」—— 他记得狼扑上来了
-      if (block.kind === 'scene' || block.kind === 'world') {
-        if (block.kind === 'scene' && opening.has(block.text)) continue
-        sceneLines.push(text)
-        continue
-      }
-      const name = block.characterName ?? (block.kind.startsWith('pc-') ? pcName : '有人')
-      const kind: PerceivedEvent['kind'] =
-        block.kind === 'speech' || block.kind === 'pc-speech'
-          ? 'speech'
-          : block.kind === 'action' || block.kind === 'pc-action'
-            ? 'action'
-            : 'cue'
-      events.push(eventOf(name, name === cardName, kind, text))
-    }
-  } else {
-    // 还没编排出来（比如只跑了前几步）：退回到用户原文，至少别让他忘掉
-    const text = round.userInput.trim()
-    if (text) sceneLines.push(text)
-  }
+  const ownBeats: PerceivedEvent[] = (roleplay?.beats ?? [])
+    .map((beat) => ({ kind: beat.kind, from: bundle.name, text: beat.text, self: true }))
+    .filter((event) => event.text.trim().length > 0)
 
   return {
     index: round.index,
-    time: sceneSetup?.time ?? '',
-    place: sceneSetup?.place ?? '',
-    atmosphere: sceneSetup?.atmosphere ?? '',
-    pressure: situation?.pressure ?? '',
-    escalation: situation?.escalation ?? '',
-    pcProfile: sceneSetup?.pcProfile ?? '',
-    presentNames: presentNamesOf(sceneSetup, pcName),
-    sceneLines,
-    events,
+    time: bundle.scene.time,
+    place: bundle.scene.place,
+    atmosphere: bundle.scene.atmosphere,
+    pressure: bundle.pressure ?? '',
+    escalation: bundle.escalation ?? '',
+    pcProfile: bundle.counterpartProfile,
+    presentNames: bundle.presentNames,
+    sceneLines: bundle.sceneLines,
+    events: [...bundle.perceived, ...ownBeats],
     inner: roleplay?.inner?.trim() ?? '',
   }
 }
@@ -185,6 +103,17 @@ export interface HistoryInput {
  * 超出上限时从**最早**的轮次开始丢（保留离现在最近的），并在开头注明。
  * 滑动窗口会破坏角色一致性，所以这里刻意不设「只看最近 N 轮」。
  */
+/**
+ * 这个角色「亲身经历过的」往事：一轮一段，按时间顺序，从第 1 轮一路累加。
+ *
+ * 两条硬规则：
+ * 1. **他不在场的那一轮，内容一个字都不给**，只留一行「你不在这里」。
+ *    连续的几轮会合并成一行。
+ * 2. **别人说的话做的事不进他的往事。** 每一段都取那一轮真正发给他的
+ *    那份上下文（已经过感知判定），再补上他自己当时的言行。
+ *
+ * 超出上限时从**最早**的轮次开始丢（保留离现在最近的），并在开头注明。
+ */
 export function collectHistory(input: HistoryInput): HistoryRound[] {
   const { rounds, steps, card, pcName, sessionId, currentRoundId } = input
   const current = rounds.find((round) => round.id === currentRoundId)
@@ -196,22 +125,36 @@ export function collectHistory(input: HistoryInput): HistoryRound[] {
 
   const built: HistoryRound[] = []
   for (const round of past) {
-    const perception = findStep(steps, round.id, 'perceive')?.output as PerceptionOutcome | undefined
+    const sceneSetup = findStep(steps, round.id, 'scene')?.output as SceneSetup | undefined
+
+    if (!wasPresent(sceneSetup, card)) {
+      const last = built[built.length - 1]
+      if (last?.absent) {
+        last.absentThrough = round.index
+        continue
+      }
+      built.push(absentRound(round.index))
+      continue
+    }
+
+    const bundle = findStep(steps, round.id, 'context', card.id)?.output as ContextBundle | undefined
+    if (!bundle) {
+      // 他在场，但那一轮的上下文已经不在了（被重跑清掉）。宁可留个空壳，
+      // 也不要把这一轮错并进前后的「你不在场」里。
+      built.push({ ...absentRound(round.index), absent: false })
+      continue
+    }
+
     built.push(
-      rebuildRound({
+      roundFromBundle({
         round,
-        sceneSetup: findStep(steps, round.id, 'scene')?.output as SceneSetup | undefined,
-        situation: findStep(steps, round.id, 'situation')?.output as SituationState | undefined,
-        scene: findStep(steps, round.id, 'compose')?.output as ComposedScene | undefined,
-        candidates: perception?.candidates ?? [],
-        reception: perception?.entries.find((entry) => entry.characterId === card.id),
+        bundle,
         roleplay: findStep(steps, round.id, 'roleplay', card.id)?.output as RoleplayOutput | undefined,
-        cardName: card.name,
-        pcName,
       }),
     )
   }
 
+  void pcName
   return trimToBudget(built, input.maxChars ?? HISTORY_MAX_CHARS)
 }
 
@@ -282,6 +225,14 @@ export function renderRoundBody(round: {
 
 /** 往事里的一轮，连同他当时心里在想什么 */
 export function renderHistoryRound(round: HistoryRound, pcName = '你对面的人'): string {
+  if (round.absent) {
+    const span =
+      round.absentThrough && round.absentThrough > round.index
+        ? `第 ${round.index} 轮 ~ 第 ${round.absentThrough} 轮`
+        : `第 ${round.index} 轮`
+    return `── ${span}：你不在这里 ──`
+  }
+
   const body = renderRoundBody({ ...round, pcName })
   return round.inner ? `${body}\n\n（你当时在想：${round.inner}）` : body
 }

@@ -183,7 +183,8 @@ function renderHistory(bundle: ContextBundle): string {
   return (
     '【往事 —— 按时间顺序，越靠后越近】\n\n' +
     '（这些是你亲身经历过的过去。可以自然地引用、联想、记仇、叙旧，' +
-    '但不要像复述档案一样把它们念出来。）' +
+    '但不要像复述档案一样把它们念出来。' +
+    '标着「你不在这里」的那几轮你不在场，那段时间发生了什么你并不知道。）' +
     (rounds.length ? '\n\n' + rounds.map((round) => renderHistoryRound(round, bundle.pcName)).join('\n\n') : '')
   )
 }

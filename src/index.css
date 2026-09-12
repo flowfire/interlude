@@ -1202,6 +1202,11 @@ pre.code {
 .ctx-event-scene {
   color: var(--text-faint);
 }
+.ctx-history-absent {
+  border-left-color: transparent;
+  background: transparent;
+  opacity: 0.6;
+}
 .ctx-inner {
   display: block;
   color: var(--pink);

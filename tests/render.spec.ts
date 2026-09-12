@@ -100,6 +100,35 @@ describe('上下文面板', () => {
     expect(html).toContain('我来了。')
   })
 
+  it('他不在场的轮次在面板上标明，不带内容', () => {
+    const html = renderToString(
+      createElement(ContextView, {
+        bundle: makeBundle([
+          {
+            index: 2,
+            absent: true,
+            absentThrough: 4,
+            time: '',
+            place: '',
+            atmosphere: '',
+            pressure: '',
+            escalation: '',
+            pcProfile: '',
+            presentNames: [],
+            sceneLines: [],
+            events: [],
+            inner: '',
+          },
+        ]),
+        roundId: 'r5',
+      }),
+    )
+    expect(html).toContain('他不在场（内容一个字都没给他）')
+    // React SSR 会在插值处插注释，所以只断言拼接得起来的那几段
+    expect(html).toContain(' ~ 第 ')
+    expect(html).toContain('ctx-history-absent')
+  })
+
   it('还没有往事时说明这是第一轮', () => {
     const html = renderToString(createElement(ContextView, { bundle: makeBundle([]), roundId: 'r1' }))
     expect(html).toContain('这是第一轮，他还没有往事')

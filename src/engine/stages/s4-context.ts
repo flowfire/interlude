@@ -44,16 +44,23 @@ export interface ContextBuildInput {
 }
 
 /**
- * 候选池里的文本是给「信息分发」那个模型看的，pc 那一侧被套上了「你：」的壳；
- * 而舞台上本来就是第一人称在说话。直接拿去渲染会变成「我：「你：「…」」」，
- * 所以这里把壳剥掉。
+ * 候选池里的文本是给「信息分发」那个模型看的，说话人一律被套上了
+ * 「谁：」或「谁：「…」」的壳（pc 那一侧写成「你：」）。
+ * 而舞台上本来就是按人分好的，直接拿去渲染会变成「我：「你：「…」」」、
+ * 「林砚：林砚：…」这种双重前缀，所以这里按说话人把壳剥掉。
  */
-function stripPcWrapper(text: string, kind: string): string {
+function stripSpeakerWrapper(text: string, from: string | undefined, pcName: string, kind: string): string {
   if (kind !== 'speech' && kind !== 'action') return text
-  const quoted = text.match(/^你：「([\s\S]*)」$/)
-  if (quoted) return quoted[1]
-  const plain = text.match(/^你：([\s\S]*)$/)
-  if (plain) return plain[1]
+
+  const prefixes = [from, from === pcName ? '你' : ''].filter((item): item is string => Boolean(item))
+  for (const who of prefixes) {
+    if (text.startsWith(`${who}：「`) && text.endsWith('」')) {
+      return text.slice(who.length + 2, -1)
+    }
+    if (text.startsWith(`${who}：`)) {
+      return text.slice(who.length + 1)
+    }
+  }
   return text
 }
 
@@ -86,7 +93,7 @@ function buildPerceived(input: {
   for (const item of candidates) {
     if (missed.has(item.ref)) continue
     const raw = distorted.get(item.ref) ?? item.text
-    const text = item.from === pcName ? stripPcWrapper(raw, item.kind) : raw
+    const text = stripSpeakerWrapper(raw, item.from, pcName, item.kind)
 
     switch (item.kind) {
       case 'scene':
