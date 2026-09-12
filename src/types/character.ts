@@ -38,6 +38,13 @@ export interface CharacterCard {
   source: CardSource
   /** 查到的资料摘要（可追溯，也避免重跑时再查一次） */
   researchNote?: string
+  /**
+   * 他能不能直接读到别人的内心（读心、共感、心灵链接之类）。
+   *
+   * 这一项会打破「心理不外传」的硬规则 —— 有读心能力的角色，
+   * 会被直接授予对方的内心活动。
+   */
+  canReadMind: boolean
   persona: {
     summary: string
     speechStyle: string
@@ -52,6 +59,12 @@ export interface CharacterCard {
     canonAnchors: string[]
     /** 他绝不会做的事、绝不会说的话 */
     boundaries: string[]
+    /** 能力：他能做什么。超出这个范围的事，他不该做得到 */
+    abilities: string[]
+    /** 感知特长：他能察觉到别人察觉不到的东西 */
+    perception: string[]
+    /** 会牵引剧情的设定：体质、宿命、身份、被卷进的事 */
+    hooks: string[]
   }
   state: {
     mood: string
@@ -68,6 +81,8 @@ export interface KnownCastEntry {
   name: string
   aliases: string[]
   brief: string
+  /** 会牵引剧情的设定，例如「天生招祸，走到哪儿哪儿出事」 */
+  hooks?: string[]
 }
 
 /** 角色感知到的一件事，按时间顺序排列 */
@@ -112,6 +127,11 @@ export interface ContextBundle {
   ownThoughts: string[]
   /** 素材里已经属于他的表现：他刚才说过什么、做过什么 */
   ownPriorLines: string[]
+  /**
+   * 通过特殊能力读到的别人内心。
+   * 只有 canReadMind 的角色才会有内容 —— 这是「心理不外传」唯一的例外。
+   */
+  mindRead: { from: string; text: string }[]
   /** 他注意到的、从「你」的内心外化出来的可见表现 —— 只有现象，没有你的真实想法 */
   pcCues: ObservedCue[]
   /** 他记得的、以前轮次发生过的事（按时间顺序，最近的排在最后） */

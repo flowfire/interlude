@@ -46,6 +46,7 @@ export function buildContextBundle(input: ContextBuildInput): ContextBundle {
   const ownThoughts: string[] = []
   const ownPriorLines: string[] = []
   const knownFacts: string[] = []
+  const mindRead: ContextBundle['mindRead'] = []
   const doesNotKnow = new Set<string>()
   const perceived: PerceivedEvent[] = []
 
@@ -105,8 +106,17 @@ export function buildContextBundle(input: ContextBuildInput): ContextBundle {
           ownThoughts.push(segment.text)
           break
         }
-        const owner = segment.subject?.[0] ?? '有人'
-        doesNotKnow.add(`${owner}心里在想什么（你只能从他的表情、语气、动作去猜，而且可能猜错）`)
+
+        const owner = segment.subject?.[0]
+        const isPcInner = !owner || owner === pcName
+
+        // 读心能力是「心理不外传」唯一的例外：直接交给他，并标明来源
+        if (card.canReadMind && isPcInner) {
+          mindRead.push({ from: pcName, text: segment.text })
+          break
+        }
+
+        doesNotKnow.add(`${owner ?? '有人'}心里在想什么（你只能从他的表情、语气、动作去猜，而且可能猜错）`)
 
         // 不是他的内心，但如果这就是「你」的内心，它的外在表现会出现在这里
         const index = innerIndexById.get(segment.id)
@@ -121,8 +131,13 @@ export function buildContextBundle(input: ContextBuildInput): ContextBundle {
     }
   }
 
-  // 你填写的自我人设属于「内心层面」，绝不外泄；对方只能看到场景构建归纳出的外在形象
-  doesNotKnow.add(`${pcName}的真实想法、来历和底牌（你只能凭他的样子和表现去判断）`)
+  // 你填写的自我人设属于「内心层面」，绝不外泄；对方只能看到场景构建归纳出的外在形象。
+  // 有读心能力的角色是唯一例外 —— 但他读到的也只是表层念头，来历和底牌依然看不到。
+  doesNotKnow.add(
+    card.canReadMind
+      ? `${pcName}更深的来历和底牌（你读得到他此刻在想什么，但读不到他为什么这么想）`
+      : `${pcName}的真实想法、来历和底牌（你只能凭他的样子和表现去判断）`,
+  )
 
   return {
     characterId: card.id,
@@ -144,6 +159,7 @@ export function buildContextBundle(input: ContextBuildInput): ContextBundle {
     seen,
     ownThoughts,
     ownPriorLines,
+    mindRead,
     pcCues,
     knownFacts,
     doesNotKnow: [...doesNotKnow],

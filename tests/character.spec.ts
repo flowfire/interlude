@@ -43,10 +43,14 @@ function card(name: string, appears = true): CharacterCard {
       voiceSamples: [],
       canonAnchors: [],
       boundaries: [],
+      abilities: [],
+      perception: [],
+      hooks: [],
     },
     state: { mood: '戒备', location: '茶馆' },
     appearsInInput: appears,
     evidence: '素材里的某一句',
+    canReadMind: false,
   }
 }
 
@@ -81,6 +85,7 @@ function bundleOf(name: string): ContextBundle {
     seen: [],
     ownThoughts: [],
     ownPriorLines: [],
+    mindRead: [],
     pcCues: [],
     knownFacts: [],
     doesNotKnow: [],

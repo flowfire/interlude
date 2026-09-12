@@ -99,6 +99,7 @@ export function toKnownCast(library: Record<string, CharacterCard>): KnownCastEn
     name: card.name,
     aliases: card.aliases,
     brief: card.persona.summary,
+    hooks: card.persona.hooks ?? [],
   }))
 }
 

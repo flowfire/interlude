@@ -20,6 +20,7 @@ function card(name: string, aliases: string[] = []): CharacterCard {
     canonical: false,
     franchise: '',
     source: 'material',
+    canReadMind: false,
     persona: {
       summary: '一句话简介',
       speechStyle: '',
@@ -30,6 +31,9 @@ function card(name: string, aliases: string[] = []): CharacterCard {
       voiceSamples: [],
       canonAnchors: [],
       boundaries: [],
+      abilities: [],
+      perception: [],
+      hooks: [],
     },
     state: { mood: '', location: '' },
     appearsInInput: true,

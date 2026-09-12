@@ -25,7 +25,8 @@ export function renderKnownCast(knownCast: KnownCastEntry[] | undefined): string
   return `【已经出场过的人】\n${knownCast
     .map((entry) => {
       const alias = entry.aliases.length ? `（也叫 ${entry.aliases.join('、')}）` : ''
-      return `- ${entry.name}${alias}：${entry.brief || '（没有更多说明）'}`
+      const hooks = entry.hooks?.length ? `\n    · 会牵引：${entry.hooks.join('；')}` : ''
+      return `- ${entry.name}${alias}：${entry.brief || '（没有更多说明）'}${hooks}`
     })
     .join('\n')}`
 }

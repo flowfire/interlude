@@ -45,6 +45,12 @@ const SYSTEM = `你正在一部互动剧里扮演「__NAME__」。你只演这�
 此刻心境：__MOOD__
 此刻所在：__LOCATION__
 
+【你能做的事 —— 超出这个范围的事，你做不到】
+__ABILITIES__
+
+【你察觉得到、而别人察觉不到的东西】
+__PERCEPTION__
+
 【你的标志性特征 —— 要让熟悉你的人一眼认出你】
 __SIGNATURE__
 
@@ -121,6 +127,16 @@ function renderBundle(bundle: ContextBundle): string {
     parts.push(`【你自己此刻在想什么（只有你知道）】\n${bundle.ownThoughts.map((line) => `· ${line}`).join('\n')}`)
   }
 
+  if (bundle.mindRead.length) {
+    parts.push(
+      `【你读到的念头 —— 这是你的特殊能力直接读到的，不是猜的】\n${bundle.mindRead
+        .map((item) => `· 「${item.from}」此刻在想：${item.text}`)
+        .join('\n')}\n\n` +
+        '注意：你只读得到**此刻的表层念头**，读不到他的来历、动机和底牌。' +
+        '也不要表现得像在朗读对方的内心独白 —— 你知道内容，但怎么用取决于你的性格。',
+    )
+  }
+
   if (bundle.perceived.length) {
     const lines = bundle.perceived.map((event, index) => {
       const n = index + 1
@@ -184,6 +200,8 @@ export function buildRoleplayMessages(input: RoleplayPromptInput): ChatMessage[]
     .replaceAll('__TEMPERAMENT__', listOrNone(card.persona.temperament ?? [], '（素材里没有明说）'))
     .replaceAll('__HABITS__', listOrNone(card.persona.habits ?? [], '（素材里没有明说）'))
     .replaceAll('__BACKGROUND__', card.persona.background || '（素材里没有明说）')
+    .replaceAll('__ABILITIES__', bullets(card.persona.abilities ?? [], '（没有特别说明，按常理判断）'))
+    .replaceAll('__PERCEPTION__', bullets(card.persona.perception ?? [], '（没有超出常人的感知）'))
     .replaceAll('__SIGNATURE__', bullets(card.persona.signature ?? []))
     .replaceAll(
       '__VOICE_SAMPLES__',
