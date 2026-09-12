@@ -3,7 +3,7 @@ import type { KnownCastEntry } from '@/types/character'
 import type { NormalizedDoc } from '../stages/s0-normalize'
 import type { Segment } from '@/types/segment'
 import type { ContentRating } from '@/types/step'
-import { renderKnownCast } from './segmenter'
+import { renderKnownCast, renderRecap } from './segmenter'
 
 export interface ScenePromptInput {
   doc: NormalizedDoc
@@ -16,6 +16,8 @@ export interface ScenePromptInput {
   rating?: ContentRating
   /** 这个故事里已经出场过的人，用来解析指代词 */
   knownCast?: KnownCastEntry[]
+  /** 前面已经演过的剧情 —— 判断「前面那个人」是谁的主要依据 */
+  previousRecap?: string
 }
 
 const SYSTEM = `你是「幕间」的场景构建器。用户会给你一段剧情素材以及它的拆解结果，你要把这段素材变成**一个可以立刻开演的场面**。
@@ -77,7 +79,7 @@ const SYSTEM = `你是「幕间」的场景构建器。用户会给你一段剧�
 只输出这一个 JSON 对象，不要解释文字，不要 Markdown 围栏。`
 
 export function buildSceneMessages(input: ScenePromptInput): ChatMessage[] {
-  const { doc, segments, pcName, pcPersona, storyTitle, previousScene, rating = 'general', knownCast } = input
+  const { doc, segments, pcName, pcPersona, storyTitle, previousScene, rating = 'general', knownCast, previousRecap } = input
 
   const segmentLines = segments
     .map((segment) => {
@@ -109,6 +111,8 @@ export function buildSceneMessages(input: ScenePromptInput): ChatMessage[] {
 ${personaLine}
 
 ${previous}
+
+${renderRecap(previousRecap)}
 
 ${renderKnownCast(knownCast)}
 

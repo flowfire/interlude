@@ -15,6 +15,8 @@ export interface SegmenterPromptInput {
   freedomLevel: 'low' | 'medium' | 'high'
   /** 这个故事里已经出场过的人，用来解析指代词 */
   knownCast?: KnownCastEntry[]
+  /** 前面已经演过的剧情 */
+  previousRecap?: string
 }
 
 /** 渲染「已经出场过的人」名单，给三个需要消歧的阶段共用 */
@@ -26,6 +28,21 @@ export function renderKnownCast(knownCast: KnownCastEntry[] | undefined): string
       return `- ${entry.name}${alias}：${entry.brief || '（没有更多说明）'}`
     })
     .join('\n')}`
+}
+
+/**
+ * 渲染前文剧情。
+ *
+ * 这一份比「角色卡名单」重要得多 —— 「前面那个人」指的是谁，
+ * 取决于上一幕里谁走在前面、谁站在哪儿，光看名单是看不出来的。
+ */
+export function renderRecap(recap: string | undefined): string {
+  if (!recap?.trim()) return ''
+  return (
+    `【前面已经演过的内容】\n${recap.trim()}\n\n` +
+    '（素材里的「他」「那个人」「前面的人」「那家伙」很可能指的就是这上面出现过的人 —— ' +
+    '对照着判断，直接写那个人的名字，不要新造一个角色。）'
+  )
 }
 
 const SYSTEM = `你是「幕间」的拆解器。你唯一的工作是把用户给的一段剧情素材，拆成带类型标签的最小片段，并标出涉及的实体与时间标记。
@@ -87,7 +104,7 @@ timeMarkers 的 kind 取值：absolute（绝对时间）、relative（相对时�
 visibility：只有 inner 用 "private"，其余用 "public"。`
 
 export function buildSegmenterMessages(input: SegmenterPromptInput): ChatMessage[] {
-  const { doc, pcName, pcPersona, storyTitle, freedomLevel, knownCast } = input
+  const { doc, pcName, pcPersona, storyTitle, freedomLevel, knownCast, previousRecap } = input
 
   const blockLines = doc.blocks
     .map((block) => {
@@ -107,6 +124,8 @@ export function buildSegmenterMessages(input: SegmenterPromptInput): ChatMessage
 
 【用户填写的自我人设】
 ${pcPersona.trim() || '（用户没有填写，请从素材里推断）'}
+
+${renderRecap(previousRecap)}
 
 ${renderKnownCast(knownCast)}
 

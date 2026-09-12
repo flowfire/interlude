@@ -4,7 +4,7 @@ import type { NormalizedDoc } from '../stages/s0-normalize'
 import type { WikiLookup } from '../research/wiki'
 import type { Segment } from '@/types/segment'
 import type { ScenePresent } from '@/types/scene'
-import { renderKnownCast } from './segmenter'
+import { renderKnownCast, renderRecap } from './segmenter'
 
 export interface CastPromptInput {
   doc: NormalizedDoc
@@ -16,6 +16,8 @@ export interface CastPromptInput {
   research: Record<string, WikiLookup>
   /** 这个故事里已经出场过的人 */
   knownCast?: KnownCastEntry[]
+  /** 前面已经演过的剧情 */
+  previousRecap?: string
 }
 
 const SYSTEM = `你是「幕间」的角色卡生成器。场景构建器已经确定了这一轮有哪些人在场，你要为名单上的每一个人写一份角色卡。
@@ -93,7 +95,7 @@ tier 取值：major（主要角色）、minor（次要）、extra（只有一两
 只输出这一个 JSON 对象，不要任何解释文字、不要 Markdown 围栏。`
 
 export function buildCastMessages(input: CastPromptInput): ChatMessage[] {
-  const { doc, segments, pcName, storyTitle, present, research, knownCast } = input
+  const { doc, segments, pcName, storyTitle, present, research, knownCast, previousRecap } = input
 
   const presentList = present
     .map((item) => {
@@ -118,6 +120,8 @@ export function buildCastMessages(input: CastPromptInput): ChatMessage[] {
 
   const user = `故事：《${storyTitle}》
 视角角色（用户扮演）：「${pcName}」
+
+${renderRecap(previousRecap)}
 
 ${renderKnownCast(knownCast)}
 

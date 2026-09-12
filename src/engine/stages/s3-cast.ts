@@ -29,6 +29,8 @@ export interface CastStageInput {
   enableResearch?: boolean
   /** 这个故事里已经出场过的人，用来把「前面的人」这类称呼归并回去 */
   knownCast?: KnownCastEntry[]
+  /** 前面已经演过的剧情 */
+  previousRecap?: string
 }
 
 export interface CastStageOutput {
@@ -206,7 +208,7 @@ export async function runCastStage(
   client: LlmClient,
   input: CastStageInput,
 ): Promise<{ output: CastStageOutput; result: ChatResult | null }> {
-  const { doc, segments, project, present, library = {}, enableResearch = true, knownCast } = input
+  const { doc, segments, project, present, library = {}, enableResearch = true, knownCast, previousRecap } = input
   const activePresent = present.filter((item) => item.name !== project.pcName)
 
   if (!activePresent.length) {
@@ -259,6 +261,7 @@ export async function runCastStage(
     present: fresh,
     research,
     knownCast,
+    previousRecap,
   })
 
   try {

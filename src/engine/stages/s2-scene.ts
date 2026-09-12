@@ -28,6 +28,8 @@ export interface SceneStageInput {
   rating?: ContentRating
   /** 这个故事里已经出场过的人，用来解析「他」「前面那个人」这类指代 */
   knownCast?: KnownCastEntry[]
+  /** 前面已经演过的剧情 */
+  previousRecap?: string
 }
 
 const INPUT_MODES: SceneInputMode[] = ['dialogue', 'outline', 'mixed']
@@ -302,7 +304,7 @@ export async function runSceneStage(
   client: LlmClient,
   input: SceneStageInput,
 ): Promise<{ output: SceneSetup; result: ChatResult | null }> {
-  const { doc, segments, project, previousScene, rating = 'general', entities = [], knownCast } = input
+  const { doc, segments, project, previousScene, rating = 'general', entities = [], knownCast, previousRecap } = input
 
   const messages = buildSceneMessages({
     doc,
@@ -313,6 +315,7 @@ export async function runSceneStage(
     previousScene,
     rating,
     knownCast,
+    previousRecap,
   })
 
   try {

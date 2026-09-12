@@ -236,6 +236,8 @@ export interface SegmentStageInput {
   project: ProjectSettings
   /** 这个故事里已经出场过的人，用来解析「他」「前面那个人」这类指代 */
   knownCast?: KnownCastEntry[]
+  /** 前面已经演过的剧情 */
+  previousRecap?: string
 }
 
 export interface SegmentStageOutput extends SegmenterResult {
@@ -256,6 +258,7 @@ export async function runSegmentStage(
     storyTitle: project.storyTitle,
     freedomLevel: project.freedomLevel,
     knownCast: input.knownCast,
+    previousRecap: input.previousRecap,
   })
 
   try {
