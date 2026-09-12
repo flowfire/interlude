@@ -140,9 +140,7 @@ function RoundBlock({ round, isLast, demo }: { round: Round; isLast: boolean; de
           ) : null}
 
           {!setup.usedModel ? (
-            <div className="scene-fallback">
-              场景构建降级了（没有调用模型）。原因：{setup.fallbackReason || '未知'}
-            </div>
+            <div className="scene-fallback">未调用模型：{setup.fallbackReason || '原因未知'}</div>
           ) : null}
         </div>
       ) : null}
@@ -275,22 +273,15 @@ function RoundBlock({ round, isLast, demo }: { round: Round; isLast: boolean; de
         <div className="situation-block">
           <div className="situation-head">
             <span className="who-badge who-world">局面</span>
-            <span className="hint">
-              {situationData.state.usedModel ? '这一步不是任何人说的话，是世界自己在动' : '局面推进降级了'}
-            </span>
+            {situationData.state.usedModel ? null : <span className="hint">未调用模型</span>}
           </div>
           {situationData.state.events.map((event, index) => (
             <div key={index} className={`situation-event situation-event-${event.kind}`}>
               {event.text}
             </div>
           ))}
-          {situationData.state.order?.length ? (
-            <div className="situation-order">
-              出场顺序（后动的人看得见先动的人）：{situationData.state.order.join(' → ')}
-            </div>
-          ) : null}
           {situationData.state.escalation ? (
-            <div className="situation-escalation">如果没人动：{situationData.state.escalation}</div>
+            <div className="situation-escalation">下一步：{situationData.state.escalation}</div>
           ) : null}
         </div>
       ) : null}

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { composeScene } from '@/engine/stages/s7-compose'
 import { buildPerceiveCandidates } from '@/engine/stages/s3b-perceive'
+import { buildSituationMessages } from '@/engine/prompts/situation'
 import { runSituationStage } from '@/engine/stages/s3c-situation'
 import { buildRoleplayMessages } from '@/engine/prompts/roleplay'
 import { normalizeInput } from '@/engine/stages/s0-normalize'
@@ -18,6 +19,7 @@ const situation: SituationState = {
     { kind: 'ambient', text: '左侧灌木丛里传来一声很低的喉音' },
     { kind: 'scene', text: '最前面那两头伏低了身子' },
   ],
+  pace: 'escalate',
   order: ['金刚狼', '阿七'],
   usedModel: true,
 }
@@ -94,6 +96,29 @@ describe('局面推进：世界自己会往前走', () => {
     expect(mine).toBeGreaterThanOrEqual(0)
     expect(world).toBeGreaterThan(mine)
     expect(reaction).toBeGreaterThan(world)
+  })
+
+  it('节奏与上一轮的节奏都会交给导演，避免原地踏步', () => {
+    const messages = buildSituationMessages({
+      storyTitle: '测试',
+      pcName: '我',
+      doc: normalizeInput('我听着他的吩咐不动。'),
+      segments: segments(),
+      sceneSetup: setup,
+      drives: [{ name: '金刚狼', drive: '把这孩子活着带出去', brief: '挡在前面' }],
+      previous: { pressure: '狼群在收紧', escalation: '它们会扑上来', pace: 'build' },
+    })
+
+    const [system, user] = messages
+    // 导演要显式判断节奏，而不是把"快慢"交给角色的长期目标
+    expect(system.content).toContain('不要连着两轮都停在 build')
+    expect(system.content).toContain('如果用户下一轮什么都不写，剧情还会往前走吗')
+    expect(system.content).toContain('"pace"')
+    // 上一轮是铺垫，导演得知道
+    expect(user.content).toContain('上一轮的节奏：build')
+    // 压力要压在具体某个人的目标上
+    expect(system.content).toContain('压力要压在**某个人的目标上**')
+    expect(user.content).toContain('把这孩子活着带出去')
   })
 
   it('模型不可用时只降级，不阻断整轮，并沿用上一轮的压力', async () => {

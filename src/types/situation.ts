@@ -14,6 +14,21 @@ export const SITUATION_EVENT_LABEL: Record<SituationEventKind, string> = {
 }
 
 /**
+ * 这一轮在节奏上的位置。
+ *
+ * 角色只会对眼前的事做反应，没有人推，他们就会一直聊下去 ——
+ * 所以「这一轮该快还是该慢」是导演的活，不能交给角色的长期目标。
+ */
+export type SituationPace = 'build' | 'escalate' | 'climax' | 'settle'
+
+export const SITUATION_PACE_LABEL: Record<SituationPace, string> = {
+  build: '铺垫',
+  escalate: '升温',
+  climax: '爆发',
+  settle: '收束',
+}
+
+/**
  * 「局面」——这一轮世界自己往前走了多少。
  *
  * 这是整条流水线里唯一一个**不代表任何角色**的行动者：
@@ -25,6 +40,8 @@ export interface SituationState {
   pressure: string
   /** 如果没有任何人干预，接下来会发生什么 */
   escalation: string
+  /** 这一轮在节奏上的位置 */
+  pace: SituationPace
   /** 这一轮客观发生的事，按顺序（会进时间线，也会进信息分发） */
   events: SituationEvent[]
   /**
@@ -40,6 +57,7 @@ export interface SituationState {
 }
 
 export const RawSituationSchema = z.object({
+  pace: z.union([z.string(), z.number(), z.null()]).optional(),
   pressure: z.union([z.string(), z.number(), z.null()]).optional(),
   escalation: z.union([z.string(), z.number(), z.null()]).optional(),
   events: z.union([z.array(z.unknown()), z.string(), z.null()]).optional(),

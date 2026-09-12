@@ -1,7 +1,7 @@
 import type { LlmClient } from '@/engine/llm/client'
 import type { ChatResult } from '@/types/llm'
 import type { CharacterCard } from '@/types/character'
-import type { SituationEvent, SituationState } from '@/types/situation'
+import type { SituationEvent, SituationPace, SituationState } from '@/types/situation'
 import { RawSituationSchema } from '@/types/situation'
 import type { SceneSetup } from '@/types/scene'
 import type { Segment } from '@/types/segment'
@@ -17,10 +17,17 @@ export interface SituationStageInput {
   pcName: string
   storyTitle: string
   previousRecap?: string
-  previous?: { pressure: string; escalation: string } | null
+  previous?: { pressure: string; escalation: string; pace?: SituationPace } | null
 }
 
 const MAX_EVENTS = 3
+
+const PACES: SituationPace[] = ['build', 'escalate', 'climax', 'settle']
+
+function normalizePace(raw: unknown): SituationPace {
+  const value = asText(raw).trim().toLowerCase() as SituationPace
+  return PACES.includes(value) ? value : 'build'
+}
 
 /** 出场顺序：只保留在场的名字，顺序照给 */
 function normalizeOrder(raw: unknown, cards: CharacterCard[]): string[] {
@@ -96,6 +103,7 @@ export async function runSituationStage(
     })
 
     const parsed = data as {
+      pace?: unknown
       pressure?: unknown
       escalation?: unknown
       events?: unknown
@@ -104,6 +112,7 @@ export async function runSituationStage(
     }
     return {
       output: {
+        pace: normalizePace(parsed.pace),
         pressure: asText(parsed.pressure).trim() || previous?.pressure || '',
         escalation: asText(parsed.escalation).trim(),
         events: normalizeEvents(parsed.events),
@@ -116,6 +125,7 @@ export async function runSituationStage(
   } catch (error) {
     return {
       output: {
+        pace: previous?.pace ?? 'build',
         pressure: previous?.pressure ?? '',
         escalation: previous?.escalation ?? '',
         events: [],

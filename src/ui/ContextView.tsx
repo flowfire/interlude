@@ -47,15 +47,13 @@ export default function ContextView({ bundle, roundId }: Props) {
   return (
     <div className="context-view">
       <div className="info-box" style={{ marginBottom: 12 }}>
-        这是「{bundle.name}」在这一轮里<strong>实际拿到</strong>的全部信息。
-        {contextStep ? `（步骤：${contextStep.label}）` : ''}
-        共 {segments.length} 个片段，其中 {givenCount} 个给了它。
+        「{bundle.name}」这一轮拿到的信息 · {segments.length} 个片段中 {givenCount} 个给了它
       </div>
 
       <div className="ctx-section">
-        <h4>他亲身经历的往事（一轮一段，逐轮累加，永不重写）</h4>
+        <h4>往事</h4>
         {!bundle.history?.length ? (
-          <div className="hint">这是第一轮，他还没有往事。</div>
+          <div className="hint">还没有往事。</div>
         ) : (
           bundle.history.map((round) =>
             round.absent ? (
@@ -65,7 +63,7 @@ export default function ContextView({ bundle, roundId }: Props) {
                   {round.absentThrough && round.absentThrough > round.index
                     ? ` ~ 第 ${round.absentThrough} 轮`
                     : ''}
-                  ：他不在场（内容一个字都没给他）
+                  ：他不在场
                 </div>
               </div>
             ) : (
@@ -95,11 +93,11 @@ export default function ContextView({ bundle, roundId }: Props) {
       </div>
 
       <div className="ctx-section">
-        <h4>他按时间顺序感知到的（这才是他实际的体验）</h4>
+        <h4>这一轮他感知到的</h4>
         <ol className="ctx-timeline">
           {bundle.perceived.map((event, index) => (
             <li key={index} className={`ctx-event ctx-event-${event.kind}`}>
-              <span className="ctx-from">{event.self ? '（他自己）' : event.from}</span>
+              <span className="ctx-from">{event.self ? '他自己' : event.from}</span>
               {event.kind === 'speech' ? `「${event.text}」` : event.text}
             </li>
           ))}
@@ -129,7 +127,7 @@ export default function ContextView({ bundle, roundId }: Props) {
       />
 
       <Section
-        title="他注意到的你的样子（从你的内心外化而来）"
+        title="他注意到的你的样子"
         items={bundle.pcCues.map((cue) => (
           <>
             {cue.visible}
@@ -148,23 +146,7 @@ export default function ContextView({ bundle, roundId }: Props) {
       <Section title="他本来就知道的背景" items={bundle.knownFacts.map((line) => line)} />
 
       <Section
-        title={
-          bundle.recalled.length
-            ? `他记得的以前（${bundle.recalled.length} 段摘要 · 已并入上面的往事，不再单独发给他）`
-            : '他记得的以前'
-        }
-        items={bundle.recalled.map((memory) => (
-          <>
-            <span className="ctx-round">第 {memory.roundIndex} 轮</span>
-            <span className="ctx-from">{memory.where}</span>
-            {memory.summary}
-            {memory.inner ? <span className="ctx-inner">（他当时在想：{memory.inner}）</span> : null}
-          </>
-        ))}
-      />
-
-      <Section
-        title="他确定不知道的事 —— 硬约束"
+        title="他确定不知道的事"
         items={(bundle.doesNotKnow.length ? bundle.doesNotKnow : ['（没有额外限制）']).map((line) => line)}
         tone="blocked"
       />
@@ -177,7 +159,7 @@ export default function ContextView({ bundle, roundId }: Props) {
       ) : null}
 
       <div className="ctx-section">
-        <h4>拆解对照：你的原文哪些给了他</h4>
+        <h4>原文去向</h4>
         <div className="ctx-seg-list">
           {segments.map((segment) => {
             const given = segmentGivenTo(segment, bundle.name)

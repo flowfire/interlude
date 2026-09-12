@@ -44,7 +44,7 @@ export default function InputBar() {
         </button>
         {!personaOpen ? (
           <span className="hint persona-preview">
-            {project.pcPersona.trim() ? project.pcPersona.trim().slice(0, 60) : '（还没写。写清你是谁，每次分析都会带上）'}
+            {project.pcPersona.trim() ? project.pcPersona.trim().slice(0, 60) : '还没写'}
           </span>
         ) : null}
       </div>
@@ -54,7 +54,7 @@ export default function InputBar() {
           className="textarea persona-input"
           rows={4}
           placeholder={
-            '你是谁：身份、年龄感、外貌、穿着\n你是什么样的人：性格、说话习惯、在乎什么\n此刻的状态：心情、身上带着什么、刚经历过什么\n\n这段内容会注入拆解、场景构建、阵容解析和每个角色的上下文（但别人只能看到表面的部分）。'
+            '你是谁：身份、年龄感、外貌、穿着\n你是什么样的人：性格、说话习惯、在乎什么\n此刻的状态：心情、身上带着什么、刚经历过什么'
           }
           value={project.pcPersona}
           onChange={(event) => setProject({ pcPersona: event.target.value })}
@@ -65,7 +65,7 @@ export default function InputBar() {
         className="textarea"
         rows={3}
         placeholder={
-          '写你这一轮想做什么、说什么。可以是一段具体演出，也可以只是一句概要——\n比如「（我遇到了金刚狼）」，引擎会自己把场面搭起来。\n按 Ctrl/⌘ + Enter 发送'
+          '这一轮发生了什么。具体演出、一句概要都可以。\n按 Ctrl/⌘ + Enter 发送'
         }
         value={draft}
         onChange={(event) => setDraft(event.target.value)}
@@ -86,9 +86,8 @@ export default function InputBar() {
           className={`r18-toggle ${r18 ? 'on' : ''}`}
           title={
             '这一轮往成人向推进。\n' +
-            '角色能自己控制的那部分（距离、触碰、语气、身体反应）会放开尺度，\n' +
-            '但性格、说话方式、关系阶段不会变，也不会一步到位。\n' +
-            '勾选会一直保留，直到你自己取消。'
+            '性格、说话方式、关系阶段不变，也不会一步到位。\n' +
+            '勾选会一直保留，直到你取消。'
           }
         >
           <input

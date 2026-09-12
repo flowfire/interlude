@@ -120,7 +120,7 @@ export default function SessionList() {
                       </button>
                     </div>
                     <div className="r-sub">
-                      {own.length} 轮 · {own[0]?.userInput.trim().slice(0, 22) || '（还没写内容）'}
+                      {own.length} 轮 · {own[0]?.userInput.trim().slice(0, 22) || '还没写内容'}
                     </div>
                     <div className="r-sub" style={{ marginTop: 0 }}>{formatRelative(session.updatedAt)}</div>
                   </>

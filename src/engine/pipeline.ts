@@ -25,7 +25,7 @@ import type {
   RoleplayOutput,
 } from '@/types/character'
 import type { ObservedCue, PcExposure } from '@/types/exposure'
-import type { SituationState } from '@/types/situation'
+import type { SituationPace, SituationState } from '@/types/situation'
 import type { SceneSetup } from '@/types/scene'
 import type { Round, Step, StepStage } from '@/types/step'
 import type { ProjectSettings } from '@/types/settings'
@@ -163,7 +163,7 @@ function buildRecap(ctx: PipelineContext): string {
  *
  * 「压力」是跨轮累积的东西：上一轮埋下的隐患，这一轮该兑现一部分。
  */
-function previousSituation(ctx: PipelineContext): { pressure: string; escalation: string } | null {
+function previousSituation(ctx: PipelineContext): { pressure: string; escalation: string; pace: SituationPace } | null {
   const ids = sessionRoundIds(ctx)
   const step = Object.values(ctx.steps)
     .filter((item) => item.stage === 'situation' && item.status === 'done')
@@ -173,7 +173,7 @@ function previousSituation(ctx: PipelineContext): { pressure: string; escalation
 
   const state = step?.output as SituationState | undefined
   if (!state) return null
-  return { pressure: state.pressure, escalation: state.escalation }
+  return { pressure: state.pressure, escalation: state.escalation, pace: state.pace ?? 'build' }
 }
 
 /**

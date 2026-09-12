@@ -44,7 +44,7 @@ export default function ReactionCardView({
         contextStep ? (
           <ContextView bundle={contextStep.output} roundId={roundId} />
         ) : (
-          <div className="hint">找不到这一步的上下文记录（可能还没有跑完）。</div>
+          <div className="hint">还没有上下文记录。</div>
         )
       ) : null}
 
@@ -86,11 +86,11 @@ export default function ReactionCardView({
         <div className="inner-toggle" onClick={() => setShowInner((value) => !value)}>
           {showInner ? (
             <>
-              <span className="inner-label">它没说出口的（其他人看不到）</span>
+              <span className="inner-label">没说出口的</span>
               <span className="inner-text">{reaction.inner}</span>
             </>
           ) : (
-            <span>▸ 它没说出口的（点击展开）</span>
+            <span>▸ 没说出口的</span>
           )}
         </div>
       ) : null}

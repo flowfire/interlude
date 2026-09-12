@@ -20,7 +20,7 @@ export interface SituationPromptInput {
   /** 前面已经演过的剧情（共享版，全量累加） */
   previousRecap?: string
   /** 上一轮的局面状态 */
-  previous?: { pressure: string; escalation: string } | null
+  previous?: { pressure: string; escalation: string; pace?: string } | null
   /** 在场的人各自想要什么 */
   drives: SituationDrive[]
 }
@@ -54,11 +54,27 @@ const SYSTEM = `你是「幕间」的**局面**，也就是这一场戏的**导�
    只有压力已经积累到该爆发的时候，才让它爆发。
 5. **不要推翻用户刚写的东西。** 用户这一轮写了什么，那就是刚刚发生的事，你只能承接它。
 
+【节奏 —— 你管的第三件事】
+角色只会对**眼前发生的事**做反应。没有人推，他们就会一直聊下去、一直等下去。
+所以每一轮你都要先判断：**这一轮该快，还是该慢？**
+
+- build（铺垫）：事情在积累，还没到时候。适合刚换场景、刚引入新东西。
+- escalate（升温）：压力明显上升，有人被逼到墙角。这是最常用的。
+- climax（爆发）：这一刻炸了。用在压力已经攒够的时候。
+- settle（收束）：刚过去的事在收尾，喘口气。
+
+两条硬要求：
+- **不要连着两轮都停在 build。** 上一轮如果是铺垫，这一轮就必须升温 ——
+  或者干脆用 settle 明确地把上一段收掉。原地踏步是最糟的。
+- **每一轮结束前问自己一句：如果用户下一轮什么都不写，剧情还会往前走吗？**
+  如果答案是"不会"，那这一轮你就失职了，加一个推力再交出去。
+
 【压力线】
 每一轮你都要重新判断这件事：**如果所有人都不作为，接下来会发生什么？**
 - pressure：此刻正在逼近的东西，一句话，要具体（「狼群在二十步外压成半圆，最前面那两头已经伏低了身子」）
 - escalation：如果没有任何人干预，下一步会发生什么，一句话（「再有两三息，它们就会扑上来」）
 - 上一轮的 escalation 如果没人处理，这一轮就该**兑现一部分**。威胁被无视，是要付代价的。
+- 压力要压在**某个人的目标上** —— 让他没法继续等着。上面那份「各自想要什么」就是靶子。
 - 但如果局势已经被解决或缓解了，压力就应该降下来，不要硬撑着制造紧张。
 
 【出场顺序 —— 你管的第二件事】
@@ -81,6 +97,7 @@ const SYSTEM = `你是「幕间」的**局面**，也就是这一场戏的**导�
 
 【输出格式】
 {
+  "pace": "escalate",
   "pressure": "狼群在二十步外压成半圆，最前面那两头已经伏低了身子。",
   "escalation": "再有两三息它们就会扑上来，第一个被撞倒的会是站在最外面的那个。",
   "events": [
@@ -109,7 +126,7 @@ export function buildSituationMessages(input: SituationPromptInput): ChatMessage
     .join('\n')
 
   const previousLine = previous?.pressure
-    ? `【上一轮的局面】\n正在逼近：${previous.pressure}\n如果没人干预：${previous.escalation || '（未说明）'}`
+    ? `【上一轮的局面】\n正在逼近：${previous.pressure}\n如果没人干预：${previous.escalation || '（未说明）'}\n上一轮的节奏：${previous.pace || '（未说明）'}`
     : '【这是第一幕】还没有积累起来的压力。'
 
   const driveLine = drives.length
@@ -141,7 +158,7 @@ ${doc.text}
 【拆解结果】
 ${segmentLines || '（这一轮用户没有写具体内容）'}
 
-请写出这一轮的局面：压力、下一步、这一轮实际发生的事，以及**谁先动谁后动**。`
+请写出这一轮的局面：节奏、压力、下一步、这一轮实际发生的事，以及**谁先动谁后动**。`
 
   return [
     { role: 'system', content: SYSTEM },

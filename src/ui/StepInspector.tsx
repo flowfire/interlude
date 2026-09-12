@@ -112,7 +112,7 @@ export default function StepInspector() {
           <div className="divider" />
           <div className="hint">
             下游步骤 {downstream.length} 个
-            {downstream.length ? `：${downstream.map((id) => steps[id]?.label ?? id).join('、')}` : '（这一步是末端）'}
+            {downstream.length ? `：${downstream.map((id) => steps[id]?.label ?? id).join('、')}` : '末端步骤'}
             {' · '}
             耗时 {step.cost?.ms ?? 0} ms
             {step.cost?.calls ? ` · ${step.cost.calls} 次调用 · 输入 ${step.cost.tokensIn} / 输出 ${step.cost.tokensOut} tokens` : ''}

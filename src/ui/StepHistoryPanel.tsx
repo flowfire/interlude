@@ -231,7 +231,7 @@ export default function StepHistoryPanel() {
                                 <dt>摘要</dt>
                                 <dd>{summarize(step) || '—'}</dd>
                                 <dt>模型</dt>
-                                <dd>{step.model ?? '（本地计算）'}</dd>
+                                <dd>{step.model ?? '本地计算'}</dd>
                                 <dt>耗时</dt>
                                 <dd>{step.cost ? `${step.cost.ms} ms` : '—'}</dd>
                                 <dt>时间</dt>

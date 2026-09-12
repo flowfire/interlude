@@ -225,7 +225,7 @@ export default function SettingsDialog() {
               />
               自动补全幕间空白
             </label>
-            <span className="hint">时间跳跃（比如「三天后」）时，自动推断这段时间里每个角色各自经历了什么。</span>
+            <span className="hint">时间跳跃时，推断每个角色这段时间各自的经历。</span>
           </div>
 
           <div className="divider" />
