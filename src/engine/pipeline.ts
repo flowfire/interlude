@@ -6,13 +6,14 @@ import { normalizeInput, type NormalizedDoc } from './stages/s0-normalize'
 import { runSegmentStage, type SegmentStageOutput } from './stages/s1-segment'
 import { runSceneStage } from './stages/s2-scene'
 import { runExposureStage } from './stages/s2b-exposure'
+import { runMindReadStage } from './stages/s3b-mindread'
 import { runCastStage, type CastStageOutput } from './stages/s3-cast'
 import { buildContextBundle } from './stages/s4-context'
 import { runRoleplayStage } from './stages/s5-roleplay'
 import { composeScene } from './stages/s7-compose'
 import { buildRoundMemories, describeWhere, type MemoryBuildInput } from './stages/s8-memory'
 import { getCastLibrary, getMemories, recallFor, toKnownCast } from './memory/library'
-import type { ComposedScene, ContextBundle, KnownCastEntry, RoleplayOutput } from '@/types/character'
+import type { ComposedScene, ContextBundle, KnownCastEntry, MindReadOutcome, RoleplayOutput } from '@/types/character'
 import type { ObservedCue, PcExposure } from '@/types/exposure'
 import type { SceneSetup } from '@/types/scene'
 import type { Round, Step, StepStage } from '@/types/step'
@@ -269,6 +270,25 @@ async function executeStep(ctx: PipelineContext, step: Step): Promise<Step> {
       return done(step, output, { model: result?.model, cost: costOf(result, startedAt) })
     }
 
+    case 'mindread': {
+      const characterId = String(step.meta?.characterId ?? '')
+      const castOut = findUpstreamByStage(ctx.steps, step.id, 'cast')?.output as CastStageOutput | undefined
+      const segments =
+        (findUpstreamByStage(ctx.steps, step.id, 'segment')?.output as SegmentStageOutput | undefined)?.segments ?? []
+      const exposure = findUpstreamByStage(ctx.steps, step.id, 'exposure')?.output as PcExposure | undefined
+      const card = castOut?.characters.find((item) => item.id === characterId)
+      if (!card) throw new Error(`阵容里找不到角色 ${characterId}`)
+
+      const { output, result } = await runMindReadStage(ctx.client, {
+        card,
+        name: card.name,
+        segments,
+        exposure,
+        pcName: ctx.project.pcName,
+      })
+      return done(step, output, { model: result?.model, cost: costOf(result, startedAt) })
+    }
+
     case 'context': {
       const characterId = String(step.meta?.characterId ?? '')
       const castOut = findUpstreamByStage(ctx.steps, step.id, 'cast')?.output as CastStageOutput | undefined
@@ -290,6 +310,9 @@ async function executeStep(ctx: PipelineContext, step: Step): Promise<Step> {
         fromIndex: cue.fromIndex,
         leakage: cue.leakage,
       }))
+      // 他实际读到的内容 —— 由独立的读取判定阶段给出，对方的原文不在这里
+      const mindReadOutcome = findUpstreamByStage(ctx.steps, step.id, 'mindread')?.output as MindReadOutcome | undefined
+      const mindRead = mindReadOutcome?.characterId === card.id ? mindReadOutcome.readings : []
 
       const output = buildContextBundle({
         card,
@@ -299,6 +322,7 @@ async function executeStep(ctx: PipelineContext, step: Step): Promise<Step> {
         sceneSetup,
         memories,
         pcCues,
+        mindRead,
       })
       return done(step, output, { cost: elapsed(startedAt) })
     }
@@ -510,14 +534,31 @@ export async function runFullRound(ctx: PipelineContext): Promise<FullRoundResul
   const actors = castOutput?.characters ?? []
 
   // 每个在场角色：一条「上下文 → 反应」分支
+  // 有读取能力的角色，中间还要插一步独立的「读取判定」
+  const mindReadSteps = new Map<string, Step>()
+  for (const card of actors) {
+    if (!card.mindReading?.trim()) continue
+    mindReadSteps.set(
+      card.id,
+      createStep<MindReadOutcome>({
+        roundId: ctx.round.id,
+        stage: 'mindread',
+        label: `「${card.name}」读到了什么`,
+        deps: [castStep.id, segmentStep.id, exposureStep.id],
+        meta: { characterId: card.id, characterName: card.name },
+      }),
+    )
+  }
+
   const contextSteps: Step[] = []
   const roleplaySteps: Step[] = []
   for (const card of actors) {
+    const mindReadStep = mindReadSteps.get(card.id)
     const contextStep = createStep<ContextBundle>({
       roundId: ctx.round.id,
       stage: 'context',
       label: `给「${card.name}」的上下文`,
-      deps: [castStep.id, exposureStep.id],
+      deps: [castStep.id, exposureStep.id, ...(mindReadStep ? [mindReadStep.id] : [])],
       meta: { characterId: card.id, characterName: card.name },
     })
     const roleplayStep = createStep<RoleplayOutput>({
@@ -531,12 +572,18 @@ export async function runFullRound(ctx: PipelineContext): Promise<FullRoundResul
     roleplaySteps.push(roleplayStep)
   }
 
-  for (const step of [...contextSteps, ...roleplaySteps]) steps = { ...steps, [step.id]: step }
+  for (const step of [...mindReadSteps.values(), ...contextSteps, ...roleplaySteps]) {
+    steps = { ...steps, [step.id]: step }
+  }
 
   if (roleplaySteps.length) {
     result = await runSteps(
       { ...ctx, steps, ledger },
-      [...contextSteps.map((step) => step.id), ...roleplaySteps.map((step) => step.id)],
+      [
+        ...[...mindReadSteps.values()].map((step) => step.id),
+        ...contextSteps.map((step) => step.id),
+        ...roleplaySteps.map((step) => step.id),
+      ],
     )
     steps = result.steps
     emit()

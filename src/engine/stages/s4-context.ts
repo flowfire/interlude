@@ -12,6 +12,11 @@ export interface ContextBuildInput {
   sceneSetup: SceneSetup
   /** 从「你」的内心外化出来的可见表现（不含你的真实想法） */
   pcCues?: ObservedCue[]
+  /**
+   * 他**实际读到**的内心 —— 由独立的「读取判定」阶段给出。
+   * 注意这里传进来的是判定结果，不是对方的原始内心。
+   */
+  mindRead?: { text: string; certainty: number }[]
   /** 这个角色以前轮次留下的记忆（按时间顺序） */
   memories?: MemoryEntry[]
 }
@@ -33,7 +38,7 @@ function mentionsSelf(segment: Segment, name: string): boolean {
  * 5. **感知按时间顺序排列** —— 用户是按顺序写的，角色也该按顺序经历
  */
 export function buildContextBundle(input: ContextBuildInput): ContextBundle {
-  const { card, segments, cards, pcName, sceneSetup, memories = [], pcCues = [] } = input
+  const { card, segments, cards, pcName, sceneSetup, memories = [], pcCues = [], mindRead = [] } = input
   void cards
 
   const presentNames = [pcName, ...sceneSetup.present.map((item) => item.name)].filter(
@@ -46,7 +51,6 @@ export function buildContextBundle(input: ContextBuildInput): ContextBundle {
   const ownThoughts: string[] = []
   const ownPriorLines: string[] = []
   const knownFacts: string[] = []
-  const mindRead: ContextBundle['mindRead'] = []
   const doesNotKnow = new Set<string>()
   const perceived: PerceivedEvent[] = []
 
@@ -63,11 +67,6 @@ export function buildContextBundle(input: ContextBuildInput): ContextBundle {
     list.push(cue)
     cuesByInner.set(cue.fromIndex, list)
   }
-
-  // 对方这一轮「藏得深不深」—— 观察者感觉得到，读心者也需要它来判断自己能读到多少
-  const averageLeakage = pcCues.length
-    ? pcCues.reduce((sum, cue) => sum + cue.leakage, 0) / pcCues.length
-    : 0.5
 
   const ordered = [...segments].sort((a, b) => a.sourceRange[0] - b.sourceRange[0])
 
@@ -115,17 +114,9 @@ export function buildContextBundle(input: ContextBuildInput): ContextBundle {
         const owner = segment.subject?.[0]
         const isPcInner = !owner || owner === pcName
 
-        // 读心类能力：给他「候选」，但**能读到多少由他自己判断** ——
-        // 引擎只负责把信息放进可读范围，不替他决定读到什么程度。
-        if (card.mindReading && isPcInner) {
-          mindRead.push({
-            from: pcName,
-            text: segment.text,
-            ability: card.mindReading,
-            leakage: averageLeakage,
-          })
-          break
-        }
+        // 有读取能力的角色，走的是独立的「读取判定」阶段 ——
+        // 对方的原文**不会**流到这里，他拿到的只有判定结果。
+        if (card.mindReading.trim() && isPcInner) break
 
         doesNotKnow.add(`${owner ?? '有人'}心里在想什么（你只能从他的表情、语气、动作去猜，而且可能猜错）`)
 
@@ -145,7 +136,7 @@ export function buildContextBundle(input: ContextBuildInput): ContextBundle {
   // 你填写的自我人设属于「内心层面」，绝不外泄；对方只能看到场景构建归纳出的外在形象。
   // 有读心能力的角色是例外 —— 但也只是「有可能读到念头」，来历和底牌依然看不到。
   doesNotKnow.add(
-    card.mindReading
+    card.mindReading.trim()
       ? `${pcName}更深的来历和底牌（你的能力最多只覆盖到念头这一层）`
       : `${pcName}的真实想法、来历和底牌（你只能凭他的样子和表现去判断）`,
   )

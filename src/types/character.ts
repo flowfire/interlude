@@ -87,6 +87,24 @@ export interface KnownCastEntry {
   hooks?: string[]
 }
 
+/**
+ * 一次「读取判定」的结果。
+ *
+ * 存在的理由：判断「能读到多少」和「扮演角色」不能是同一个调用 ——
+ * 否则后者手里握着原文，说什么都约束不住。所以先独立判一次，
+ * 扮演环节只拿到这份结果，原文根本不会进它的上下文。
+ */
+export interface MindReadOutcome {
+  characterId: string
+  name: string
+  /** 他**实际读到**的内容。空数组 = 什么都没读到 */
+  readings: { text: string; certainty: number }[]
+  /** 一句话说明他这一轮读到了多少 */
+  note: string
+  usedModel: boolean
+  fallbackReason?: string
+}
+
 /** 角色感知到的一件事，按时间顺序排列 */
 export interface PerceivedEvent {
   kind: 'speech' | 'action' | 'cue'
@@ -130,20 +148,10 @@ export interface ContextBundle {
   /** 素材里已经属于他的表现：他刚才说过什么、做过什么 */
   ownPriorLines: string[]
   /**
-   * 他能读到的「候选」内心。
-   *
-   * 注意这只代表**引擎允许他知道这个信息存在**，不代表他一定读到了 ——
-   * 能读到多少，由他自己结合能力强度与对方的隐藏程度判断。
+   * 他**实际读到**的内心 —— 由「读取判定」阶段独立给出。
+   * 注意这里没有对方的原始内心：原文留在判定阶段，不会进他的上下文。
    */
-  mindRead: {
-    from: string
-    /** 对方的原始内心活动 */
-    text: string
-    /** 他自己的读取能力描述 */
-    ability: string
-    /** 对方这一轮的外在泄漏程度 0~1，越低越藏得住事 */
-    leakage: number
-  }[]
+  mindRead: { text: string; certainty: number }[]
   /** 他注意到的、从「你」的内心外化出来的可见表现 —— 只有现象，没有你的真实想法 */
   pcCues: ObservedCue[]
   /** 他记得的、以前轮次发生过的事（按时间顺序，最近的排在最后） */

@@ -128,22 +128,14 @@ function renderBundle(bundle: ContextBundle): string {
   }
 
   if (bundle.mindRead.length) {
-    const lines = bundle.mindRead.map((item) => {
-      const hidden = Math.round((1 - item.leakage) * 100)
-      return (
-        `· 对方「${item.from}」此刻没说出口的是：「${item.text}」\n` +
-        `  你的读取能力：${item.ability}\n` +
-        `  对方这一轮藏得有多深：约 ${hidden}%（越高越难读，${Math.round(item.leakage * 100)}% 泄漏在外）`
-      )
-    })
+    const lines = bundle.mindRead.map(
+      (item) => `· ${item.text}${item.certainty < 0.7 ? `（你的把握只有 ${Math.round(item.certainty * 100)}%）` : ''}`,
+    )
 
     parts.push(
-      `【你「可能」读到的念头】\n${lines.join('\n')}\n\n` +
-        '⚠️ 上面那行原始信息**你未必都能读到**。到底读到多少，由你自己结合两件事判断：\n' +
-        '  1. 你自己的能力强度和限制（见「你的读取能力」那一行）\n' +
-        '  2. 对方藏得有多深\n' +
-        '读不到的部分就当它不存在 —— 不要因为拿到了这行字就表现得全知。\n' +
-        '如果你判断自己只能读到一点碎片，那就只体现那一点。',
+      `【你读到的】\n${lines.join('\n')}\n\n` +
+        '这是你的能力**实际读到**的东西 —— 读不到的部分已经被滤掉了，所以这就是你这次的收获。\n' +
+        '把握不高时，你可以表现得不确定，也可能读错。不要表现得比你实际读到的更全知。',
     )
   }
 

@@ -1,14 +1,19 @@
 import { describe, expect, it } from 'vitest'
+import { runFullRound } from '@/engine/pipeline'
 import { buildContextBundle } from '@/engine/stages/s4-context'
 import { normalizeCastResult, stableCharacterId } from '@/engine/stages/s3-cast'
 import { buildRoleplayMessages } from '@/engine/prompts/roleplay'
 import { buildSceneMessages } from '@/engine/prompts/scene'
 import { renderKnownCast } from '@/engine/prompts/segmenter'
 import { normalizeInput } from '@/engine/stages/s0-normalize'
-import type { CharacterCard, ContextBundle, KnownCastEntry, RawCastResult } from '@/types/character'
+import type { LlmClient, ChatJsonOptions } from '@/engine/llm/client'
+import type { CharacterCard, ContextBundle, KnownCastEntry, MindReadOutcome, RawCastResult } from '@/types/character'
 import type { SceneSetup } from '@/types/scene'
 import type { Segment, SegmentKind } from '@/types/segment'
-import { DEFAULT_PROJECT_SETTINGS } from '@/types/settings'
+import type { Round } from '@/types/step'
+import { DEFAULT_LLM_SETTINGS, DEFAULT_PROJECT_SETTINGS } from '@/types/settings'
+
+const TEST_PROJECT = { ...DEFAULT_PROJECT_SETTINGS, researchEnabled: false }
 
 function segment(id: string, kind: SegmentKind, text: string, extra: Partial<Segment> = {}): Segment {
   return {
@@ -34,7 +39,7 @@ function setup(): SceneSetup {
     opening: [],
     situation: '你推门进来',
     pcProfile: '外套湿了一片',
-    present: [{ name: '林砚', role: '靠里坐着', brief: '在喝茶', kind: 'character', active: true }],
+    present: [{ name: '读心者', role: '靠里坐着', brief: '在喝茶', kind: 'character', active: true }],
     establishedBeats: [],
     usedModel: true,
   }
@@ -74,102 +79,262 @@ function card(overrides: Partial<CharacterCard> & { name: string }): CharacterCa
 const PC_INNER = '他果然还是不想让我看出什么'
 const READER_ABILITY = '能读到对方此刻具体的念头，但读不到动机和来历'
 
-function bundleFor(reader: CharacterCard, pcCues: ContextBundle['pcCues'] = []): ContextBundle {
-  return buildContextBundle({
-    card: reader,
-    segments: [segment('s1', 'inner', PC_INNER, { subject: ['我'] })],
-    cards: [reader],
-    pcName: '我',
-    sceneSetup: setup(),
-    pcCues,
-  })
-}
+/* ------------------------- 单元：上下文只装判定结果 ------------------------- */
 
-describe('读心是一段谱系，不是开关', () => {
-  it('没有这种能力的角色，你的内心依然不外传', () => {
-    const bundle = bundleFor(card({ name: '林砚' }))
+describe('上下文里装的是判定结果，不是原文', () => {
+  it('没有读取能力的角色，你的内心依然不外传', () => {
+    const plain = card({ name: '林砚' })
+    const bundle = buildContextBundle({
+      card: plain,
+      segments: [segment('s1', 'inner', PC_INNER, { subject: ['我'] })],
+      cards: [plain],
+      pcName: '我',
+      sceneSetup: setup(),
+    })
+
     expect(bundle.mindRead).toEqual([])
     expect(JSON.stringify(bundle)).not.toContain(PC_INNER)
     expect(bundle.doesNotKnow.join('|')).toContain('心里在想什么')
   })
 
-  it('有读取能力的角色拿到的是「候选」，并附带能力描述与对方的隐藏程度', () => {
-    const bundle = bundleFor(card({ name: '读心者', mindReading: READER_ABILITY }), [
-      { visible: '视线挪开了半秒', readability: 0.3, channel: 'gaze', fromIndex: 0, leakage: 0.2 },
-    ])
-
-    expect(bundle.mindRead).toHaveLength(1)
-    expect(bundle.mindRead[0].text).toBe(PC_INNER)
-    // 引擎不替他判断读到多少，只把「能力」和「对方藏得多深」一起交给他
-    expect(bundle.mindRead[0].ability).toBe(READER_ABILITY)
-    expect(bundle.mindRead[0].leakage).toBeCloseTo(0.2)
-  })
-
-  it('对方藏得深，泄漏度就低 —— 这是模型判断「能不能读到」的依据', () => {
-    const reader = card({ name: '读心者', mindReading: READER_ABILITY })
-    const hidden = bundleFor(reader, [
-      { visible: '几乎没有变化', readability: 0.05, channel: 'breath', fromIndex: 0, leakage: 0.05 },
-    ])
-    const leaking = bundleFor(reader, [
-      { visible: '手抖了一下', readability: 0.8, channel: 'body', fromIndex: 0, leakage: 0.9 },
-    ])
-
-    expect(hidden.mindRead[0].leakage).toBeLessThan(leaking.mindRead[0].leakage)
-  })
-
-  it('只拿得到你的内心，拿不到其他角色的', () => {
+  it('有读取能力的角色，拿到的只有判定结果 —— 原文一个字都不在', () => {
     const reader = card({ name: '读心者', mindReading: READER_ABILITY })
     const bundle = buildContextBundle({
       card: reader,
-      segments: [
-        segment('s1', 'inner', PC_INNER, { subject: ['我'] }),
-        segment('s2', 'inner', '他其实在犹豫', { subject: ['林砚'] }),
-      ],
+      segments: [segment('s1', 'inner', PC_INNER, { subject: ['我'] })],
       cards: [reader],
       pcName: '我',
       sceneSetup: setup(),
+      mindRead: [{ text: '他好像在防备着什么', certainty: 0.4 }],
     })
 
-    expect(bundle.mindRead.map((item) => item.text)).toEqual([PC_INNER])
-    expect(bundle.doesNotKnow.join('|')).toContain('林砚')
+    expect(bundle.mindRead).toHaveLength(1)
+    expect(bundle.mindRead[0].text).toBe('他好像在防备着什么')
+    // 最要紧的一条：原始内心根本没进上下文
+    expect(JSON.stringify(bundle)).not.toContain(PC_INNER)
+    expect(bundle.doesNotKnow.join('|')).toContain('来历')
   })
 
-  it('提示词里明确说「你未必都能读到」，把判断权交回给模型', () => {
-    const bundle = bundleFor(card({ name: '读心者', mindReading: READER_ABILITY }), [
-      { visible: '视线挪开了半秒', readability: 0.3, channel: 'gaze', fromIndex: 0, leakage: 0.3 },
-    ])
+  it('判定说「什么都没读到」时，上下文里就是空的', () => {
+    const reader = card({ name: '读心者', mindReading: READER_ABILITY })
+    const bundle = buildContextBundle({
+      card: reader,
+      segments: [segment('s1', 'inner', PC_INNER, { subject: ['我'] })],
+      cards: [reader],
+      pcName: '我',
+      sceneSetup: setup(),
+      mindRead: [],
+    })
 
-    const user = buildRoleplayMessages({ bundle, project: DEFAULT_PROJECT_SETTINGS })[1].content
-
-    expect(user).toContain('你「可能」读到的念头')
-    expect(user).toContain(PC_INNER)
-    expect(user).toContain(READER_ABILITY)
-    // 关键：不是「你读到了」，而是「你未必都能读到」
-    expect(user).toContain('未必都能读到')
-    expect(user).toContain('由你自己结合两件事判断')
-    expect(user).toContain('读不到的部分就当它不存在')
+    expect(bundle.mindRead).toEqual([])
+    expect(JSON.stringify(bundle)).not.toContain(PC_INNER)
   })
 
-  it('藏得越深，提示词里那个数字越难看懂', () => {
-    const bundle = bundleFor(card({ name: '读心者', mindReading: READER_ABILITY }), [
-      { visible: '几乎没有变化', readability: 0.05, channel: 'breath', fromIndex: 0, leakage: 0.1 },
-    ])
+  it('扮演提示词里只说「你读到的」，并且不再出现原始内心', () => {
+    const reader = card({ name: '读心者', mindReading: READER_ABILITY })
+    const bundle = buildContextBundle({
+      card: reader,
+      segments: [segment('s1', 'inner', PC_INNER, { subject: ['我'] })],
+      cards: [reader],
+      pcName: '我',
+      sceneSetup: setup(),
+      mindRead: [{ text: '他好像在防备着什么', certainty: 0.4 }],
+    })
+
     const user = buildRoleplayMessages({ bundle, project: DEFAULT_PROJECT_SETTINGS })[1].content
-    expect(user).toContain('藏得有多深：约 90%')
+    expect(user).toContain('【你读到的】')
+    expect(user).toContain('他好像在防备着什么')
+    expect(user).toContain('把握只有 40%')
+    expect(user).not.toContain(PC_INNER)
   })
 })
 
+/* ------------------------- 集成：读取判定是独立的一步 ------------------------- */
+
+const ROUND_INPUT = '我低下头。（他果然还是不想让我看出什么）'
+
+function makeRound(): Round {
+  return {
+    id: 'r1',
+    sessionId: 's1',
+    index: 1,
+    userInput: ROUND_INPUT,
+    stepIds: [],
+    rootStepIds: [],
+    status: 'draft',
+    createdAt: '2024-01-01T00:00:00.000Z',
+    updatedAt: '2024-01-01T00:00:00.000Z',
+  }
+}
+
+function scriptedClient(mindReadResponse: unknown) {
+  const calls: string[] = []
+  const client = {
+    settings: { ...DEFAULT_LLM_SETTINGS, maxConcurrency: 4 },
+    isConfigured: true,
+    chat: async () => {
+      throw new Error('未使用')
+    },
+    chatJson: async (_messages: unknown, options: ChatJsonOptions) => {
+      const label = options.label ?? ''
+      calls.push(label)
+      const key = label.startsWith('roleplay:') ? 'roleplay' : label.startsWith('mindread:') ? 'mindread' : label
+
+      const table: Record<string, unknown> = {
+        segment: {
+          segments: [
+            { blockIndex: 0, kind: 'action', text: '我低下头。', subject: ['我'] },
+            { blockIndex: 1, kind: 'inner', text: PC_INNER, subject: ['我'], visibility: 'private' },
+          ],
+          entities: [{ mention: '读心者', kind: 'person', role: 'present' }],
+        },
+        scene: {
+          inputMode: 'dialogue',
+          time: '傍晚',
+          place: '城南茶馆',
+          atmosphere: '',
+          opening: [],
+          situation: '你低下头',
+          pcProfile: '外套湿了一片',
+          present: [{ name: '读心者', role: '对面', brief: '在喝茶', kind: 'character', active: true }],
+          establishedBeats: [],
+        },
+        exposure: {
+          cues: [
+            { fromIndex: 0, hidden: PC_INNER, visible: '视线落到桌面上', channel: 'gaze', leakage: 0.15, readability: 0.1 },
+          ],
+          note: '',
+        },
+        cast: {
+          characters: [
+            { name: '读心者', tier: 'major', summary: '能读到念头的人', mindReading: READER_ABILITY, appearsInInput: true },
+          ],
+        },
+        mindread: mindReadResponse,
+        roleplay: { beats: [{ kind: 'speech', text: '……你在想什么？' }], inner: '他藏得挺深。' },
+      }
+
+      const raw = table[key]
+      if (raw === undefined) throw new Error(`没有为 ${label} 准备响应`)
+      return {
+        data: options.parse(raw),
+        result: {
+          content: JSON.stringify(raw),
+          usage: { promptTokens: 1, completionTokens: 1, totalTokens: 2 },
+          model: 'fake',
+          ms: 1,
+          retries: 0,
+        },
+      }
+    },
+  }
+  return { client: client as unknown as LlmClient, calls }
+}
+
+async function runOnce(mindReadResponse: unknown) {
+  const { client, calls } = scriptedClient(mindReadResponse)
+  const round = makeRound()
+  const result = await runFullRound({
+    client,
+    project: TEST_PROJECT,
+    round,
+    rounds: [round],
+    steps: {},
+    ledger: [],
+  })
+  return { result, calls }
+}
+
+describe('读取判定是独立的一步，扮演环节拿不到原文', () => {
+  it('有读取能力的角色会多出一个「读取判定」步骤，并且先于扮演', async () => {
+    const { result, calls } = await runOnce({ readings: [{ text: '他好像在防备着什么', certainty: 0.4 }], note: '' })
+
+    const stages = Object.values(result.steps).map((step) => step.stage)
+    expect(stages).toContain('mindread')
+    expect(stages).toContain('context')
+    expect(stages).toContain('roleplay')
+
+    // 判定确实单独调用了一次模型
+    expect(calls.some((label) => label.startsWith('mindread:'))).toBe(true)
+
+    // 扮演步骤依赖上下文步骤（而上下文依赖判定步骤）
+    const contextStep = Object.values(result.steps).find((step) => step.stage === 'context')!
+    const mindReadStep = Object.values(result.steps).find((step) => step.stage === 'mindread')!
+    const roleplayStep = Object.values(result.steps).find((step) => step.stage === 'roleplay')!
+    expect(contextStep.deps).toContain(mindReadStep.id)
+    expect(roleplayStep.deps).toContain(contextStep.id)
+  })
+
+  it('扮演用的上下文里只有判定结果，原文彻底不出现', async () => {
+    const { result } = await runOnce({ readings: [{ text: '他好像在防备着什么', certainty: 0.4 }], note: '' })
+
+    const contextStep = Object.values(result.steps).find((step) => step.stage === 'context')!
+    const bundle = contextStep.output as ContextBundle
+
+    expect(bundle.mindRead).toHaveLength(1)
+    expect(bundle.mindRead[0].text).toBe('他好像在防备着什么')
+    expect(JSON.stringify(bundle)).not.toContain(PC_INNER)
+  })
+
+  it('判定结果为空时，扮演环节就真的什么都不知道', async () => {
+    const { result } = await runOnce({ readings: [], note: '什么都没读到。' })
+
+    const contextStep = Object.values(result.steps).find((step) => step.stage === 'context')!
+    const bundle = contextStep.output as ContextBundle
+
+    expect(bundle.mindRead).toEqual([])
+    expect(JSON.stringify(bundle)).not.toContain(PC_INNER)
+
+    const mindReadStep = Object.values(result.steps).find((step) => step.stage === 'mindread')!
+    expect((mindReadStep.output as MindReadOutcome).note).toContain('什么都没读到')
+  })
+
+  it('扮演环节真正发出去的提示词里也不含原文', async () => {
+    const { client } = scriptedClient({ readings: [{ text: '他好像在防备着什么', certainty: 0.4 }], note: '' })
+    let roleplayPrompt = ''
+
+    const capturing = {
+      settings: client.settings,
+      isConfigured: true,
+      chat: client.chat,
+      chatJson: async (messages: { content: string }[], options: ChatJsonOptions) => {
+        if ((options.label ?? '').startsWith('roleplay:')) {
+          roleplayPrompt = messages.map((message) => message.content).join('\n')
+        }
+        return client.chatJson(messages as never, options)
+      },
+    } as unknown as LlmClient
+
+    const round = makeRound()
+    await runFullRound({
+      client: capturing,
+      project: TEST_PROJECT,
+      round,
+      rounds: [round],
+      steps: {},
+      ledger: [],
+    })
+
+    expect(roleplayPrompt).toContain('他好像在防备着什么')
+    expect(roleplayPrompt).not.toContain(PC_INNER)
+  })
+})
+
+/* ------------------------- 能力与钩子 ------------------------- */
+
 describe('能力与感知会进角色提示词', () => {
   it('能力列进「你能做的事」，并说明超出范围就做不到', () => {
+    const withAbilities = card({
+      name: '林砚',
+      persona: {
+        ...card({ name: 'x' }).persona,
+        abilities: ['会开锁', '认得草药'],
+        perception: ['闻得出三天前留下的气味'],
+      },
+    })
+
     const bundle = buildContextBundle({
-      card: card({
-        name: '林砚',
-        persona: {
-          ...card({ name: 'x' }).persona,
-          abilities: ['会开锁', '认得草药'],
-          perception: ['闻得出三天前留下的气味'],
-        },
-      }),
+      card: withAbilities,
       segments: [],
       cards: [],
       pcName: '我',
@@ -241,23 +406,5 @@ describe('mindReading 的解析', () => {
     expect(parsed[0].mindReading).toContain('善于隐藏时会失准')
     expect(parsed[1].mindReading).toContain('碎片')
     expect(parsed[2].mindReading).toContain('读剧本')
-  })
-
-  it('能力和感知会被解析出来', () => {
-    const raw = {
-      characters: [
-        {
-          name: '林砚',
-          abilities: ['会开锁', '认得草药'],
-          perception: '闻得出三天前的气味',
-          hooks: ['天生招祸'],
-        },
-      ],
-    } as unknown as RawCastResult
-
-    const parsed = normalizeCastResult(raw, '我')[0]
-    expect(parsed.persona.abilities).toEqual(['会开锁', '认得草药'])
-    expect(parsed.persona.perception).toEqual(['闻得出三天前的气味'])
-    expect(parsed.persona.hooks).toEqual(['天生招祸'])
   })
 })
