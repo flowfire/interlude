@@ -92,11 +92,9 @@ describe('候选池只装「有资格被察觉到」的东西', () => {
 
   it('没有读取能力时，「没说出口的」不进候选池 —— 不能因为多了一层判定就泄露原文', () => {
     const candidates = buildPerceiveCandidates({
-      card: card({ name: '听风者', persona: { ...card({ name: 'x' }).persona, perception: [SUPERSENSE] } }),
-      name: '听风者',
+      cards: [card({ name: '听风者', persona: { ...card({ name: 'x' }).persona, perception: [SUPERSENSE] } })],
       segments: baseSegments,
       pcName: '我',
-      position: '',
     })
 
     expect(candidates.some((item) => item.kind === '动作')).toBe(true)
@@ -106,11 +104,9 @@ describe('候选池只装「有资格被察觉到」的东西', () => {
 
   it('有读取能力时，才把内心放进去', () => {
     const candidates = buildPerceiveCandidates({
-      card: card({ name: '读心者', mindReading: MIND_READING }),
-      name: '读心者',
+      cards: [card({ name: '读心者', mindReading: MIND_READING })],
       segments: baseSegments,
       pcName: '我',
-      position: '',
     })
 
     expect(candidates.some((item) => item.kind === '没说出口的')).toBe(true)
@@ -118,8 +114,7 @@ describe('候选池只装「有资格被察觉到」的东西', () => {
 
   it('外化出来的细微表现对所有候选开放（它们是可见的，只是需要敏锐）', () => {
     const candidates = buildPerceiveCandidates({
-      card: card({ name: '听风者', persona: { ...card({ name: 'x' }).persona, perception: [SUPERSENSE] } }),
-      name: '听风者',
+      cards: [card({ name: '听风者', persona: { ...card({ name: 'x' }).persona, perception: [SUPERSENSE] } })],
       segments: baseSegments,
       exposure: {
         cues: [{ id: 'c1', hidden: PC_INNER, visible: '视线落到桌面上', channel: 'gaze', leakage: 0.2, readability: 0.15, fromIndex: 0 }],
@@ -128,7 +123,6 @@ describe('候选池只装「有资格被察觉到」的东西', () => {
         usedModel: true,
       },
       pcName: '我',
-      position: '',
     })
 
     expect(candidates.some((item) => item.kind === '细微表现')).toBe(true)
@@ -312,14 +306,15 @@ async function runOnce(perceiveResponse: unknown, mindReading = '', perception: 
 describe('感知判定是独立的一步，扮演环节拿不到原文', () => {
   it('有超常感官的角色会多出一个「感知判定」步骤', async () => {
     const { result, calls } = await runOnce({
-      perceived: [{ text: '背后有一声很轻的摩擦', channel: 'hearing', certainty: 0.6 }],
-      note: '',
+      entries: [
+        { name: '听风者', perceived: [{ text: '背后有一声很轻的摩擦', channel: 'hearing', certainty: 0.6 }], note: '' },
+      ],
     })
 
     const stages = Object.values(result.steps).map((step) => step.stage)
     expect(stages).toContain('perceive')
     expect(stages).toContain('context')
-    expect(calls.some((label) => label.startsWith('perceive:'))).toBe(true)
+    expect(calls.filter((label) => label === 'perceive')).toHaveLength(1)
 
     const contextStep = Object.values(result.steps).find((step) => step.stage === 'context')!
     const perceiveStep = Object.values(result.steps).find((step) => step.stage === 'perceive')!
@@ -327,21 +322,19 @@ describe('感知判定是独立的一步，扮演环节拿不到原文', () => {
   })
 
   it('完全没有超常感官的角色不会多花这一次调用', async () => {
-    const { result, calls } = await runOnce(
-      { perceived: [], note: '' },
-      '',
-      [],
-    )
+    const { result, calls } = await runOnce({ entries: [{ name: '听风者', perceived: [], note: '' }] })
 
-    const stages = Object.values(result.steps).map((step) => step.stage)
-    expect(stages).not.toContain('perceive')
-    expect(calls.some((label) => label.startsWith('perceive:'))).toBe(false)
+    // 关键：无论场上有几个人，信息分发只调用一次 —— 这正是「合成一次」的价值
+    expect(calls.filter((label) => label === 'perceive')).toHaveLength(1)
+    const perceiveSteps = Object.values(result.steps).filter((step) => step.stage === 'perceive')
+    expect(perceiveSteps).toHaveLength(1)
   })
 
   it('判定结果进上下文，扮演发出去的提示词里也只有它', async () => {
     const { client } = scriptedClient({
-      perceived: [{ text: '背后有一声很轻的摩擦', channel: 'hearing', certainty: 0.6 }],
-      note: '',
+      entries: [
+        { name: '听风者', perceived: [{ text: '背后有一声很轻的摩擦', channel: 'hearing', certainty: 0.6 }], note: '' },
+      ],
     })
     let roleplayPrompt = ''
 
@@ -377,7 +370,7 @@ describe('感知判定是独立的一步，扮演环节拿不到原文', () => {
   })
 
   it('判定为空时，扮演环节就真的什么都没多察觉到', async () => {
-    const { result } = await runOnce({ perceived: [], note: '什么都没多察觉到。' })
+    const { result } = await runOnce({ entries: [{ name: '听风者', perceived: [], note: '什么都没多察觉到。' }] })
 
     const bundle = Object.values(result.steps).find((step) => step.stage === 'context')?.output as ContextBundle
     expect(bundle.extras).toEqual([])

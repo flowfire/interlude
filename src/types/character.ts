@@ -99,27 +99,26 @@ export const PERCEIVE_CHANNEL_LABEL: Record<PerceiveChannel, string> = {
   mind: '读到念头',
 }
 
-/**
- * 一次「感知判定」的结果。
- *
- * 存在的理由：判断「他能察觉到什么」和「扮演角色」不能是同一个调用 ——
- * 否则后者手里握着原文，说什么都约束不住。
- *
- * 它同时覆盖两类东西：
- * - 超常感官：眼观六路、耳听八方、异于常人的嗅觉……
- * - 读取内心：读心只是「感知」的一个特例（channel = 'mind'）
- */
-export interface PerceptionOutcome {
+/** 某一个角色在这一轮里额外察觉到的东西 */
+export interface PerceptionEntry {
   characterId: string
   name: string
-  /**
-   * 他**额外**察觉到的东西。
-   * 明面上的台词与动作不在这里 —— 那些引擎会直接给他。
-   * 空数组 = 他什么都没多察觉到，这是常见且正确的答案。
-   */
+  /** 空数组 = 他没多察觉到什么，这是常见且正确的答案 */
   perceived: { text: string; channel: PerceiveChannel; certainty: number }[]
-  /** 一句话说明他这一轮察觉到多少 */
   note: string
+}
+
+/**
+ * 「信息分发」的结果：把这一轮实际发生的事，转化成每个角色各自接收到的版本。
+ *
+ * 存在的理由有两条：
+ * 1. 判断「他能察觉到什么」和「扮演角色」不能是同一个调用 ——
+ *    否则后者手里握着原文，说什么都约束不住。原文留在这一层，不外流。
+ * 2. 判断「谁背对着谁」这类空间关系需要全局视角 ——
+ *    所以一次调用分发给大家，而不是每个角色各判一次。
+ */
+export interface PerceptionOutcome {
+  entries: PerceptionEntry[]
   usedModel: boolean
   fallbackReason?: string
 }
