@@ -273,12 +273,17 @@ The engine plays **its own last four scores** back to it (`10 → 10 → 15`) an
 
 **It can offer you a few roads at any time.** In this mode the suggested directions are not a fallback for "I cannot push" but a **regular way of leading**.
 
-What matters is how they are written: **each one is your next step** — the line you say, the move you make — **and clicking it drops it into the input box ready to send as-is**:
+Two things matter:
 
-> ▸ **Let him in to recover** — I step aside from the doorway: "Come in, sit down first." Then I turn to dig out the medicine kit — the blood on his sleeve has already dried brown.
-> ▸ **Ask who he is first** — I keep my hand on the frame and do not move aside: "Who are you looking for?" My voice comes out steadier than I expected.
+**① Each one is your next step** — the line you say, the move you make — **and clicking it drops it into the input box ready to send as-is**:
 
-It is **not** a plot direction for you to translate yourself ("let him recover at your place: he is hurt too badly to leave" is god's-eye view). Every road leads there; whichever you pick beats standing still.
+> ▸ **Get closer under cover of the medicine kit** — I step aside from the doorway: "Come in, sit down first." Then I turn to dig out the kit.
+> ▸ **Tell him to get out of the wet clothes** — "Those need to come off." I pull an old shirt from the cupboard and hand it over, then stay right where I am.
+> ▸ **Put your hand on his** — as he reaches for his coat buttons I stop his hand — say nothing, and do not pull back.
+
+It is **not** a plot direction for you to translate yourself ("let him recover at your place: he is hurt too badly to leave" is god's-eye view).
+
+**② All three lead there — only the route differs.** It is not a spectrum of "accept / neutral / refuse": you already answered *whether* when you ticked the mode. What it offers you is **which way in** — care, testing, saying it outright. Three completely different paths, and none of them ends in "nothing happens".
 
 **It also writes the relationship-building for you.** You do not want to write that stretch step by step, so it has to fill in *why the two of them ended up together* with a proper background passage, shown on the board (expanded by default). **It may not get away with one line** — "you have been together three months" is zero information and is explicitly listed as unacceptable. It has to say how they got there (which incident, which sentence, who backed down first) and what unspoken understanding or old debt sits between them.
 

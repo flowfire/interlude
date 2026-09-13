@@ -9,7 +9,7 @@ import { describe, expect, it } from 'vitest'
  *
  * | 层 | 用词 |
  * |---|---|
- * | 提示词（给模型看的） | 色情小说：做爱、操、屌、逼 —— 越直白越好 |
+ * | 提示词（给模型看的） | 色情小说：做爱、操、鸡巴、逼 —— 越直白越好 |
  * | 界面（用户看的） | 中性、正式：性内容、成人向、推进 |
  * | README（门面） | 隐晦、暗示：已经开始了、那一步 |
  *
@@ -50,7 +50,7 @@ describe('用词分层：界面与 README 保持中性', () => {
   it('反过来，提示词里必须有它们 —— 直白只在这一层', () => {
     for (const name of ['situation.ts', 'roleplay.ts']) {
       const text = readFileSync(join(process.cwd(), 'src', 'engine', 'prompts', name), 'utf8')
-      expect(text, `${name} 应该用色情小说的词`).toContain('屌')
+      expect(text, `${name} 应该用色情小说的词`).toContain('鸡巴')
     }
   })
 })

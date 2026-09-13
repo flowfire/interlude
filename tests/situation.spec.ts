@@ -344,6 +344,12 @@ describe('局面推进：世界自己会往前走', () => {
     expect(system.content).toContain('不是剧情往哪走的描述')
     expect(system.content).toContain('他点下去还得自己重写一遍，这个按钮就白给了')
     expect(system.content).toContain('我侧身让开门口')
+    // 几条路都得通向做爱 —— 不是「接受 / 中立 / 拒绝」那种谱系
+    expect(system.content).toContain('不是「接受 / 中立 / 拒绝」那种谱系')
+    expect(system.content).toContain('是让他选"用哪种走法进去"')
+    expect(system.content).toContain('最后那条等于在问"要不要"')
+    expect(system.content).toContain('借着上药靠近')
+    expect(system.content).toContain('直接把手按在他手上')
     expect(system.content).toContain('写在 holdUp 里没用')
   })
 

@@ -166,7 +166,7 @@ describe('R18 分级', () => {
     expect(on).toContain('不许用这些糊过去')
     expect((on.match(/融为一体/g) ?? []).length).toBe(1)
     // 露骨的词要明确告知，让模型知道该用
-    expect(on).toContain('操、肏、屌、逼')
+    expect(on).toContain('操、肏、鸡巴、逼')
     expect(on).toContain('回避本身就是出戏')
     // 指令自己的措辞也不能回避 —— 它会原样传导成导演的偏好
     expect(on).not.toContain('那件事')
@@ -200,7 +200,7 @@ describe('R18 分级', () => {
     expect(on).toContain('这些都要明明白白写出来')
     expect(on).toContain('过程要写出来')
     // 用词直白（用户要求：有必要就必须明确告知）
-    expect(on).toContain('操、肏、屌、逼')
+    expect(on).toContain('操、肏、鸡巴、逼')
     expect(on).toContain('不许用这些糊过去')
     // 理由必须建立在已经发生过的事上，不是随便挑一个转折点
     expect(on).toContain('为什么是此刻')
@@ -315,7 +315,7 @@ describe('R18 分级', () => {
     // 勾了这个开关，用词就得像色情小说 —— 这些是必须出现的
     for (const text of [director, actor]) {
       expect(text).toContain('做爱')
-      expect(text).toContain('屌')
+      expect(text).toContain('鸡巴')
       expect(text).toContain('逼')
     }
 
