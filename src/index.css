@@ -964,6 +964,11 @@ pre.code {
 .situation-reason[open] {
   font-style: italic;
 }
+.situation-streak {
+  margin-top: 6px;
+  color: var(--text-faint);
+  font-size: 11.5px;
+}
 .situation-order {
   margin-top: 6px;
   color: #c9a86a;

@@ -324,6 +324,19 @@ function RoundBlock({ round, isLast, demo }: { round: Round; isLast: boolean; de
               {situationData.state.reason}
             </details>
           ) : null}
+
+          {situationData.state.holdUp?.trim() ? (
+            <details className="situation-reason">
+              <summary>为什么这一轮没有更进一步</summary>
+              {situationData.state.holdUp}
+            </details>
+          ) : null}
+
+          {round.rating === 'r18' && situationData.state.r18Streak > 1 ? (
+            <div className="situation-streak">
+              成人向已持续 {situationData.state.r18Streak} 轮
+            </div>
+          ) : null}
           {situationData.state.r18Ended ? (
             <div className="situation-escalation">这一幕收尾了 · R18 模式已自动关闭</div>
           ) : null}

@@ -240,6 +240,10 @@ R18 is not "flip a switch and the model talks dirty". **Every stage** of the eng
 
 **Pressure to get in is high; pressure to get out is low** — that is deliberate.
 
+**It has to account for not moving forward.** Every round the director asks itself "did this go further than last round". If it did not, it has to say on the card where it got stuck — specifically ("that sentence of hers read as a refusal, he needs to check once before moving"), and empty phrases like "the time is not right" are explicitly called out as stalling. **The board carries a collapsed "why this round did not go further" you can open.**
+
+**And you can see the pressure.** The board shows "adult mode running for N rounds" — the very number the director has hanging over it. The longer it stalls, the bigger that number gets, and the uglier the deadline in its prompt looks.
+
 **The director closes it out for you.** When it is time, it can declare the scene finished in that round — and the client **unticks the box automatically**, back to normal. You do not have to worry about ticking it once and having it hang there forever; tick it again whenever you want.
 
 ### Three lines

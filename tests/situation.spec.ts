@@ -21,6 +21,8 @@ const situation: SituationState = {
     { kind: 'scene', text: '最前面那两头伏低了身子' },
   ],
   reason: '',
+  holdUp: '',
+  r18Streak: 1,
   pace: 'escalate',
   r18Ended: false,
   directions: [],

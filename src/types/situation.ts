@@ -82,6 +82,16 @@ export interface SituationState {
    * 这一轮要先把那个契机补上。
    */
   reason: string
+  /**
+   * 这一轮**没有往前走**的缘由。
+   *
+   * 导演每一轮都要自问"比上一轮更进一步了吗"。推进了就留空；
+   * 没推进就必须写清楚卡在哪 —— 而且必须是当下的、具体的理由。
+   * 写"时机未到""还在酝酿"等于承认自己不知道该往哪走。
+   */
+  holdUp: string
+  /** 成人向已经连着几轮了 —— 就是压在导演身上的那个数字，页面上会显示 */
+  r18Streak: number
   /** 这一轮在节奏上的位置 */
   pace: SituationPace
   /**
@@ -115,6 +125,7 @@ export interface SituationState {
 
 export const RawSituationSchema = z.object({
   reason: z.union([z.string(), z.number(), z.null()]).optional(),
+  holdUp: z.union([z.string(), z.number(), z.null()]).optional(),
   pace: z.union([z.string(), z.number(), z.null()]).optional(),
   r18Ended: z.union([z.boolean(), z.string(), z.null()]).optional(),
   pressure: z.union([z.string(), z.number(), z.null()]).optional(),

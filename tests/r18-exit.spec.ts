@@ -44,6 +44,8 @@ vi.mock('@/engine/llm/instance', () => {
     if (label === 'situation') {
       return {
         reason: '',
+        holdUp: '',
+        r18Streak: 1,
         pace: 'settle',
         r18Ended: h.r18Ended,
         pressure: '',
@@ -154,6 +156,18 @@ describe('导演可以宣告成人向收尾', () => {
     await runRoundFor(plain.id)
     await runR18Round('第四轮：我又把门关上了。')
     expect(h.situationPrompts.at(-1)).toContain('已经第 1 轮了')
+  })
+
+  it('压力计数会写进产物里 —— 页面上那个数字得有来源', async () => {
+    await freshWorkspace()
+    await runR18Round('第一轮：我把门关上了。')
+    await runR18Round('第二轮：我坐下了。')
+
+    const step = Object.values(useAppStore.getState().steps).find(
+      (item) => item.stage === 'situation' && item.roundId === useAppStore.getState().rounds[1].id,
+    )
+    const state = step?.output as { r18Streak?: number } | undefined
+    expect(state?.r18Streak).toBe(2)
   })
 
   it('退出去之后用户还能再勾回来', () => {

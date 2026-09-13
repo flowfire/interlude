@@ -162,6 +162,7 @@ export async function runSituationStage(
 
     const parsed = data as {
       reason?: unknown
+      holdUp?: unknown
       pace?: unknown
       r18Ended?: unknown
       pressure?: unknown
@@ -174,6 +175,8 @@ export async function runSituationStage(
     return {
       output: {
         reason: asText(parsed.reason).trim(),
+        holdUp: asText(parsed.holdUp).trim(),
+        r18Streak: Math.max(1, r18Streak ?? 1),
         pace: normalizePace(parsed.pace),
         r18Ended:
           parsed.r18Ended === true ||
@@ -192,6 +195,8 @@ export async function runSituationStage(
     return {
       output: {
         reason: '',
+        holdUp: '',
+        r18Streak: Math.max(1, r18Streak ?? 1),
         pace: previous?.pace ?? 'build',
         r18Ended: false,
         pressure: previous?.pressure ?? '',
