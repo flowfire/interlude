@@ -233,9 +233,15 @@ describe('R18 分级', () => {
     // 所以导演不许用一句话糊过去（这是最容易偷懒的地方）
     expect(on).toContain('感情建立交给你写 —— 但不是让你偷懒')
     expect(on).toContain('但我要看到它')
-    expect(on).toContain('不许用一句话糊过去')
+    expect(on).toContain('用一句话糊过去是不合格的')
     expect(on).toContain('我们的关系维持了三个月')
-    expect(on).toContain('为什么是这两个人')
+    // 不要在意字数，但也不许水
+    expect(on).toContain('不要在意字数')
+    expect(on).toContain('用户嫌的从来不是长，是空')
+    expect(on).toContain('合格的密度下限')
+    expect(on).toContain('晾在院子里，一直没收进来')
+    expect(on).toContain('每一句都要携带信息')
+    expect(on).toContain('不要水')
     // 性恰恰是用户勾 R18 要看的东西，一个字都不能跳
     expect(on).toContain('性一个字都不能跳')
     expect(on).toContain('不能有"他们昨天做了什么"')

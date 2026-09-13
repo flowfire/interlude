@@ -318,6 +318,13 @@ function RoundBlock({ round, isLast, demo }: { round: Round; isLast: boolean; de
               {event.text}
             </div>
           ))}
+          {situationData.state.backstory?.trim() ? (
+            <details className="situation-backstory" open>
+              <summary>他们是怎么走到这一步的</summary>
+              {situationData.state.backstory}
+            </details>
+          ) : null}
+
           {situationData.state.reason?.trim() ? (
             <details className="situation-reason">
               <summary>为什么是此刻</summary>

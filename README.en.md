@@ -252,6 +252,8 @@ The test stays one sentence: **did anything new happen between their bodies this
 
   **It may not get away with one line.** "You have been together three months" is **zero information** and is explicitly listed as unacceptable — it has to say how they got there (which incident, which sentence, who backed down first), what unspoken understanding or old debt sits between them, and what the relationship means to each of them. **At minimum a bystander has to understand why it is these two.**
 
+  **It is also explicitly told not to skimp on length**: the prompt carries a 200-plus-character sample as the *floor* for acceptable density, with the line *what the user minds is never length, it is emptiness*. The only constraint is that every sentence has to carry information (a concrete action, a time, a loaded detail) — "the days passed and they grew closer" does not count. What it writes is **shown on the board** (expanded by default), because seeing it is the point rather than skipping it.
+
 **But nothing about the sex itself gets skipped.** That is what you ticked R18 to see — the background may carry *how far the relationship has got*, never *what they did last night*. Writing the act into the background skips the entire point of the switch.
 
 One sentence to judge by: **the background carries "why they can"; the performance carries "how they do it".**

@@ -939,6 +939,23 @@ pre.code {
   color: #cbb894;
   font-style: italic;
 }
+/* 快速模式下导演替用户交代的那段「他们为什么在一起了」——
+   用户要看的就是它，所以默认展开 */
+.situation-backstory {
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-left: 2px solid rgba(184, 135, 60, 0.5);
+  background: rgba(184, 135, 60, 0.05);
+  color: #cdbf9f;
+  font-size: 12.5px;
+  line-height: 1.85;
+}
+.situation-backstory > summary {
+  cursor: pointer;
+  color: #c9a86a;
+  font-size: 11.5px;
+  margin-bottom: 4px;
+}
 .situation-reason {
   margin-top: 6px;
   color: #d8c9a8;

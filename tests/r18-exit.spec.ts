@@ -43,6 +43,7 @@ vi.mock('@/engine/llm/instance', () => {
     }
     if (label === 'situation') {
       return {
+        backstory: '',
         reason: '',
         holdUp: '',
         routes: [],

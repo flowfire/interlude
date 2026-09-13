@@ -50,6 +50,7 @@ function card(name: string): CharacterCard {
 }
 
 const situation: SituationState = {
+  backstory: '',
   reason: '',
   holdUp: '',
   routes: [],

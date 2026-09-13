@@ -74,6 +74,14 @@ export interface SituationState {
   /** 如果没有任何人干预，接下来会发生什么 */
   escalation: string
   /**
+   * 交代「他们为什么在一起了」的那段背景。
+   *
+   * 快速模式下用户把**感情建立**这段委托给导演了 —— 但他要看，所以
+   * 这一段必须真的写出来，而且要够：**用户嫌的不是长，是空。**
+   * 平时（没勾快速模式）可以留空。
+   */
+  backstory: string
+  /**
    * 为什么是**此刻**。
    *
    * 成人向推进时导演必须先交代这个：这个理由得建立在这一轮之前
@@ -146,6 +154,7 @@ export interface SituationState {
 }
 
 export const RawSituationSchema = z.object({
+  backstory: z.union([z.string(), z.number(), z.null()]).optional(),
   reason: z.union([z.string(), z.number(), z.null()]).optional(),
   sexScore: z.union([z.number(), z.string(), z.null()]).optional(),
   holdUp: z.union([z.string(), z.number(), z.null()]).optional(),

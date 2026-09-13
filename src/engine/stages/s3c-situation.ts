@@ -185,6 +185,7 @@ export async function runSituationStage(
     })
 
     const parsed = data as {
+      backstory?: unknown
       reason?: unknown
       sexScore?: unknown
       holdUp?: unknown
@@ -200,6 +201,7 @@ export async function runSituationStage(
     }
     return {
       output: {
+        backstory: asText(parsed.backstory).trim(),
         reason: asText(parsed.reason).trim(),
         holdUp: asText(parsed.holdUp).trim(),
         routes: normalizeRoutes(parsed.routes),
@@ -222,6 +224,7 @@ export async function runSituationStage(
   } catch (error) {
     return {
       output: {
+        backstory: '',
         reason: '',
         holdUp: '',
         routes: [],

@@ -275,6 +275,7 @@ const ROUND2_ROLEPLAY_LINYAN = {
 }
 
 const ROUND1_SITUATION = {
+  backstory: '',
   reason: '',
   holdUp: '',
   routes: [],
@@ -289,6 +290,7 @@ const ROUND1_SITUATION = {
 }
 
 const ROUND2_SITUATION = {
+  backstory: '',
   reason: '',
   pressure: '林砚那盏茶已经见底了，他今天不是来叙旧的；阿七擦杯子的手停在了半空。',
   escalation: '你再不把话说完，林砚就会替你说破。',
