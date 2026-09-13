@@ -49,6 +49,7 @@ vi.mock('@/engine/llm/instance', () => {
         routes: [],
         r18Streak: 1,
         sexScore: 0,
+        prevSexScore: 0,
         pace: 'settle',
         r18Ended: h.r18Ended,
         pressure: '',
@@ -171,6 +172,26 @@ describe('导演可以宣告成人向收尾', () => {
     )
     const state = step?.output as { r18Streak?: number } | undefined
     expect(state?.r18Streak).toBe(2)
+  })
+
+  it('引擎把上一轮的分写进产物 —— 界面才能判「没涨 = 不合格」', async () => {
+    await freshWorkspace()
+    // 第一轮：situation 返回 sexScore 0，prevSexScore 也按 0 算
+    await runR18Round('第一轮：我把门关上了。')
+    const first = Object.values(useAppStore.getState().steps).find(
+      (item) => item.stage === 'situation' && item.roundId === useAppStore.getState().rounds[0].id,
+    )
+    expect((first?.output as { prevSexScore?: number })?.prevSexScore).toBe(0)
+
+    // 第二轮：引擎必须把第一轮那个分带过来当 prevSexScore
+    await runR18Round('第二轮：我坐下了。')
+    const second = Object.values(useAppStore.getState().steps).find(
+      (item) => item.stage === 'situation' && item.roundId === useAppStore.getState().rounds[1].id,
+    )
+    const out = second?.output as { prevSexScore?: number; sexScore?: number } | undefined
+    expect(out?.prevSexScore).toBe(0)
+    // 两轮都是 0 → 后者没比前者高 → 界面上会被标成不合格
+    expect(out?.sexScore).toBe(0)
   })
 
   it('退出去之后用户还能再勾回来', () => {

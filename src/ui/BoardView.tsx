@@ -357,6 +357,15 @@ function RoundBlock({ round, isLast, demo }: { round: Round; isLast: boolean; de
             </details>
           ) : null}
 
+          {round.rating === 'r18' &&
+          round.direct &&
+          situationData.state.sexScore <= situationData.state.prevSexScore ? (
+            <div className="situation-stalled">
+              ⚠ 这一轮的分没有涨（{situationData.state.prevSexScore} → {situationData.state.sexScore}）
+              —— 勾了快速模式却没主动引导，这轮不合格
+            </div>
+          ) : null}
+
           {round.rating === 'r18' ? (
             <div className="situation-streak">
               成人向第 {situationData.state.r18Streak} 轮 · 性内容{' '}

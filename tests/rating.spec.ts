@@ -213,7 +213,12 @@ describe('R18 分级', () => {
     expect(on).toContain('为什么是此刻他们能往前一步')
     expect(on).toContain('都不算理由')
     // events 也不许写跟性无关的东西
-    expect(on).toContain('不要拿一场跟性无关的冲突来"推进剧情"')
+    // 快速模式 = 导演有义务主动引导（不是"允许"）
+    expect(on).toContain('导演有义务主动引导剧情')
+    expect(on).toContain('你负责把他带到那儿')
+    // 硬指标：分必须比上一轮高，否则不合格
+    expect(on).toContain('这一轮的 sexScore 必须比上一轮高')
+    expect(on).toContain('没涨 = **不合格**')
     // 推不动的时候有第三条路：不硬拗、不抗命，而是给用户几条可选方向
     expect(on).toContain('把选择权交回用户')
     expect(on).toContain('routes 是**给用户选的开场**')
@@ -231,8 +236,8 @@ describe('R18 分级', () => {
     expect(directHint).toContain('不许用这些糊过去')
     // 快速模式：用户把「感情建立」交给导演替他写 —— 但他要看，
     // 所以导演不许用一句话糊过去（这是最容易偷懒的地方）
-    expect(on).toContain('感情建立交给你写 —— 但不是让你偷懒')
-    expect(on).toContain('但我要看到它')
+    expect(on).toContain('主动引导的手段之一：把感情建立替你写掉')
+    expect(on).toContain('用户不想自己一步一步写这段')
     expect(on).toContain('用一句话糊过去是不合格的')
     expect(on).toContain('我们的关系维持了三个月')
     // 不要在意字数，但也不许水

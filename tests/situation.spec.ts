@@ -26,6 +26,7 @@ const situation: SituationState = {
   routes: [],
   r18Streak: 1,
   sexScore: 0,
+  prevSexScore: 0,
   pace: 'escalate',
   r18Ended: false,
   directions: [],
@@ -184,9 +185,15 @@ describe('局面推进：世界自己会往前走', () => {
     }
 
     const [r18] = buildSituationMessages({ ...base, rating: 'r18' })
-    expect(r18.content).toContain('【本轮分级：成人向】')
+    // R18 = 「允许」：用户带到那儿才发生，导演不主动推
+    expect(r18.content).toContain('成人向 —— 这是「允许」，不是「要求」')
+    expect(r18.content).toContain('他不引导，你就不主动推进')
+    expect(r18.content).toContain('但他一旦把剧情带到那儿，你必须接住')
+    // 用词要直白、直接、粗俗 —— 这三个词用户要求直接写进去
+    expect(r18.content).toContain('文字要直白、直接、粗俗')
+    expect(r18.content).toContain('含蓄就是扫兴')
     // 落到导演的职责上：他能安排的是场面与剧情
-    expect(r18.content).toContain('摸、亲、脱、按，都写出来')
+    expect(r18.content).toContain('该写什么器官就写什么器官')
     // 三条底线一条不少
     expect(r18.content).toContain('人设的**底**不变')
     expect(r18.content).toContain('关系不凭空跳到')

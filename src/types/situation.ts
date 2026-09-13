@@ -112,6 +112,13 @@ export interface SituationState {
    */
   sexScore: number
   /**
+   * 上一轮的 sexScore（**引擎填的，不是导演给的**）。
+   *
+   * 快速模式有条硬规则：这一轮的分必须比上一轮高，否则视为不合格。
+   * 判断放在界面上做，所以这里只存数据。
+   */
+  prevSexScore: number
+  /**
    * 导演推荐的发展方向。
    *
    * 有些场面确实没法直接进入性（刚见面、身份对立、正在危险里）。

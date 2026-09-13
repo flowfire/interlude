@@ -207,6 +207,7 @@ export async function runSituationStage(
         routes: normalizeRoutes(parsed.routes),
         r18Streak: Math.max(1, r18Streak ?? 1),
         sexScore: normalizeScore(parsed.sexScore),
+        prevSexScore: recentScores?.length ? recentScores[recentScores.length - 1] : 0,
         pace: normalizePace(parsed.pace),
         r18Ended:
           parsed.r18Ended === true ||
@@ -230,6 +231,7 @@ export async function runSituationStage(
         routes: [],
         r18Streak: Math.max(1, r18Streak ?? 1),
         sexScore: 0,
+        prevSexScore: recentScores?.length ? recentScores[recentScores.length - 1] : 0,
         pace: previous?.pace ?? 'build',
         r18Ended: false,
         pressure: previous?.pressure ?? '',

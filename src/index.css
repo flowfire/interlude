@@ -1018,6 +1018,15 @@ pre.code {
   font-size: 12px;
   line-height: 1.6;
 }
+.situation-stalled {
+  margin-top: 6px;
+  padding: 5px 8px;
+  border-left: 2px solid rgba(200, 90, 80, 0.7);
+  background: rgba(200, 90, 80, 0.09);
+  color: #e09b94;
+  font-size: 11.5px;
+  line-height: 1.6;
+}
 .situation-streak {
   margin-top: 6px;
   color: var(--text-faint);

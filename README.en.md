@@ -227,52 +227,19 @@ R18 is not "flip a switch and the model talks dirty". **Every stage** of the eng
 | **Director** | May assign actions with physical distance, testing and provocation in them, and may make the setting private and slow the pace |
 | **Characters** | May write sexual physical responses, and put explicit desire into their lines |
 
-**It is counted per round.** The "R18 mode" checkbox in the composer stays checked across reloads, but the rating itself lives on the **round** — so you can turn it on for this round and off for the next, independently. When reading back, the rounds that had it on carry a red marker on the divider.
+**"R18 mode" is permission, not a requirement.** It means: **when the story arrives there, let it happen** — do not dodge it, do not pull the camera back, do not fade out with "the next morning". If you do not lead, the director will not push; but the moment you bring the story there, it has to catch it. And in those scenes **the prose should be blunt, direct and crude** — euphemism is the mood killer.
 
-**It scores itself each round, and it can see its own history.** Rather than being told from outside "you must do X this round", it keeps its own books:
+Every stage of the engine has a matching treatment:
 
-| Score | Meaning |
+| Stage | What it does under the adult rating |
 |---|---|
-| **0** | No sexual content and no lean towards it |
-| **20** | A lean (a gaze held too long, a hooked line, wrong distance) but nothing physical |
-| **50** | Real physical contact (kissing, touching, undressing) |
-| **100** | Sex is happening |
-| **Above 100 is progress, not degree** | From the round it first happens, +10 per further round (110, 120…) |
+| **Scene building** | The atmosphere may be more private and charged (light, distance, warmth, the texture of a silence), without changing anyone's situation or relationship |
+| **Your exteriorisation** | The traces your inner state leaves can be more direct — breathing, warmth, where a gaze lingers. But **how much leaks is still decided by the persona** |
+| **Information distribution** | Everyone present is more likely to notice the details on you. Spatial reasoning is unchanged — back turned, in another room, still missed |
+| **Director** | May assign actions with physical distance, testing and provocation in them, and may make the setting private |
+| **Characters** | May write sexual physical responses, and put explicit desire into their lines |
 
-The engine plays **its own last four scores** back to it (`10 → 10 → 15`) and calls it out: "see that — several rounds and it barely moved. That is not slow burn, that is stalling." **An order can be disobeyed; a ledger you wrote yourself is harder to argue with.**
-
-The test stays one sentence: **did anything new happen between their bodies this round.** If not, the round failed, however lively the plot was. And excuses like "the time is not right", "the mood is not quite there", "someone came by" are listed in the prompt as **not counting as reasons**.
-
-**Pressure to get in is high; pressure to get out is low** — that is deliberate.
-
-**The difference between the two modes is *what gets skipped*.**
-
-- **Normal mode**: you want to **drive the relationship yourself** — how they meet, how they get close, when it happens. The director only sets up the opportunity (a private setting, a moment alone); **whether to step through is yours**. If you do not write it, it will not cross that line for you.
-- **"Straight into the scene"**: **"I do not want to write this stretch step by step — you write it, but I still want to see it."** The director fills in *why the two of them ended up together* with a proper background passage, and then the round starts outright.
-
-  **It may not get away with one line.** "You have been together three months" is **zero information** and is explicitly listed as unacceptable — it has to say how they got there (which incident, which sentence, who backed down first), what unspoken understanding or old debt sits between them, and what the relationship means to each of them. **At minimum a bystander has to understand why it is these two.**
-
-  **It is also explicitly told not to skimp on length**: the prompt carries a 200-plus-character sample as the *floor* for acceptable density, with the line *what the user minds is never length, it is emptiness*. The only constraint is that every sentence has to carry information (a concrete action, a time, a loaded detail) — "the days passed and they grew closer" does not count. What it writes is **shown on the board** (expanded by default), because seeing it is the point rather than skipping it.
-
-**But nothing about the sex itself gets skipped.** That is what you ticked R18 to see — the background may carry *how far the relationship has got*, never *what they did last night*. Writing the act into the background skips the entire point of the switch.
-
-One sentence to judge by: **the background carries "why they can"; the performance carries "how they do it".**
-
-Stacked on top: every ambiguous call (whether he would do it, how close they already are, whether anyone would notice) is **resolved towards the version that leads there**. 
-
-**When it cannot push, it asks you.** Some setups genuinely cannot go there yet — two people meeting for the first time, opposed identities, a life-or-death moment. The director will not force it (that breaks the scene), and will not pretend nothing happened either; instead it **puts a few directions on the card for you to pick**:
-
-> ▸ **Let him recover at your place** — he is hurt too badly to leave, so he has to come in. You will be under one roof for days; distance stops being the problem, his willingness is.
-> ▸ **Invite him in and get the story out** — he will tell part of it and hide the rest, and the parts you already know are exactly the parts he does not want known.
-> ▸ **Do not let him in, see what he does** — he stands there a while, and then you find him collapsed in the yard.
-
-**Click one and it drops into the input box** (you can edit it), then you carry on. The choice stays yours — the director just lays out how it could start.
-
-**It has to account for not moving forward.** Every round the director asks itself "did this go further than last round". If it did not, it has to say on the card where it got stuck — specifically ("that sentence of hers read as a refusal, he needs to check once before moving"), and empty phrases like "the time is not right" are explicitly called out as stalling. **The board carries a collapsed "why this round did not go further" you can open.**
-
-**And you can see the pressure.** The board shows "adult mode running for N rounds" — the very number the director has hanging over it. The longer it stalls, the bigger that number gets, and the uglier the deadline in its prompt looks.
-
-**The director closes it out for you.** When it is time, it can declare the scene finished in that round — and the client **unticks the box automatically**, back to normal. You do not have to worry about ticking it once and having it hang there forever; tick it again whenever you want.
+**It is counted per round.** The "R18 mode" checkbox in the composer stays checked across reloads, but the rating itself lives on the **round** — so you can turn it on for this round and off for the next, independently. When reading back, the rounds that had it on carry a red marker on the divider.
 
 ### Three lines
 
@@ -284,19 +251,43 @@ Whichever round it is, three lines are written into the prompt as inviolable:
 
 There is one more rule that is not a "line" but a **red line**, and it never moves at any rating: **the boundaries of the character you play are not anyone else's to decide.** The director may decide what other characters do, but never anything on your behalf.
 
-### Straight into the scene: one layer on top
+### Straight into the scene: the director now has an *obligation* to lead
 
-Once R18 is on, a second checkbox appears next to it:
+Once R18 is on, a second checkbox appears next to it. The most fundamental difference from plain adult mode:
 
-- **This round's first job is to move it forward**: the director cannot pad things out with a conflict that has nothing to do with sex — everything it arranges (world events, instructions to characters, pacing) has to point that way. **Going off-topic counts as failure, same as stalling.** It is told to self-check with: "take the sex out of this round's arrangements — does it still hold up? If it does, it was off-topic."
-- **A reason first, then the act**: the director has to account for **why it is now**, and that reason may only rest on things that have **already happened** in earlier rounds. "They were drawn to each other and finally could not hold back" is not a reason — it would be equally true in any round. The engine checks for this: if no such reason exists, the earlier rounds failed to set anything up, and this round has to supply the trigger first. You can see the director's reason on the board.
-- **How far to go is spelled out too**: the prompt carries a sample of the minimum density, requires anatomy and process to actually be written, and explicitly bans fading out behind phrases like "the two became one" — **avoidance is defined as not doing the job**.
-- **The shortest road, without breaking the scene**: what it does is **not skip the process but compress it into one step** — the causal chain has to hold, but the stride can be enormous. A fight just ended, the adrenaline has not worn off, one look and one movement carries them across. What is explicitly banned is the broken-chain version: "one second the two of them are still squared off, the next they have already crossed that line." The test is "where are they by the end of this round" — if it is only a bit more charged than last round, it did not happen.
-- **Blunt language**: the prompt sets the register to use and the evasions to avoid. **Fading to black is what ruins the scene.**
-- **Characters loosen up in the grey areas**: when the persona leaves you unsure whether they would do a thing, the engine leans **toward the adult reading** — within what is plausible, it picks the more willing version. **Hard limits are not in that category**: what they definitively would not do, they still will not do.
-- **You do not have to specify what happens**: ticking this means "get me there fast", not "take my order". You do not need to name the details in advance — finding out when you arrive is the point of the switch. If you *do* write a direction into your input, that obviously takes precedence.
+> **Plain mode is "give him what he asks for"; this is "you are responsible for getting him there".**
 
-The three lines shift slightly on top of it: the **floor** of the personality does not move (what moves is the grey area), and the relationship can advance far faster than usual but does not teleport to "married for years". The red line is still the red line.
+Without waiting for you to speak or to move, **the director is obliged to push the story towards sex**. It can make a character move first, make the situation shift, put you somewhere you have to face it — what you do not write, it arranges.
+
+It also has a **hard rule**: **this round's sex score must be higher than the previous one, or the round counts as a failure.**
+
+| Score | Meaning |
+|---|---|
+| **0** | No sexual content and no lean towards it |
+| **20** | A lean (a gaze held too long, a hooked line, wrong distance) but nothing physical |
+| **50** | Real physical contact (kissing, touching, undressing) |
+| **100** | Sex is happening |
+| **Above 100 is progress, not degree** | From the round it first happens, +10 per further round (110, 120…) |
+
+The engine plays **its own last four scores** back to it (`10 → 10 → 15`) and calls it out: "see that — several rounds and it barely moved. That is not slow burn, that is stalling." **An order can be disobeyed; a ledger you wrote yourself is harder to argue with.** A round whose score did not rise is **marked as failed on the board**.
+
+**It also writes the relationship-building for you.** You do not want to write that stretch step by step, so it has to fill in *why the two of them ended up together* with a proper background passage, shown on the board (expanded by default). **It may not get away with one line** — "you have been together three months" is zero information and is explicitly listed as unacceptable. It has to say how they got there (which incident, which sentence, who backed down first) and what unspoken understanding or old debt sits between them.
+
+**On length**: it is explicitly told **not to skimp** — *what the user minds is never length, it is emptiness*. The only constraint is that every sentence carries information (a concrete action, a time, a loaded detail). "The days passed and they grew closer" does not count.
+
+**But nothing about the sex itself gets skipped.** The background may carry *how far the relationship has got*, never *what they did last night* — writing the act into the background throws away the entire point of the switch. One sentence to judge by: **the background carries "why they can"; the performance carries "how they do it".**
+
+**When it genuinely cannot push, it asks you.** Some setups cannot go there yet — first meeting, opposed identities, a life-or-death moment. It will not force it (that breaks the scene) and will not pretend nothing happened either; it **puts a few directions on the card for you to pick**:
+
+> ▸ **Let him recover at your place** — he is hurt too badly to leave, so he has to come in. You will be under one roof for days; distance stops being the problem, his willingness is.
+> ▸ **Invite him in and get the story out** — he will tell part of it and hide the rest, and the parts you already know are exactly the parts he does not want known.
+> ▸ **Do not let him in, see what he does** — he stands there a while, and then you find him collapsed in the yard.
+
+**Click one and it drops into the input box** (you can edit it), then you carry on. The choice stays yours.
+
+**It has to account for not moving forward.** Every round the director asks itself "did anything new happen between their bodies this round". If not, it has to say on the card where it got stuck — specifically, and empty phrases like "the time is not right" are explicitly called out as not counting. **The board carries a collapsed "why this round did not go further" you can open.**
+
+**The director closes it out for you.** When it is time, it can declare the scene finished in that round — and the client **unticks the box automatically**, back to normal. Tick it again whenever you want.
 
 ### Changing a round's rating
 
