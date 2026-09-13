@@ -767,6 +767,21 @@ export async function runFullRound(ctx: PipelineContext): Promise<FullRoundResul
     )
     steps = result.steps
     emit()
+  } else {
+    // 这一轮阵容里没有人 —— 没有 context / roleplay 要跑，但**「信息分发」这一步
+    // 不能跟着一起停**：它不依赖角色，而且界面要拿它的产物显示"这一轮分发了什么"。
+    // 早先它被包在 `if (roleplaySteps.length)` 里，于是没人出场的那几轮，
+    // 它永远停在 pending，看起来就像"剧情断在局面这里"。
+    steps = {
+      ...steps,
+      [perceiveStep.id]: {
+        ...perceiveStep,
+        status: 'done',
+        output: { candidates: [], entries: [], usedModel: false },
+        updatedAt: nowIso(),
+      },
+    }
+    emit()
   }
 
   // S7 编排

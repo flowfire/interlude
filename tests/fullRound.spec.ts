@@ -125,3 +125,27 @@ describe('整轮流水线', () => {
     }
   })
 })
+
+describe('没有人出场的那一轮', () => {
+  it('「信息分发」照样要跑完，不能停在 pending —— 否则看起来像剧情断在局面', async () => {
+    const round = makeRound()
+    round.userInput = '我看着窗外，什么也没说。'
+
+    const result = await runFullRound({
+      client: brokenClient(),
+      project: TEST_PROJECT,
+      round,
+      steps: {},
+      ledger: [],
+    })
+
+    const byStage = (stage: string) => Object.values(result.steps).find((step) => step.stage === stage)
+    const perceive = byStage('perceive')
+
+    // 没人出场 → 没有 context / roleplay，这是对的
+    expect(Object.values(result.steps).some((step) => step.stage === 'roleplay')).toBe(false)
+    // 但 perceive 必须有结果 —— 它不依赖角色，界面也要拿它显示"这一轮分发了什么"
+    expect(perceive?.status).toBe('done')
+    expect(perceive?.output).toBeTruthy()
+  })
+})
