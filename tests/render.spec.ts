@@ -145,23 +145,23 @@ describe('输入区的分级勾选', () => {
     vi.unstubAllGlobals()
   })
 
-  it('没勾 R18 时没有「快速进入」', () => {
+  it('没勾 R18 时没有「快速入戏」', () => {
     vi.stubGlobal('localStorage', {
       getItem: () => JSON.stringify({ rating: 'general', direct: false }),
       setItem: () => {},
     })
     const html = renderToString(createElement(InputBar))
-    expect(html).toContain('R18 倾向')
-    expect(html).not.toContain('快速进入')
+    expect(html).toContain('R18 模式')
+    expect(html).not.toContain('快速入戏')
   })
 
-  it('勾上 R18 之后才出现「快速进入」', () => {
+  it('勾上 R18 之后才出现「快速入戏」', () => {
     vi.stubGlobal('localStorage', {
       getItem: () => JSON.stringify({ rating: 'r18', direct: true }),
       setItem: () => {},
     })
     const html = renderToString(createElement(InputBar))
-    expect(html).toContain('R18 倾向')
-    expect(html).toContain('快速进入')
+    expect(html).toContain('R18 模式')
+    expect(html).toContain('快速入戏')
   })
 })

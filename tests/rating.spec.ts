@@ -141,7 +141,7 @@ describe('R18 分级', () => {
     expect(r18[0].content).not.toContain('自由度')
   })
 
-  it('「快速进入」是叠在成人向之上的一层，两条都齐了才生效', () => {
+  it('「快速入戏」是叠在成人向之上的一层，两条都齐了才生效', () => {
     const base = {
       bundle: bundle(),
       project: DEFAULT_PROJECT_SETTINGS,
@@ -149,10 +149,10 @@ describe('R18 分级', () => {
 
     const off = buildRoleplayMessages({ ...base, rating: 'r18' })[1].content
     expect(off).toContain('成人向')
-    expect(off).not.toContain('【快速进入】')
+    expect(off).not.toContain('【快速入戏】')
 
     const on = buildRoleplayMessages({ ...base, rating: 'r18', direct: true })[1].content
-    expect(on).toContain('【快速进入】')
+    expect(on).toContain('【快速入戏】')
     expect(on).toContain('不想绕圈子')
     expect(on).toContain('脏话、粗话都可以用')
 
@@ -161,10 +161,10 @@ describe('R18 分级', () => {
 
     // 没勾 R18 时它不该出现
     const general = buildRoleplayMessages({ ...base, rating: 'general', direct: true })[1].content
-    expect(general).not.toContain('【快速进入】')
+    expect(general).not.toContain('【快速入戏】')
   })
 
-  it('导演也会收到「快速进入」，落在节奏与用词上', () => {
+  it('导演也会收到「快速入戏」，落在节奏与用词上', () => {
     const base = {
       storyTitle: '测试',
       pcName: '我',
@@ -175,12 +175,12 @@ describe('R18 分级', () => {
     }
 
     const on = buildSituationMessages({ ...base, rating: 'r18', direct: true })[0].content
-    expect(on).toContain('【快速进入】')
+    expect(on).toContain('【快速入戏】')
     expect(on).toContain('pace 直接给 escalate 或 climax')
     expect(on).toContain('用户扮演的角色一个字都不能替他写')
 
     const off = buildSituationMessages({ ...base, rating: 'r18' })[0].content
-    expect(off).not.toContain('【快速进入】')
+    expect(off).not.toContain('【快速入戏】')
   })
 
   it('成人向那一轮，用户身上的细节更容易被注意到', () => {
@@ -292,7 +292,7 @@ describe('编辑一轮时，「分级变了」也算改动', () => {
     expect(isRoundDraftDirty(makeRound('abc'), { userInput: '  abc\n', rating: 'general', direct: false })).toBe(false)
   })
 
-  it('只加勾「快速进入」也算改动', () => {
+  it('只加勾「快速入戏」也算改动', () => {
     expect(
       isRoundDraftDirty(makeRound('abc', 'r18'), { userInput: 'abc', rating: 'r18', direct: false }),
     ).toBe(false)

@@ -204,9 +204,9 @@ That is the built-in demo: it uses a scripted set of model responses and **actua
 
 ## Want to go adult? Per round, opt in
 
-There is an **"R18 leaning"** checkbox next to the input box. **It stays checked** (across reloads) — it is visible enough not to be forgotten, while the rating itself lives on each round, so you can turn it on or off for a single round at any time.
+There is an **"R18 mode"** checkbox next to the input box. **It stays checked** (across reloads) — it is visible enough not to be forgotten, while the rating itself lives on each round, so you can turn it on or off for a single round at any time.
 
-Once R18 is on, a second checkbox appears next to it: **"straight in"**:
+Once R18 is on, a second checkbox appears next to it: **"straight into the scene"**:
 
 - **The director stops stalling**: it goes straight to escalation or climax instead of building, and can assign physical progress directly.
 - **The narration and the dialogue get blunter**: no more hiding behind metaphor and trailing off.

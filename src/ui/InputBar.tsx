@@ -27,7 +27,7 @@ export default function InputBar() {
 
   const handleR18Change = (value: boolean) => {
     setR18(value)
-    // 关掉 R18 时「快速进入」自动失效 —— 它只在成人向那一轮有意义
+    // 关掉 R18 时「快速入戏」自动失效 —— 它只在成人向那一轮有意义
     const nextDirect = value ? direct : false
     if (!value) setDirect(false)
     saveComposerState({ rating: value ? 'r18' : 'general', direct: nextDirect })
@@ -122,14 +122,14 @@ export default function InputBar() {
             disabled={busy}
             onChange={(event) => handleR18Change(event.target.checked)}
           />
-          R18 倾向
+          R18 模式
         </label>
 
         {r18 ? (
           <label
             className={`r18-toggle ${direct ? 'on' : ''}`}
             title={
-              '快速进入：导演会更急着把场面推向那件事，不再绕圈子；\n' +
+              '快速入戏：导演会更急着把场面推向那件事，不再绕圈子；\n' +
               '旁白和台词的用词也会更直白。\n' +
               '勾选会一直保留，直到你取消 R18。'
             }
@@ -140,7 +140,7 @@ export default function InputBar() {
               disabled={busy}
               onChange={(event) => handleDirectChange(event.target.checked)}
             />
-            快速进入
+            快速入戏
           </label>
         ) : null}
 

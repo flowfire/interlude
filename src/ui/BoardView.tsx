@@ -226,7 +226,7 @@ function RoundBlock({ round, isLast, demo }: { round: Round; isLast: boolean; de
                   disabled={busy}
                   onChange={(event) => setRatingDraft(event.target.checked ? 'r18' : 'general')}
                 />
-                R18 倾向
+                R18 模式
               </label>
               {ratingDraft === 'r18' ? (
                 <label
@@ -239,7 +239,7 @@ function RoundBlock({ round, isLast, demo }: { round: Round; isLast: boolean; de
                     disabled={busy}
                     onChange={(event) => setDirectDraft(event.target.checked)}
                   />
-                  快速进入
+                  快速入戏
                 </label>
               ) : null}
               <span className="hint">
@@ -248,7 +248,7 @@ function RoundBlock({ round, isLast, demo }: { round: Round; isLast: boolean; de
                   : [
                       inputChanged ? '整轮会重新拆解、重新分发给每个角色' : null,
                       ratingChanged ? `分级改为 ${RATING_LABEL[ratingDraft]}` : null,
-                      directChanged ? `快速进入：${directDraft ? '开' : '关'}` : null,
+                      directChanged ? `快速入戏：${directDraft ? '开' : '关'}` : null,
                     ]
                       .filter(Boolean)
                       .join(' · ')}

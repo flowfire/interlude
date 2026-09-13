@@ -21,7 +21,7 @@ export interface SituationStageInput {
   idle?: boolean
   /** 这一轮的分级 —— 导演要按它决定场面往哪推 */
   rating?: ContentRating
-  /** 「快速进入」 */
+  /** 「快速入戏」 */
   direct?: boolean
   previousRecap?: string
   previous?: { pressure: string; escalation: string; pace?: SituationPace } | null

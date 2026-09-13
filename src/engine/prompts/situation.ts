@@ -19,7 +19,7 @@ export interface SituationPromptInput {
   idle?: boolean
   /** 这一轮的分级 —— 导演要按它决定场面往哪推 */
   rating?: ContentRating
-  /** 「快速进入」 */
+  /** 「快速入戏」 */
   direct?: boolean
   doc: NormalizedDoc
   segments: Segment[]
@@ -55,13 +55,13 @@ const R18_DIRECTOR_HINT = `
 `
 
 /**
- * 「快速进入」—— 叠在成人向之上，给导演的版本。
+ * 「快速入戏」—— 叠在成人向之上，给导演的版本。
  *
  * 它只改**节奏**和**用词**，不改任何一条底线。
  */
 const R18_DIRECT_HINT = `
-【快速进入】
-用户还勾了「快速进入」—— 他不想等。所以：
+【快速入戏】
+用户还勾了「快速入戏」—— 他不想等。所以：
 - pace 直接给 escalate 或 climax，不要再用 build 铺陈。
 - act 可以直接写身体上的进展，别只写"气氛变得暧昧了一点"。
 - events 也可以更直接：门外没人了、最后一个人也走了、灯灭了。

@@ -14,7 +14,7 @@ const COMPOSER_KEY = 'interlude.composer'
 export interface ComposerState {
   /** 上次发送时用的分级 —— 延续上一次的勾选，不用每次重勾 */
   rating: ContentRating
-  /** 成人向下的「快速进入」 */
+  /** 成人向下的「快速入戏」 */
   direct: boolean
 }
 
