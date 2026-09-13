@@ -226,14 +226,21 @@ describe('局面推进：世界自己会往前走', () => {
 
     const first = buildSituationMessages({ ...base, r18Streak: 1, directStreak: 0 })[0].content
     expect(first).toContain('已经第 1 轮了')
-    expect(first).toContain('第 1 轮：正常，可以从容安排')
+    expect(first).toContain('第 1 轮：可以从容安排')
 
     const late = buildSituationMessages({ ...base, r18Streak: 5, directStreak: 3 })[0].content
     expect(late).toContain('已经第 5 轮了')
-    expect(late).toContain('已经拖过头了')
-    expect(late).toContain('第 2 轮及以上：已经不是"该到"')
+    // 三个阶段各自有名字，导演才知道自己在哪一段
+    expect(late).toContain('阶段一：进入')
+    expect(late).toContain('阶段二：实质动作')
+    expect(late).toContain('阶段三：决定要不要继续')
+    // 进不去才是失职；进去了不催
+    expect(late).toContain('这是失职')
+    expect(late).toContain('没人催你')
     // 成绩单里也点明了要先判断「开始了没有」
     expect(late).toContain('这件事开始了没有')
+    // 退出终究要有个头，但压力比进入小
+    expect(late).toContain('第 10 轮以后：该收尾了')
   })
 
   it('导演知道最近几轮的节奏，用来判断该不该收场', () => {

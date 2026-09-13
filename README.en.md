@@ -216,7 +216,18 @@ R18 is not "flip a switch and the model talks dirty". **Every stage** of the eng
 
 **It is counted per round.** The "R18 mode" checkbox in the composer stays checked across reloads, but the rating itself lives on the **round** — so you can turn it on for this round and off for the next, independently. When reading back, the rounds that had it on carry a red marker on the divider.
 
-**The director closes it out for you.** When a scene of that kind has run its course, the director can declare it finished in that round — and the client **unticks the box automatically**, back to normal. You do not have to worry about ticking it once and having it hang there forever; tick it again whenever you want.
+**The director carries a tempo map.** It gets a counter that is never shown in the UI — "how many rounds has the adult mode been running" — and paces itself against three stages:
+
+| Stage | Roughly | Pressure |
+|---|---|---|
+| **Getting in** | rounds 1–3 | highest. Still not in by round 3 is dragging; still not started after round 4 is a failure |
+| **The act itself** | rounds 4–6 | none. Follow the bodies and the mood, but every round should bring something new |
+| **Deciding whether to continue** | rounds 7–9 | lowest. Carry on (with a reason), move somewhere else, or close it out |
+| *(longer)* | 10+ | time to close, unless the scene genuinely still has something to give |
+
+**Pressure to get in is high; pressure to get out is low** — that is deliberate.
+
+**The director closes it out for you.** When it is time, it can declare the scene finished in that round — and the client **unticks the box automatically**, back to normal. You do not have to worry about ticking it once and having it hang there forever; tick it again whenever you want.
 
 ### Three lines
 
