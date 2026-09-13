@@ -61,19 +61,19 @@ vi.mock('@/engine/llm/instance', () => {
 })
 
 const { useAppStore } = await import('@/store/appStore')
-const { runRoundFor } = await import('@/ui/usePipelineActions')
+const { runRoundFor, applyR18Suggestion } = await import('@/ui/usePipelineActions')
+
+beforeEach(() => {
+  h.suggestFor.length = 0
+  h.situationCall = 0
+  useAppStore.getState().resetWorkspace()
+  // `resetWorkspace` 不动 composer（用户勾的选择在换对话时保留），测试里手动归零
+  useAppStore.getState().setComposer({ rating: 'general', direct: false })
+  useAppStore.getState().setError(null)
+  useAppStore.getState().setProject({ researchEnabled: false, allowR18: true })
+})
 
 describe('导演要求开启成人向', () => {
-  beforeEach(() => {
-    h.suggestFor.length = 0
-    h.situationCall = 0
-    useAppStore.getState().resetWorkspace()
-    // `resetWorkspace` 不动 composer（用户勾的选择在换对话时保留），测试里手动归零
-    useAppStore.getState().setComposer({ rating: 'general', direct: false })
-    useAppStore.getState().setError(null)
-    useAppStore.getState().setProject({ researchEnabled: false, allowR18: true })
-  })
-
   it('第一轮没要求、第二轮要求了 —— 第二轮才勾上', async () => {
     h.suggestFor.push(false, true)
 
@@ -96,5 +96,42 @@ describe('导演要求开启成人向', () => {
 
     expect(useAppStore.getState().composer.rating).toBe('general')
     expect(useAppStore.getState().error).toContain('允许使用成人向模式')
+  })
+})
+
+describe('刷新之后仍然认这个请求', () => {
+  it('重新载入工作区后，勾选框会被重新勾上 —— 这是派生事实，不是一次性通知', async () => {
+    h.suggestFor.push(true)
+    const r1 = useAppStore.getState().newRound('我走过去。')
+    await runRoundFor(r1.id)
+    expect(useAppStore.getState().composer.rating).toBe('r18')
+
+    // 模拟用户手动取消
+    useAppStore.getState().setComposer({ rating: 'general', direct: false })
+
+    // 模拟刷新：把当前状态当成快照重新载入，然后走"挂载时"那道流程
+    const state = useAppStore.getState()
+    const snapshot = {
+      sessions: state.sessions,
+      rounds: state.rounds,
+      steps: state.steps,
+      ledger: state.ledger,
+    }
+    useAppStore.getState().loadSnapshot(snapshot as never)
+    applyR18Suggestion()
+
+    expect(useAppStore.getState().composer.rating).toBe('r18')
+  })
+
+  it('总闸关着时，刷新也不会勾上', async () => {
+    h.suggestFor.push(true)
+    const r1 = useAppStore.getState().newRound('我走过去。')
+    await runRoundFor(r1.id)
+
+    useAppStore.getState().setProject({ allowR18: false })
+    useAppStore.getState().setComposer({ rating: 'general', direct: false })
+    applyR18Suggestion()
+
+    expect(useAppStore.getState().composer.rating).toBe('general')
   })
 })

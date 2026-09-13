@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useAppStore } from '@/store/appStore'
-import { runRoundFor } from './usePipelineActions'
+import { latestR18Suggestion, runRoundFor } from './usePipelineActions'
 import { IDLE_INPUT } from '@/types/step'
 
 const SAMPLE = `三天后，傍晚。雨刚停，青石板上还积着水洼。
@@ -28,6 +28,11 @@ export default function InputBar() {
   const r18 = composer.rating === 'r18'
   const direct = composer.direct
   // 总闸关着的时候，哪怕勾选状态还留着也不生效 —— 免得出现"看不见但还在跑"的开关
+  // 导演在最后一轮请求了开启成人向 —— 直接显示出来，别让用户猜
+  const suggested = useAppStore(
+    (state) => latestR18Suggestion(state.steps, state.rounds, state.activeSessionId)?.suggested ?? false,
+  )
+
   const liveR18 = project.allowR18 && r18
   const liveDirect = liveR18 && direct
 
@@ -133,6 +138,18 @@ export default function InputBar() {
             onChange={(event) => handleR18Change(event.target.checked)}
           />
           R18 模式
+          {suggested ? (
+            <span
+              className="r18-suggest"
+              title={
+                '导演判断剧情走到这里、再纯情下去已经不合适了，建议开启成人向。\n' +
+                '它已经替你勾上了 —— 不想往那边走就把勾去掉，' +
+                '导演那一轮会照普通分级写。'
+              }
+            >
+              导演建议
+            </span>
+          ) : null}
         </label>
         ) : null}
 

@@ -14,7 +14,7 @@ import type { CastStageOutput } from '@/engine/stages/s3-cast'
 import type { CharacterCard, ComposedScene, ContextBundle } from '@/types/character'
 import type { SituationState } from '@/types/situation'
 import type { PcExposure } from '@/types/exposure'
-import type { ContentRating } from '@/types/step'
+import type { ContentRating, Round } from '@/types/step'
 import type { SceneSetup } from '@/types/scene'
 import type { Segment } from '@/types/segment'
 import type { Step } from '@/types/step'
@@ -105,8 +105,43 @@ function r18SuggestedIn(steps: Record<string, Step>, roundId: string): boolean {
   return Boolean(situationOfRound(steps, roundId)?.suggestR18)
 }
 
+/**
+ * 这一条对话的**最后一轮**是否在请求开启成人向。
+ *
+ * 这是**派生状态**，不是"跑完那一刻的通知"：刷新页面、切回这条对话、
+ * 重新载入工作区之后，导演的请求仍然摆在那儿，就该仍然算数。
+ * 早先只有"跑完一轮"那一下会去勾选，一刷新就丢了 —— 用户得再跑一轮才行。
+ */
+export function latestR18Suggestion(
+  steps: Record<string, Step>,
+  rounds: Round[],
+  sessionId: string | null,
+): { roundId: string; suggested: boolean } | null {
+  const own = rounds
+    .filter((round) => round.sessionId === sessionId)
+    .sort((a, b) => a.index - b.index)
+  const last = own[own.length - 1]
+  if (!last) return null
+  return { roundId: last.id, suggested: r18SuggestedIn(steps, last.id) }
+}
+
 function r18EndedIn(steps: Record<string, Step>, roundId: string): boolean {
   return Boolean(situationOfRound(steps, roundId)?.r18Ended)
+}
+
+/**
+ * 把当前这条对话的 R18 建议**落到勾选框上**（在挂载时、切回对话时各调一次）。
+ *
+ * 抽成独立函数是为了能被测试直接调用 —— 埋在组件 effect 里的话，
+ * "刷新之后还认不认"这件事就只能靠手点验证。
+ */
+export function applyR18Suggestion(): void {
+  const state = useAppStore.getState()
+  if (!state.project.allowR18) return
+  const suggestion = latestR18Suggestion(state.steps, state.rounds, state.activeSessionId)
+  if (suggestion?.suggested && state.composer.rating !== 'r18') {
+    state.setComposer({ rating: 'r18' })
+  }
 }
 
 /**
@@ -189,7 +224,7 @@ export async function runRoundFor(roundId: string): Promise<void> {
     // 用户可以随时取消，导演下一轮也可以再提出 —— 两边都不用记账，
     // 决定权始终是"那个勾此刻有没有勾上"。
     const state = useAppStore.getState()
-    if (r18SuggestedIn(result.steps, roundId)) {
+    if (latestR18Suggestion(result.steps, state.rounds, ctx.round.sessionId)?.suggested) {
       if (!state.project.allowR18) {
         // 导演要求了，但总闸关着 —— 这个能力根本不存在，只提示一句
         state.setError(
