@@ -82,14 +82,13 @@ textarea {
   overflow: hidden;
 }
 
-/* 当前吸顶那张场面卡的图 —— 铺成整个界面的背景。
-   压得很暗：它是氛围，不是内容，不能跟正文抢注意力。 */
-.app::before {
-  content: '';
+/* 当前场景那张图 —— 铺成整个界面的背景。
+   压得很暗：它是氛围，不是内容，不能跟正文抢注意力。
+   两层同时存在，靠 opacity 交叉淡入（background-image 本身不能过渡）。 */
+.scene-backdrop {
   position: fixed;
   inset: 0;
   z-index: 0;
-  background-image: var(--app-scene-image);
   background-size: cover;
   background-position: center;
   /* 模糊 + 轻微放大：图本来就只要了够用的分辨率，糊一下反而更像氛围，
@@ -97,13 +96,14 @@ textarea {
   filter: blur(7px);
   transform: scale(1.06);
   opacity: 0;
-  transition: opacity 0.6s ease;
+  transition: opacity 1.1s ease;
   pointer-events: none;
 }
-.app.has-scene-image::before {
+.scene-backdrop.on {
   opacity: 0.22;
 }
-.app > * {
+/* 内容浮在背景之上；两个背景层自己除外 */
+.app > *:not(.scene-backdrop) {
   position: relative;
   z-index: 1;
 }

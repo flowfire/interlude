@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import TopBar from './ui/TopBar'
 import SessionList from './ui/SessionList'
 import InputBar from './ui/InputBar'
@@ -28,6 +28,12 @@ export default function App() {
         .sort((a, b) => a.index - b.index),
     [rounds, sessionId],
   )
+  /** 两层背景的槽位与当前激活的那层 —— 用来做交叉淡入 */
+  const [backdrop, setBackdrop] = useState<{ slots: [string, string]; active: 0 | 1 }>({
+    slots: ['', ''],
+    active: 0,
+  })
+
   const activeSceneImage = pickBackdrop({
     stuckRoundId: sceneRoundId,
     firstRoundId: sessionRounds[0]?.id ?? '',
@@ -44,6 +50,28 @@ export default function App() {
    *
    * 只认**最后一个已经滚过顶部的卡**：这样有唯一赢家，不依赖 effect 的执行顺序。
    */
+  // 图换了 → 预加载好再切，避免淡入的过程中先露出一片空白
+  useEffect(() => {
+    if (!activeSceneImage || activeSceneImage === backdrop.slots[backdrop.active]) return
+    let cancelled = false
+    const next = (backdrop.active === 0 ? 1 : 0) as 0 | 1
+    const image = new Image()
+    const swap = () => {
+      if (cancelled) return
+      setBackdrop((prev: { slots: [string, string]; active: 0 | 1 }) => {
+        const slots: [string, string] = [prev.slots[0], prev.slots[1]]
+        slots[next] = activeSceneImage
+        return { slots, active: next }
+      })
+    }
+    image.onload = swap
+    image.onerror = swap
+    image.src = activeSceneImage
+    return () => {
+      cancelled = true
+    }
+  }, [activeSceneImage, backdrop.active, backdrop.slots])
+
   const scrollRef = useRef<HTMLDivElement>(null)
   useEffect(() => {
     const scroller = scrollRef.current
@@ -85,14 +113,19 @@ export default function App() {
 
 
   return (
-    <div
-      className={`app${activeSceneImage ? ' has-scene-image' : ''}`}
-      style={
-        activeSceneImage
-          ? ({ '--app-scene-image': `url("${activeSceneImage}")` } as React.CSSProperties)
-          : undefined
-      }
-    >
+    <div className="app">
+      {/* 背景用**两层交叉淡入**：background-image 本身不能过渡，直接换会是硬切。
+          新图先放进备用层、等它加载完再切 active，两张的 opacity 一起过渡，
+          看起来就是缓慢地化过去。
+          最后一层空着也无妨 —— opacity 都是 0，不会显示。 */}
+      <div
+        className={`scene-backdrop${backdrop.active === 0 ? ' on' : ''}`}
+        style={backdrop.slots[0] ? { backgroundImage: `url("${backdrop.slots[0]}")` } : undefined}
+      />
+      <div
+        className={`scene-backdrop${backdrop.active === 1 ? ' on' : ''}`}
+        style={backdrop.slots[1] ? { backgroundImage: `url("${backdrop.slots[1]}")` } : undefined}
+      />
       <TopBar />
       <div className="layout with-left">
         <SessionList />
