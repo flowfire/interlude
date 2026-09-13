@@ -248,7 +248,9 @@ The test stays one sentence: **did anything new happen between their bodies this
 **The difference between the two modes is *what gets skipped*.**
 
 - **Normal mode**: you want to **drive the relationship yourself** — how they meet, how they get close, when it happens. The director only sets up the opportunity (a private setting, a moment alone); **whether to step through is yours**. If you do not write it, it will not cross that line for you.
-- **"Straight into the scene"**: **the relationship-building and the run-up are written into the background as things that already happened** — "you have known each other three months; whatever was going to happen already did", "he has been living here; you never slept in separate beds". One line turns *why it can happen* into established fact, so the round can start with no build-up at all.
+- **"Straight into the scene"**: **"I do not want to write this stretch step by step — you write it, but I still want to see it."** The director fills in *why the two of them ended up together* with a proper background passage, and then the round starts outright.
+
+  **It may not get away with one line.** "You have been together three months" is **zero information** and is explicitly listed as unacceptable — it has to say how they got there (which incident, which sentence, who backed down first), what unspoken understanding or old debt sits between them, and what the relationship means to each of them. **At minimum a bystander has to understand why it is these two.**
 
 **But nothing about the sex itself gets skipped.** That is what you ticked R18 to see — the background may carry *how far the relationship has got*, never *what they did last night*. Writing the act into the background skips the entire point of the switch.
 

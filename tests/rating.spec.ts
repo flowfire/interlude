@@ -229,13 +229,16 @@ describe('R18 分级', () => {
     // 含糊说法只允许出现在"不许用这些"的反例清单里
     expect((directHint.match(/融为一体/g) ?? []).length).toBe(1)
     expect(directHint).toContain('不许用这些糊过去')
-    // 快速模式真正的含义：把「感情与铺垫」背景化 —— 而不是把性背景化。
-    // 性恰恰是用户勾 R18 要看的东西，跳过它等于跳过了全部意义。
-    expect(on).toContain('把「铺垫」当成已经发生的事')
-    expect(on).toContain('当成已经发生过的事实写进背景')
-    expect(on).toContain('但性本身一个字都不能跳')
+    // 快速模式：用户把「感情建立」交给导演替他写 —— 但他要看，
+    // 所以导演不许用一句话糊过去（这是最容易偷懒的地方）
+    expect(on).toContain('感情建立交给你写 —— 但不是让你偷懒')
+    expect(on).toContain('但我要看到它')
+    expect(on).toContain('不许用一句话糊过去')
+    expect(on).toContain('我们的关系维持了三个月')
+    expect(on).toContain('为什么是这两个人')
+    // 性恰恰是用户勾 R18 要看的东西，一个字都不能跳
+    expect(on).toContain('性一个字都不能跳')
     expect(on).toContain('不能有"他们昨天做了什么"')
-    expect(on).toContain('写进背景的，是"**他们为什么可以**"；演出来的，是"**他们怎么做**"')
     expect(on).toContain('模棱两可的判断一律往更能导向做爱的方向选')
     // 场景不配合时有办法：把它改造成通向性的场面
     expect(on).toContain('怎么把「看起来不相干」的场景改造成通向性的场面')
