@@ -14,9 +14,24 @@ export function pickBackdrop(input: {
   stuckRoundId: string | null
   /** 当前对话的第一轮 */
   firstRoundId: string
+  /** 当前对话的轮次顺序（从早到晚）—— 回溯要找的图时用得上 */
+  roundOrder: string[]
   /** 轮次 id → 图片地址 */
   sceneImages: Record<string, string>
 }): string {
-  const id = input.stuckRoundId ?? input.firstRoundId
-  return (id && input.sceneImages[id]) || ''
+  if (input.stuckRoundId) {
+    // 从吸顶那一轮**往前找最近的一张图**。
+    // 场景沿用的轮次自己没有图（用户没在这一轮生过），但它所在的就是同一个
+    // 场景，背景该继续用上一张，而不是空掉。
+    const index = input.roundOrder.indexOf(input.stuckRoundId)
+    for (let i = index; i >= 0; i -= 1) {
+      const url = input.sceneImages[input.roundOrder[i]]
+      if (url) return url
+    }
+    return ''
+  }
+
+  // 一张卡都没吸顶 = 还停在第一段之前。这里**不回溯**：就用第一张卡片的图，
+  // 它没有图就按没有背景处理。（用户明确定过的规则。）
+  return input.sceneImages[input.firstRoundId] ?? ''
 }

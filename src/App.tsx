@@ -21,14 +21,19 @@ export default function App() {
   const rounds = useAppStore((state) => state.rounds)
   const sessionId = useAppStore((state) => state.activeSessionId)
 
-  const firstRoundId = useMemo(
+  const sessionRounds = useMemo(
     () =>
       rounds
         .filter((round) => round.sessionId === sessionId)
-        .sort((a, b) => a.index - b.index)[0]?.id ?? '',
+        .sort((a, b) => a.index - b.index),
     [rounds, sessionId],
   )
-  const activeSceneImage = pickBackdrop({ stuckRoundId, firstRoundId, sceneImages })
+  const activeSceneImage = pickBackdrop({
+    stuckRoundId,
+    firstRoundId: sessionRounds[0]?.id ?? '',
+    roundOrder: sessionRounds.map((round) => round.id),
+    sceneImages,
+  })
 
   /**
    * 「哪张场面卡贴在顶上」由**这里**算。

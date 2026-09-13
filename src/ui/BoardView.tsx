@@ -154,8 +154,11 @@ function RoundBlock({
       {/* 1. 场面 —— 它是整幕共享的**背景**，不属于"这一步发生了什么"。
           所以做成 sticky + 默认收起：滚动时当前这一轮的场面会顶掉上一轮的
           （多个 sticky 元素的天然行为，不需要 JS），时间线里也不再被它打断。 */}
-      {/* 场景没变就不插新的场面条 —— sticky 的上一条会继续吸着，视觉上就是"沿用" */}
-      {setup && !setup.unchanged ? (
+      {/* 场景沿用的轮次**也要**渲染场面条。
+          之前不渲染，结果是上一张卡被推出自己的容器后那一段顶部彻底空掉 ——
+          sticky 只能在自己的轮次里粘住，跨不过去。
+          沿用来的那张内容与上一轮相同，视觉上正好衔接。 */}
+      {setup ? (
         <details
           data-scene-card
           data-round-id={round.id}
@@ -167,6 +170,7 @@ function RoundBlock({
             <span className="scene-label">场面</span>
             {setup.time ? <span className="scene-chip">{setup.time}</span> : null}
             {setup.place ? <span className="scene-chip">{setup.place}</span> : null}
+            {setup.unchanged ? <span className="scene-chip">沿用</span> : null}
             {setup.present.length ? (
               <span className="scene-chip">在场 {setup.present.map((item) => item.name).join('、')}</span>
             ) : null}
