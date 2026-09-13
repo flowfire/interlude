@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useAppStore } from '@/store/appStore'
 import { isRoundStalled } from '@/utils/r18'
 import { SEGMENT_KIND_LABEL, type Segment, type SegmentKind } from '@/types/segment'
-import { SCENE_MODE_LABEL } from '@/types/scene'
+import { SCENE_MODE_LABEL, type SceneSetup } from '@/types/scene'
 import { RATING_LABEL, type ContentRating, type Round } from '@/types/step'
 import { isRoundDraftDirty } from '@/utils/roundDraft'
 import {
@@ -46,17 +46,172 @@ function demoParam(): string | null {
   return new URLSearchParams(window.location.search).get('demo')
 }
 
+/**
+ * 顶部那条场面条 —— **整份文档只有一条**。
+ *
+ * 以前是每轮各渲染一张、靠 CSS sticky 彼此顶替。问题在于：场景沿用的轮次
+ * 也会插一张内容相同的卡，滚动时看起来就是"一张新卡被推上来了"，
+ * 哪怕内容一个字都没变 —— 那不是"场景没换"该有的观感。
+ *
+ * 现在只有一条，位置固定，**内容随当前场景更新**：场景没变时它纹丝不动，
+ * 真的换了场景才刷新一次。
+ */
+function SceneBar({ firstRoundId }: { firstRoundId: string }) {
+  const activeRoundId = useAppStore((state) => state.sceneRoundId)
+  // 还没滚到任何一轮（第一段剧情之前）→ 用第一轮 —— 它就是要进入的那个场景。
+  // 和背景取图的规则保持一致。
+  const sceneRoundId = activeRoundId ?? firstRoundId
+  const steps = useAppStore((state) => state.steps)
+  const sceneImages = useAppStore((state) => state.sceneImages)
+  const busy = useAppStore((state) => state.sceneImageBusy) === sceneRoundId
+  const [imageError, setImageError] = useState('')
+  // <details> 用 ref 控制开合，不用受控的 open 属性 —— React 挂载时的那次
+  // toggle 事件会把它改成收起，导致"默认展开"看起来没生效。
+  const detailsRef = useRef<HTMLDetailsElement>(null)
+
+  const setup = useMemo(() => {
+    if (!sceneRoundId) return null
+    const step = Object.values(steps).find(
+      (item) => item.roundId === sceneRoundId && item.stage === 'scene' && item.status === 'done',
+    )
+    return (step?.output as SceneSetup | undefined) ?? null
+  }, [steps, sceneRoundId])
+
+  const sceneImage = sceneRoundId ? (sceneImages[sceneRoundId] ?? '') : ''
+
+  // 换了场景就重算开合：有图默认收起（有图就能脑补环境，描述不必再占着）
+  useEffect(() => {
+    if (detailsRef.current) detailsRef.current.open = !sceneImage
+    setImageError('')
+  }, [sceneRoundId, sceneImage])
+
+  if (!setup || !sceneRoundId) return null
+
+  const generate = async () => {
+    setImageError('')
+    useAppStore.getState().setSceneImageBusy(sceneRoundId)
+    try {
+      const { generateSceneImage, sceneImagePrompt } = await import('@/engine/image/client')
+      const url = await generateSceneImage({
+        prompt: sceneImagePrompt({
+          place: setup.place,
+          atmosphere: setup.atmosphere,
+          opening: setup.opening,
+          situation: setup.situation,
+        }),
+        settings: useAppStore.getState().image,
+      })
+      useAppStore.getState().setSceneImage(sceneRoundId, url)
+      if (detailsRef.current) detailsRef.current.open = false
+    } catch (error) {
+      setImageError(error instanceof Error ? error.message : '生图失败')
+    } finally {
+      useAppStore.getState().setSceneImageBusy(null)
+    }
+  }
+
+  return (
+    <details className="scene-card" ref={detailsRef} open>
+      <summary className="scene-card-head">
+        <span className="scene-label">场面</span>
+        {setup.time ? <span className="scene-chip">{setup.time}</span> : null}
+        {setup.place ? <span className="scene-chip">{setup.place}</span> : null}
+        {setup.present.length ? (
+          <span className="scene-chip">在场 {setup.present.map((item) => item.name).join('、')}</span>
+        ) : null}
+        <span className={`chip ${setup.inputMode === 'outline' ? 'chip-warn' : ''}`}>
+          {SCENE_MODE_LABEL[setup.inputMode]}
+        </span>
+        {!setup.usedModel ? <span className="chip">规则降级</span> : null}
+
+        <span className="scene-image-tip">
+          <button
+            className={`scene-image-btn${imageError ? ' error' : ''}`}
+            disabled={busy}
+            title={
+              imageError
+                ? undefined
+                : sceneImage
+                  ? '重新生成这个场面的图'
+                  : '按这个场面的描写生成一张图，会铺成整个界面的背景'
+            }
+            onClick={(event) => {
+              event.preventDefault()
+              event.stopPropagation()
+              void generate()
+            }}
+          >
+            {busy ? (
+              '生成中'
+            ) : imageError ? (
+              '生图失败'
+            ) : sceneImage ? (
+              <>
+                <span className="scene-image-btn-idle">生图</span>
+                <span className="scene-image-btn-hover">重新生图</span>
+              </>
+            ) : (
+              '生图'
+            )}
+          </button>
+          {imageError ? <span className="scene-image-tip-text">{imageError}</span> : null}
+        </span>
+      </summary>
+
+      <div className="scene-body">
+        <div className="scene-main">
+          {setup.opening.length ? (
+            setup.opening.map((line, index) => (
+              <div key={index} className="scene-line">
+                {line}
+              </div>
+            ))
+          ) : (
+            <div className="hint">（素材里没有环境描写）</div>
+          )}
+          {setup.situation ? <div className="scene-situation">▸ {setup.situation}</div> : null}
+        </div>
+
+        <div className="scene-side">
+          {setup.atmosphere ? <div className="scene-side-row">气氛：{setup.atmosphere}</div> : null}
+          {setup.interlude ? (
+            <div className="scene-side-row">
+              {setup.interlude.summary ? <div>〔这之前〕{setup.interlude.summary}</div> : null}
+              {setup.interlude.each.map((item) => (
+                <div key={item.who} className="scene-interlude-each">
+                  {item.who}：{item.what}
+                </div>
+              ))}
+            </div>
+          ) : null}
+          {setup.present.length ? (
+            <div className="scene-side-row scene-cast">
+              {setup.present.map((item) => (
+                <span key={item.name} className="scene-chip">
+                  {item.name}
+                  {item.kind === 'extra' ? '（路人）' : ''}
+                  {item.active ? '' : '（背景）'}
+                </span>
+              ))}
+            </div>
+          ) : null}
+          {!setup.usedModel ? (
+            <div className="scene-fallback">未调用模型：{setup.fallbackReason || '原因未知'}</div>
+          ) : null}
+        </div>
+      </div>
+    </details>
+  )
+}
+
 function RoundBlock({
   round,
   isLast,
   demo,
-  stuck,
 }: {
   round: Round
   isLast: boolean
   demo: string | null
-  /** 这一轮的场面卡是不是正贴在顶上（由 BoardView 统一算，见那边的注释） */
-  stuck: boolean
 }) {
   const steps = useAppStore((state) => state.steps)
   const rounds = useAppStore((state) => state.rounds)
@@ -83,41 +238,6 @@ function RoundBlock({
   const composeData = getComposeOfRound(round.id)
   const situationData = getSituationOfRound(round.id)
   const routes = situationData?.state.routes ?? []
-  const sceneImages = useAppStore((state) => state.sceneImages)
-  const sceneImage = sceneImages[round.id] ?? ''
-  const sceneImageBusy = useAppStore((state) => state.sceneImageBusy) === round.id
-  const [imageError, setImageError] = useState('')
-
-
-  // 卡片开合：**有图就默认收起** —— 有图就能脑补环境了，描述不必再占着。
-  // 初值直接看有没有图（sceneImages 是从 localStorage 同步读出来的，
-  // 所以刷新之后也算得对，不会又摊开一次）。
-  const [sceneOpen, setSceneOpen] = useState(!sceneImage)
-
-  const handleGenerateImage = async () => {
-    if (!setup) return
-    setImageError('')
-    useAppStore.getState().setSceneImageBusy(round.id)
-    try {
-      const { generateSceneImage, sceneImagePrompt } = await import('@/engine/image/client')
-      const url = await generateSceneImage({
-        prompt: sceneImagePrompt({
-          place: setup.place,
-          atmosphere: setup.atmosphere,
-          opening: setup.opening,
-          situation: setup.situation,
-        }),
-        settings: useAppStore.getState().image,
-      })
-      useAppStore.getState().setSceneImage(round.id, url)
-      // 有图了就不用再摊着那段环境描写
-      setSceneOpen(false)
-    } catch (error) {
-      setImageError(error instanceof Error ? error.message : '生图失败')
-    } finally {
-      useAppStore.getState().setSceneImageBusy(null)
-    }
-  }
   const exposureData = getExposureOfRound(round.id)
   const reactions = composeData?.scene.reactions ?? []
   const setup = sceneData?.setup
@@ -128,7 +248,13 @@ function RoundBlock({
   }, {})
 
   return (
-    <section className="round-block" id={`round-${round.id}`}>
+    <section
+      className="round-block"
+      id={`round-${round.id}`}
+      data-round-block
+      data-round-id={round.id}
+      data-has-scene={setup && !setup.unchanged ? '1' : '0'}
+    >
       <div className="round-divider">
         <span className="round-index">第 {round.index} 轮</span>
         {round.rating === 'r18' ? (
@@ -150,126 +276,6 @@ function RoundBlock({
           从这一轮重演
         </button>
       </div>
-
-      {/* 1. 场面 —— 它是整幕共享的**背景**，不属于"这一步发生了什么"。
-          所以做成 sticky + 默认收起：滚动时当前这一轮的场面会顶掉上一轮的
-          （多个 sticky 元素的天然行为，不需要 JS），时间线里也不再被它打断。 */}
-      {/* 场景沿用的轮次**也要**渲染场面条。
-          之前不渲染，结果是上一张卡被推出自己的容器后那一段顶部彻底空掉 ——
-          sticky 只能在自己的轮次里粘住，跨不过去。
-          沿用来的那张内容与上一轮相同，视觉上正好衔接。 */}
-      {setup ? (
-        <details
-          data-scene-card
-          data-round-id={round.id}
-          className={`scene-card${stuck ? ' stuck' : ''}`}
-          open={sceneOpen}
-          onToggle={(event) => setSceneOpen((event.currentTarget as HTMLDetailsElement).open)}
-        >
-          <summary className="scene-card-head">
-            <span className="scene-label">场面</span>
-            {setup.time ? <span className="scene-chip">{setup.time}</span> : null}
-            {setup.place ? <span className="scene-chip">{setup.place}</span> : null}
-            {setup.unchanged ? <span className="scene-chip">沿用</span> : null}
-            {setup.present.length ? (
-              <span className="scene-chip">在场 {setup.present.map((item) => item.name).join('、')}</span>
-            ) : null}
-            <span className={`chip ${setup.inputMode === 'outline' ? 'chip-warn' : ''}`}>
-              {SCENE_MODE_LABEL[setup.inputMode]}
-            </span>
-            {!setup.usedModel ? <span className="chip">规则降级</span> : null}
-
-            {/* 生图按钮放在摘要行里：这张卡片必须尽可能矮，
-                任何新东西都得挤进已有的行，不能另起一行 */}
-            <span className="scene-image-tip">
-              <button
-                className={`scene-image-btn${imageError ? ' error' : ''}`}
-                disabled={sceneImageBusy}
-                title={
-                  imageError
-                    ? undefined
-                    : sceneImage
-                      ? '重新生成这个场面的图（吸顶时会铺成背景）'
-                      : '按这个场面的描写生成一张图，吸顶时铺成背景'
-                }
-                onClick={(event) => {
-                  // 摘要行整行是开合开关，按钮不能把它一起触发
-                  event.preventDefault()
-                  event.stopPropagation()
-                  void handleGenerateImage()
-                }}
-              >
-                {sceneImageBusy ? (
-                  '生成中'
-                ) : imageError ? (
-                  '生图失败'
-                ) : sceneImage ? (
-                  <>
-                    <span className="scene-image-btn-idle">生图</span>
-                    <span className="scene-image-btn-hover">重新生图</span>
-                  </>
-                ) : (
-                  '生图'
-                )}
-              </button>
-              {/* 失败时鼠标移上去能看到原因 —— 原生 title 有延迟、样式也不可控，
-                  所以自己做了一个 */}
-              {imageError ? <span className="scene-image-tip-text">{imageError}</span> : null}
-            </span>
-          </summary>
-
-          {/* 吸顶 + 默认展开，所以高度要压住：左右两栏，
-              左边（宽）放具体的场景描述，右边（窄）放细节与其余内容。 */}
-          <div className="scene-body">
-            <div className="scene-main">
-              {setup.opening.length ? (
-                setup.opening.map((line, index) => (
-                  <div key={index} className="scene-line">
-                    {line}
-                  </div>
-                ))
-              ) : (
-                <div className="hint">（素材里没有环境描写）</div>
-              )}
-              {setup.situation ? <div className="scene-situation">▸ {setup.situation}</div> : null}
-            </div>
-
-            <div className="scene-side">
-              {setup.atmosphere ? <div className="scene-side-row">气氛：{setup.atmosphere}</div> : null}
-              {situationData?.state.pressure ? (
-                <div className="scene-side-row">
-                  <span className="scene-side-label">局面</span>
-                  {situationData.state.pressure}
-                </div>
-              ) : null}
-              {setup.interlude ? (
-                <div className="scene-side-row">
-                  {setup.interlude.summary ? <div>〔这之前〕{setup.interlude.summary}</div> : null}
-                  {setup.interlude.each.map((item) => (
-                    <div key={item.who} className="scene-interlude-each">
-                      {item.who}：{item.what}
-                    </div>
-                  ))}
-                </div>
-              ) : null}
-              {setup.present.length ? (
-                <div className="scene-side-row scene-cast">
-                  {setup.present.map((item) => (
-                    <span key={item.name} className="scene-chip">
-                      {item.name}
-                      {item.kind === 'extra' ? '（路人）' : ''}
-                      {item.active ? '' : '（背景）'}
-                    </span>
-                  ))}
-                </div>
-              ) : null}
-              {!setup.usedModel ? (
-                <div className="scene-fallback">未调用模型：{setup.fallbackReason || '原因未知'}</div>
-              ) : null}
-            </div>
-          </div>
-          </details>
-      ) : null}
 
       {/* 2. 你的输入 */}
       <div className="input-block">
@@ -519,7 +525,6 @@ export default function BoardView() {
     .sort((a, b) => a.index - b.index)
 
   const bottomRef = useRef<HTMLDivElement>(null)
-  const stuckRoundId = useAppStore((state) => state.stuckRoundId)
   const lastCount = useRef(rounds.length)
 
   // 新的一轮出现时滑到它那里
@@ -550,13 +555,13 @@ export default function BoardView() {
         <h2>{session?.title ?? '对话'}</h2>
         <span className="hint">{rounds.length} 轮</span>
       </div>
+      <SceneBar firstRoundId={rounds[0]?.id ?? ''} />
       {rounds.map((round, index) => (
         <RoundBlock
           key={round.id}
           round={round}
           isLast={index === rounds.length - 1}
           demo={demoParam()}
-          stuck={stuckRoundId === round.id}
         />
       ))}
       <div ref={bottomRef} />

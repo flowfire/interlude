@@ -16,7 +16,7 @@ export default function App() {
   const setError = useAppStore((state) => state.setError)
   const busy = useAppStore((state) => state.busy)
   const statusText = useAppStore((state) => state.statusText)
-  const stuckRoundId = useAppStore((state) => state.stuckRoundId)
+  const sceneRoundId = useAppStore((state) => state.sceneRoundId)
   const sceneImages = useAppStore((state) => state.sceneImages)
   const rounds = useAppStore((state) => state.rounds)
   const sessionId = useAppStore((state) => state.activeSessionId)
@@ -29,7 +29,7 @@ export default function App() {
     [rounds, sessionId],
   )
   const activeSceneImage = pickBackdrop({
-    stuckRoundId,
+    stuckRoundId: sceneRoundId,
     firstRoundId: sessionRounds[0]?.id ?? '',
     roundOrder: sessionRounds.map((round) => round.id),
     sceneImages,
@@ -53,30 +53,27 @@ export default function App() {
     const update = () => {
       timer = undefined
       const box = scroller.getBoundingClientRect()
-      const cards = scroller.querySelectorAll<HTMLElement>('[data-scene-card]')
+      const blocks = scroller.querySelectorAll<HTMLElement>('[data-round-block]')
 
-      // 取**最后一个已经滚过顶部的场面卡**，而不管它此刻还在不在视口里。
+      // 取**最后一个已经滚过顶部的轮次**里、**带来过新场景**的那一轮。
       //
-      // 两点都是从真实问题里学来的：
+      // 为什么要"带来过新场景"这层过滤：沿用了上一个场景的轮次，场景本身仍然
+      // 属于更早那一轮 —— 顶部那条场面条和背景都该继续指着它，而不是跟着
+      // 轮次号往前跳。以前是每轮各渲染一张卡、靠 sticky 顶替，视觉上会看到
+      // "一张新卡被推上来"；现在只有一条卡，内容随场景更新。
       //
-      // · 容差 30px：sticky 实际钉住的位置受滚动容器 padding 影响，
-      //   并不等于 CSS 写的 top（实测距容器顶 24px，而不是 -1px）。
-      //   卡死在 1px 上会导致**永远没有卡被认成吸顶**。
-      //
-      // · **不break、取最后一个**：某一轮的场景没变时（unchanged）它不渲染
-      //   场面卡，上一张卡会被下面的内容推出视口 —— 如果这时候要求"卡片还在
-      //   视口里"，背景就会空掉。但它代表的场景并没有过去，应该继续沿用。
-      //   取最后一个滚过顶部的卡，正好就是"当前所在这一幕"的那张。
+      // 30px 容差：sticky 实际钉住的位置受滚动容器 padding 影响，并不等于
+      // CSS 里写的 top。
       let current: string | null = null
-      for (const card of cards) {
-        if (card.getBoundingClientRect().top - box.top <= 30) {
-          current = card.dataset.roundId ?? null
+      for (const block of blocks) {
+        if (block.getBoundingClientRect().top - box.top <= 30) {
+          if (block.dataset.hasScene === '1') current = block.dataset.roundId ?? null
         } else {
           break
         }
       }
       const store = useAppStore.getState()
-      if (store.stuckRoundId !== current) store.setStuckRoundId(current)
+      if (store.sceneRoundId !== current) store.setSceneRoundId(current)
     }
     const onScroll = () => {
       if (timer) return

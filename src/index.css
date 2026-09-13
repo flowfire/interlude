@@ -920,17 +920,17 @@ pre.code {
 .scene-card[open] {
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28);
 }
-/* 吸顶时把边界勾出来。
-   底色本来就偏暗，纯黑阴影在这里等于没有 —— 所以靠一道很淡的亮色底线
-   来分界，再叠一层更深的投影做纵深。用 box-shadow 而不是 border-bottom：
-   后者会让卡片在吸顶的一瞬间变高 1px，滚动时抖一下。 */
-.scene-card.stuck {
+/* 边界。底色本来就偏暗，纯黑阴影在这里等于没有 —— 靠一道很淡的亮色底线
+   分界，再叠一层更深的投影做纵深。用 box-shadow 而不是 border-bottom：
+   后者会让卡片变高 1px。
+   （全场只有这一条场景条，它一直贴在顶部，所以这些样式是常驻的。） */
+.scene-card {
   box-shadow:
     0 1px 0 rgba(94, 176, 168, 0.32),
     0 10px 26px rgba(0, 0, 0, 0.5);
 }
 /* 收起成一条的时候，底线就是唯一的分界，稍微给它一点存在感 */
-.scene-card.stuck:not([open]) {
+.scene-card:not([open]) {
   box-shadow:
     0 1px 0 rgba(94, 176, 168, 0.42),
     0 8px 20px rgba(0, 0, 0, 0.5);

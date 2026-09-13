@@ -66,13 +66,16 @@ export interface AppState extends WorkspaceSnapshot {
   sceneImages: Record<string, string>
   setSceneImage: (roundId: string, url: string) => void
   /**
-   * 当前吸顶的是哪一轮的场面卡（没有就是 null）。
+   * **当前所在场景**属于哪一轮（没有就是 null）。
    *
-   * 界面背景由它决定：有吸顶的用它那张图；**一张都没吸顶**说明还停在
-   * 第一段剧情之前，那时候用第一张卡片的图（只认第一张，不做回退）。
+   * 注意不是"哪一轮在视口顶部" —— 沿用了上一个场景的轮次，场景仍然属于
+   * 更早那一轮。界面背景和顶部那条场面条都跟着它走。
+   *
+   * 为 null 表示还停在第一段剧情之前，这时候用第一张卡片的图
+   * （只认第一张，不做回退）。
    */
-  stuckRoundId: string | null
-  setStuckRoundId: (roundId: string | null) => void
+  sceneRoundId: string | null
+  setSceneRoundId: (roundId: string | null) => void
   /** 正在生图的轮次（生成中显示转圈，避免重复点） */
   sceneImageBusy: string | null
   setSceneImageBusy: (roundId: string | null) => void
@@ -144,7 +147,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   image: { ...DEFAULT_IMAGE_SETTINGS },
   sceneImages: typeof localStorage === 'undefined' ? {} : loadSceneImages(),
   sceneImageBusy: null,
-  stuckRoundId: null,
+  sceneRoundId: null,
   project: { ...DEFAULT_PROJECT_SETTINGS },
   // 初始化时就把上次的勾选读回来（测试 / SSR 环境没有 localStorage，退回默认）
   composer: typeof localStorage === 'undefined' ? { ...DEFAULT_COMPOSER_STATE } : loadComposerState(),
@@ -199,7 +202,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     saveSceneImages(next)
     set({ sceneImages: next })
   },
-  setStuckRoundId: (roundId) => set({ stuckRoundId: roundId }),
+  setSceneRoundId: (roundId) => set({ sceneRoundId: roundId }),
   setSceneImageBusy: (roundId) => set({ sceneImageBusy: roundId }),
   setProject: (patch) => set((state) => ({ project: { ...state.project, ...patch } })),
   setSettingsOpen: (settingsOpen) => set({ settingsOpen }),
