@@ -219,6 +219,11 @@ describe('R18 分级', () => {
     // 硬指标：分必须比上一轮高，否则不合格
     expect(on).toContain('这一轮的 sexScore 必须比上一轮高')
     expect(on).toContain('没涨 = **不合格**')
+    // 而且这道关要它自己在**交卷之前**过 —— 引擎事后判的时候它已经交了
+    expect(on).toContain('交出之前，先过这一关')
+    expect(on).toContain('它比上一轮高了吗')
+    expect(on).toContain('**没高** → **不合格，重想。**')
+    expect(on).toContain('不许靠改分数蒙过去')
     // 推不动的时候有第三条路：不硬拗、不抗命，而是给用户几条可选方向
     expect(on).toContain('routes 不是兜底 —— 是常规手段')
     expect(on).toContain('随时都可以给 2~3 个方向')
