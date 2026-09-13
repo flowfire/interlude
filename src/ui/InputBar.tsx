@@ -159,7 +159,7 @@ export default function InputBar() {
         <button className="btn" disabled={busy} onClick={() => setDraft(SAMPLE)} title="一段有具体演出的素材">
           示例：具体演出
         </button>
-        <button className="btn" disabled={busy} onClick={() => setDraft(SAMPLE_OUTLINE)} title="一句概要，引擎会展开成场面">
+        <button className="btn" disabled={busy} onClick={() => setDraft(SAMPLE_OUTLINE)} title="一句概要，引擎会展开成场景">
           示例：概要
         </button>
 

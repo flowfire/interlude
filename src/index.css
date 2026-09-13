@@ -811,7 +811,7 @@ pre.code {
   transition: opacity 0.15s;
   font-size: 11.5px;
 }
-.round-block:hover .round-replay {
+.round-divider:hover .round-replay {
   opacity: 1;
 }
 .session-head {

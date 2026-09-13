@@ -323,11 +323,11 @@ You write in the first person, but **in every prompt the engine hands to an AI, 
 
 ## Scenes are not rebuilt every round
 
-When several rounds stay in the same place (the same table, the same rain), scene building only has to answer one thing — **unchanged**. If time, place, who is present and the mood are all the same, it returns a single marker, **the engine reuses the previous scene, and no new scene strip is inserted** (the previous one keeps sticking to the top, which reads as "still the same scene").
+When several rounds stay in the same place (the same table, the same rain), scene building only has to answer one thing — **unchanged**. If time, place, who is present and the mood are all the same, it returns a single marker, and **the engine reuses the previous scene**.
+
+The UI follows the same rule: **one card per scene, not per round.** Rounds that reuse the previous scene join the same group and share its card — so scrolling through them leaves that card **perfectly still on top**; only a genuinely new scene pushes a new one up. (The card sits right after the divider of the round it belongs to.)
 
 That saves a generation and removes the repetition of describing the same room every round. **"Unchanged" does not mean "nothing happened"** — the two of them are still at that table, only halfway through the conversation, which is the most common kind of consecutive round.
-
-The scene strip itself changed too: it is **background shared by the whole scene**, not "what happened this step", so it is now a sticky bar — expanded by default, click to collapse; scrolling brings the current round's strip over the previous one.
 
 ## Three mechanisms worth knowing
 

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useAppStore } from '@/store/appStore'
 import { isRoundStalled } from '@/utils/r18'
 import { SEGMENT_KIND_LABEL, type Segment, type SegmentKind } from '@/types/segment'
@@ -47,7 +47,7 @@ function demoParam(): string | null {
 }
 
 /**
- * 顶部那条场面条 —— **整份文档只有一条**。
+ * 场景卡 —— 一个场景一张，插在它所属那一轮的分隔符后面。
  *
  * 以前是每轮各渲染一张、靠 CSS sticky 彼此顶替。问题在于：场景沿用的轮次
  * 也会插一张内容相同的卡，滚动时看起来就是"一张新卡被推上来了"，
@@ -108,7 +108,7 @@ function SceneCard({ sceneRoundId }: { sceneRoundId: string }) {
   return (
     <details className="scene-card" ref={detailsRef} data-scene-card data-round-id={sceneRoundId} open>
       <summary className="scene-card-head">
-        <span className="scene-label">场面</span>
+        <span className="scene-label">场景</span>
         {setup.time ? <span className="scene-chip">{setup.time}</span> : null}
         {setup.place ? <span className="scene-chip">{setup.place}</span> : null}
         {setup.present.length ? (
@@ -127,8 +127,8 @@ function SceneCard({ sceneRoundId }: { sceneRoundId: string }) {
               imageError
                 ? undefined
                 : sceneImage
-                  ? '重新生成这个场面的图'
-                  : '按这个场面的描写生成一张图，会铺成整个界面的背景'
+                  ? '重新生成这个场景的图'
+                  : '按这个场景的描写生成一张图，会铺成整个界面的背景'
             }
             onClick={(event) => {
               event.preventDefault()
@@ -199,6 +199,33 @@ function SceneCard({ sceneRoundId }: { sceneRoundId: string }) {
   )
 }
 
+/** 轮次分隔符 —— 提在 RoundBlock 外面，好让场景卡插在它和内容之间 */
+function RoundDivider({ round }: { round: Round }) {
+  return (
+    <div className="round-divider">
+      <span className="round-index">第 {round.index} 轮</span>
+      {round.rating === 'r18' ? (
+        <span
+          className={`chip chip-r18${round.direct ? ' chip-r18-direct' : ''}`}
+          title={round.direct ? '成人向 · 快速入戏' : '成人向'}
+        >
+          R18{round.direct ? ' · 快速入戏' : ''}
+        </span>
+      ) : null}
+      {round.status === 'running' ? <span className="chip chip-warn">生成中</span> : null}
+      {round.status === 'error' ? <span className="chip chip-error">有步骤失败</span> : null}
+      <div className="round-line" />
+      <button
+        className="btn btn-sm btn-ghost round-replay"
+        title="作废这一轮之后的所有轮次，并重新生成这一轮"
+        onClick={() => void replayFromRound(round.id)}
+      >
+        从这一轮重演
+      </button>
+    </div>
+  )
+}
+
 function RoundBlock({
   round,
   isLast,
@@ -250,28 +277,6 @@ function RoundBlock({
       data-round-id={round.id}
       data-has-scene={setup && !setup.unchanged ? '1' : '0'}
     >
-      <div className="round-divider">
-        <span className="round-index">第 {round.index} 轮</span>
-        {round.rating === 'r18' ? (
-          <span
-            className={`chip chip-r18${round.direct ? ' chip-r18-direct' : ''}`}
-            title={round.direct ? '成人向 · 快速入戏' : '成人向'}
-          >
-            R18{round.direct ? ' · 快速入戏' : ''}
-          </span>
-        ) : null}
-        {round.status === 'running' ? <span className="chip chip-warn">生成中</span> : null}
-        {round.status === 'error' ? <span className="chip chip-error">有步骤失败</span> : null}
-        <div className="round-line" />
-        <button
-          className="btn btn-sm btn-ghost round-replay"
-          title="作废这一轮之后的所有轮次，并重新生成这一轮"
-          onClick={() => void replayFromRound(round.id)}
-        >
-          从这一轮重演
-        </button>
-      </div>
-
       {/* 2. 你的输入 */}
       <div className="input-block">
         <div className="input-block-head" onClick={() => setShowSegments((value) => !value)}>
@@ -577,14 +582,18 @@ export default function BoardView() {
         // 卡 sticky 在**这一组**里，所以它从场景开始一直粘到下一个场景出现，
         // 中途不会因为"换了一轮"就被推走 —— 只有真的换了场景，下一张卡才顶上来。
         <div className="scene-group" key={group.sceneRoundId}>
-          <SceneCard sceneRoundId={group.sceneRoundId} />
-          {group.rounds.map((round) => (
-            <RoundBlock
-              key={round.id}
-              round={round}
-              isLast={round.id === rounds[rounds.length - 1]?.id}
-              demo={demoParam()}
-            />
+          {group.rounds.map((round, index) => (
+            <Fragment key={round.id}>
+              <RoundDivider round={round} />
+              {/* 场景卡跟在它所属那一轮的分隔符后面 —— 分隔符是这一轮的标题，
+                  场景是这一轮的内容。后面的轮次若沿用同一场景，就不再插卡。 */}
+              {index === 0 ? <SceneCard sceneRoundId={group.sceneRoundId} /> : null}
+              <RoundBlock
+                round={round}
+                isLast={round.id === rounds[rounds.length - 1]?.id}
+                demo={demoParam()}
+              />
+            </Fragment>
           ))}
         </div>
       ))}
