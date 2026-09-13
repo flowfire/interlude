@@ -24,6 +24,7 @@ const KIND_SET = new Set<SegmentKind>([
   'narration',
   'worldfact',
   'offscreen',
+  'directive',
   'ambient',
   'unknown',
 ])
@@ -50,6 +51,9 @@ const KIND_ALIAS: Record<string, SegmentKind> = {
   设定: 'worldfact',
   fact: 'worldfact',
   场外: 'offscreen',
+  指示: 'directive',
+  元指令: 'directive',
+  directive: 'directive',
   offscreen_event: 'offscreen',
   群像: 'ambient',
   氛围: 'ambient',

@@ -9,6 +9,7 @@ export const SegmentKindSchema = z.enum([
   'narration', // 旁白 / 叙述
   'worldfact', // 世界设定 / 事实陈述
   'offscreen', // 场外事件（被提及但未演出）
+  'directive', // 给引擎/导演的指示（不是演出内容，不发给角色）
   'ambient', // 氛围 / 群像
   'unknown', // 无法判定
 ])
@@ -22,6 +23,7 @@ export const SEGMENT_KIND_LABEL: Record<SegmentKind, string> = {
   narration: '旁白',
   worldfact: '设定',
   offscreen: '场外',
+  directive: '指示',
   ambient: '群像',
   unknown: '未定',
 }
@@ -34,6 +36,7 @@ export const SEGMENT_KIND_HINT: Record<SegmentKind, string> = {
   narration: '叙述性文字，不明确属于谁',
   worldfact: '世界观、设定、既定事实',
   offscreen: '发生在别处或别的时间、被提及的事件',
+  directive: '你在指挥引擎（"让导演安排……""希望接下来……"）。只发给导演，角色看不到',
   ambient: '人群、嘈杂、背景动态',
   unknown: '引擎无法判定，等你指定',
 }
