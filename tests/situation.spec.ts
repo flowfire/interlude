@@ -304,6 +304,12 @@ describe('局面推进：世界自己会往前走', () => {
     expect(system.content).toContain('让他在你这里养伤')
     // 光说「做不到」不给方向，仍然算拖
     expect(system.content).toContain('然后什么都不给，那就是在拖')
+    // 关键：告诉它 routes 会被渲染成按钮 —— 否则它会当成可选字段忽略，
+    // 把方向写成 holdUp 里的一段散文，用户点不了
+    expect(system.content).toContain('routes 是要被渲染成按钮的')
+    expect(system.content).toContain('写在 holdUp 里没用')
+    expect(system.content).toContain('那是一段文字，用户点不了')
+    expect(system.content).toContain('别把方向塞进 events 或 pressure')
   })
 
   it('导演知道最近几轮的节奏，用来判断该不该收场', () => {
