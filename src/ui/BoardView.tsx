@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useAppStore } from '@/store/appStore'
-import { groupRoundsByScene } from '@/utils/sceneGroups'
+import { findSceneSetup, groupRoundsByScene } from '@/utils/sceneGroups'
 import { isRoundStalled } from '@/utils/r18'
 import { SEGMENT_KIND_LABEL, type Segment, type SegmentKind } from '@/types/segment'
 import { SCENE_MODE_LABEL, type SceneSetup } from '@/types/scene'
@@ -66,12 +66,8 @@ function SceneCard({ sceneRoundId }: { sceneRoundId: string }) {
   // toggle 事件会把它改成收起，导致"默认展开"看起来没生效。
   const detailsRef = useRef<HTMLDetailsElement>(null)
 
-  const setup = useMemo(() => {
-    const step = Object.values(steps).find(
-      (item) => item.roundId === sceneRoundId && item.stage === 'scene' && item.status === 'done',
-    )
-    return (step?.output as SceneSetup | undefined) ?? null
-  }, [steps, sceneRoundId])
+  // 和分组共用同一个判据（见 utils/sceneGroups 里的 findSceneSetup）
+  const setup = useMemo(() => findSceneSetup(steps, sceneRoundId) ?? null, [steps, sceneRoundId])
 
   const sceneImage = sceneImages[sceneRoundId] ?? ''
 

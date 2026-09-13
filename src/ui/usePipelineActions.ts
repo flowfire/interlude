@@ -19,9 +19,21 @@ import type { SceneSetup } from '@/types/scene'
 import type { Segment } from '@/types/segment'
 import type { Step } from '@/types/step'
 
-function fail(error: unknown) {
+function fail(error: unknown, roundId?: string) {
   const message = error instanceof Error ? error.message : String(error)
-  useAppStore.getState().setError(message)
+
+  // 跑到一半炸掉时，"这一轮为什么只有前几步"是最难猜的。
+  // 把**最后跑完的那一步**报出来 —— 病灶就在它后面那一步。
+  let where = ''
+  if (roundId) {
+    const own = Object.values(useAppStore.getState().steps)
+      .filter((step) => step.roundId === roundId)
+      .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+    const last = own[own.length - 1]
+    if (last) where = `\n\n（这一轮停在「${last.label}」之后 —— 问题就出在下一步。）`
+  }
+
+  useAppStore.getState().setError(message + where)
 }
 
 function describeRunning(steps: Record<string, Step>): string {
@@ -200,7 +212,7 @@ export async function runRoundFor(roundId: string): Promise<void> {
       }
     }
   } catch (error) {
-    fail(error)
+    fail(error, roundId)
   } finally {
     useAppStore.setState({ busy: false, statusText: '' })
   }

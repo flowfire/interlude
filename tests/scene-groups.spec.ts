@@ -47,3 +47,23 @@ describe('按场景分组', () => {
     expect(groupRoundsByScene([], {})).toEqual([])
   })
 })
+
+describe('场景产物的判据只有一处', () => {
+  it('stale 也算数 —— 只要那一格有产物', async () => {
+    const { findSceneSetup } = await import('@/utils/sceneGroups')
+    const stale = {
+      id: 'sc',
+      roundId: 'r1',
+      stage: 'scene',
+      status: 'stale',
+      output: { unchanged: false, place: '茶馆' },
+    } as unknown as Step
+    expect(findSceneSetup({ a: stale }, 'r1')?.place).toBe('茶馆')
+  })
+
+  it('没有产物就是没有 —— 这时不该有场景卡', async () => {
+    const { findSceneSetup } = await import('@/utils/sceneGroups')
+    const empty = { id: 'sc', roundId: 'r1', stage: 'scene', status: 'pending', output: null } as unknown as Step
+    expect(findSceneSetup({ a: empty }, 'r1')).toBeUndefined()
+  })
+})
