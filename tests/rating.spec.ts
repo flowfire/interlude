@@ -204,7 +204,16 @@ describe('R18 分级', () => {
     expect(on).toContain('不许用这些糊过去')
     // 理由必须建立在已经发生过的事上，不是随便挑一个转折点
     expect(on).toContain('为什么是此刻')
-    expect(on).toContain('放在**任何一轮**都成立，所以它不是理由')
+    expect(on).toContain('放在任何一轮都成立')
+    // 这一轮的第一要务是推进成人向，不是"随便推进一点剧情"
+    expect(on).toContain('第一要务')
+    expect(on).toContain('你不是在"随便推进一点剧情"，你是在把这两个人推向性')
+    expect(on).toContain('跑题 = 失职')
+    // reason 必须是"性内容能往前一步"的理由，不能是跑题的剧情转折
+    expect(on).toContain('为什么这一轮他们之间的性内容能往前一步')
+    expect(on).toContain('那是剧情推进')
+    // events 也不许写跟性无关的东西
+    expect(on).toContain('不要写跟性无关的世界事件')
     expect(on).toContain('让它成为理由 —— 然后再进')
     // 光给词表不够，得给密度示范
     expect(on).toContain('性器官要写出来')
