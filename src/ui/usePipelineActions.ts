@@ -86,16 +86,27 @@ function describeRunning(steps: Record<string, Step>): string {
  * 客户端据此自动退出成人向模式 —— 免得用户勾了一次就一路挂着，
  * 陷进没完没了的 R18。关掉之后他随时可以再勾。
  */
-function r18SuggestedIn(steps: Record<string, Step>): boolean {
-  const step = Object.values(steps).find((item) => item.stage === 'situation')
-  const state = step?.output as SituationState | undefined
-  return Boolean(state?.suggestR18)
+/**
+ * 取**这一轮**的「局面推进」产物。
+ *
+ * 注意必须带 `roundId` —— `steps` 里装着**所有轮次**的步骤，而 `Object.values`
+ * 是插入顺序，所以 `find((s) => s.stage === 'situation')` 拿到的永远是
+ * **第 1 轮**那一个。这个错误让「导演要求开启成人向」和「导演宣告收尾」
+ * 两个信号一直读的是第一轮的值（通常是 false），界面因此毫无反应。
+ */
+function situationOfRound(steps: Record<string, Step>, roundId: string): SituationState | undefined {
+  const step = Object.values(steps).find(
+    (item) => item.roundId === roundId && item.stage === 'situation',
+  )
+  return step?.output as SituationState | undefined
 }
 
-function r18EndedIn(steps: Record<string, Step>): boolean {
-  const step = Object.values(steps).find((item) => item.stage === 'situation')
-  const state = step?.output as SituationState | undefined
-  return Boolean(state?.r18Ended)
+function r18SuggestedIn(steps: Record<string, Step>, roundId: string): boolean {
+  return Boolean(situationOfRound(steps, roundId)?.suggestR18)
+}
+
+function r18EndedIn(steps: Record<string, Step>, roundId: string): boolean {
+  return Boolean(situationOfRound(steps, roundId)?.r18Ended)
 }
 
 /**
@@ -178,15 +189,23 @@ export async function runRoundFor(roundId: string): Promise<void> {
     // 用户可以随时取消，导演下一轮也可以再提出 —— 两边都不用记账，
     // 决定权始终是"那个勾此刻有没有勾上"。
     const state = useAppStore.getState()
-    if (r18SuggestedIn(result.steps) && state.project.allowR18 && state.composer.rating !== 'r18') {
-      state.setComposer({ rating: 'r18' })
+    if (r18SuggestedIn(result.steps, roundId)) {
+      if (!state.project.allowR18) {
+        // 导演要求了，但总闸关着 —— 这个能力根本不存在，只提示一句
+        state.setError(
+          '导演判断剧情该进入成人向了，但设置里没有打开「允许使用成人向模式」。\n\n' +
+            '打开之后，这类请求会自动替你勾上。',
+        )
+      } else if (state.composer.rating !== 'r18') {
+        state.setComposer({ rating: 'r18' })
+      }
     }
 
     void autoGenerateSceneImage(roundId)
 
     // 导演有权给成人向踩刹车：他宣告收尾了，就把勾选替用户关掉
     // （用户随时可以再勾回来，所以这里不需要问他）
-    if (r18EndedIn(result.steps)) {
+    if (r18EndedIn(result.steps, roundId)) {
       const composer = useAppStore.getState().composer
       if (composer.rating === 'r18' || composer.direct) {
         useAppStore.getState().setComposer({ rating: 'general', direct: false })
