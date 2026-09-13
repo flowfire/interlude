@@ -19,6 +19,11 @@ import type { SceneSetup } from '@/types/scene'
 import type { Segment } from '@/types/segment'
 import type { Step } from '@/types/step'
 
+/** 这一轮的步骤是不是跑全了 —— 判据是有没有走到「编排」 */
+export function roundIsComplete(steps: Record<string, Step>, roundId: string): boolean {
+  return Object.values(steps).some((item) => item.roundId === roundId && item.stage === 'compose')
+}
+
 function fail(error: unknown, roundId?: string) {
   const message = error instanceof Error ? error.message : String(error)
 
@@ -254,6 +259,25 @@ export async function rerunStep(stepId: string): Promise<void> {
 
   try {
     const ctx = makeContext(step.roundId)
+
+    // **上一次如果跑到一半就断了**（比如只走到「局面推进」，后面的
+    // perceive / context / roleplay / compose 根本没被创建），
+    // 那么"从某一步重跑"是永远补不齐的 —— `rerunFrom` 只重跑**已存在的**下游，
+    // 不存在的会被 `if (!step) continue` 跳过。
+    //
+    // 这种情况直接重跑整轮，否则用户会反复点重跑、结果毫无变化。
+    if (!roundIsComplete(ctx.steps, step.roundId)) {
+      useAppStore.setState({
+        busy: true,
+        error: null,
+        statusText: '这一轮上次没有跑完，正在重新跑完整的一轮…',
+      })
+      const result = await runFullRound(ctx)
+      useAppStore.getState().mergeSteps(result.steps, result.ledger)
+      if (result.error) useAppStore.getState().setError(result.error)
+      return
+    }
+
     useAppStore.setState({ busy: true, error: null, statusText: `正在从「${step.label}」重跑…` })
     await rerunFrom(ctx, stepId)
   } catch (error) {

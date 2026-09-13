@@ -4944,3 +4944,47 @@ const fallback = created.length ? created : buildCastFromPresent(fresh)
 如果整段日志在第 2 条之后就没了，那就是创建步骤时抛的。
 
 **这些日志是临时的**，定位完会撤掉（或收进一个 debug 开关）。
+
+---
+
+### 第九十五轮变更：单步重跑现在能自愈「跑到一半断了」的轮次
+
+**用户反馈**：
+
+> 你确定你加日志了吗？没有任何输出啊？
+> 好像只有这一个输出：`client.ts:109 Fetch 已完成加载：POST https://api.deepseek.com/chat/completions`
+
+**日志确实加了，但用户走的那条路根本不经过它。**
+
+他点的是右侧面板的"**从这一步重跑**"，那条路是 `rerunStep → rerunFrom`，
+**完全不调用 `runFullRound`** —— 我的日志全在 `runFullRound` 里，自然不会出现。
+
+**而顺着这条线，找到了真正的病根**：
+
+```ts
+// rerunFrom
+const plan = planRerun(ctx.steps, ctx.ledger, rootStepId)
+for (const id of plan.toRun) {
+  const step = steps[id]
+  if (!step) continue          // ← 不存在的步骤直接跳过
+  ...
+}
+```
+
+`rerunFrom` 只会重跑**已经存在的**下游。第 8 轮缺了 `perceive` 之后的 5 步，
+所以"从「局面推进」重跑"**永远补不上它们** —— 用户反复点重跑，结果毫无变化。
+
+**这不只是第 8 轮的问题**：**任何一轮跑到一半失败之后，单步重跑都无法自愈。**
+用户只能靠"从这一轮重演"（那会删掉后面的轮次）或者新发一条，两者都是绕路。
+
+**改法**：`rerunStep` 先判断这一轮全不全（**判据是有没有走到「编排」**）。
+不全就直接重跑整轮，并说明原因：
+
+> 这一轮上次没有跑完，正在重新跑完整的一轮…
+
+**测试**：`tests/rerun-incomplete.spec.ts` 三条 ——
+走到「编排」才算全、停在「局面推进」就是没跑全、以及判据只看指定那一轮。
+
+**这一轮的教训**：**"日志没打出来"本身就是一条线索** ——
+它说明代码根本没走到那里。我应该先问"你点的哪个按钮、走的是哪条路"，
+而不是急着加更多日志。
