@@ -365,9 +365,10 @@ function RoundBlock({ round, isLast, demo }: { round: Round; isLast: boolean; de
             </div>
           ) : null}
 
+          {/* 界面文案保持中性正式 —— 直白、粗俗的用词只出现在提示词里 */}
           {round.rating === 'r18' ? (
             <div className="situation-streak">
-              成人向第 {situationData.state.r18Streak} 轮 · 做爱{' '}
+              成人向第 {situationData.state.r18Streak} 轮 · 性内容{' '}
               {situationData.state.sexScore >= 100
                 ? `已经在做（第 ${Math.round((situationData.state.sexScore - 100) / 10) + 1} 轮）`
                 : `${situationData.state.sexScore} / 100`}

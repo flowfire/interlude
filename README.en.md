@@ -266,8 +266,8 @@ It also has a **hard rule**: **this round's sex score must be higher than the pr
 | **0** | No sexual content and no lean towards it |
 | **20** | A lean (a gaze held too long, a hooked line, wrong distance) but nothing physical |
 | **50** | Real physical contact (kissing, touching, undressing) |
-| **100** | Sex is happening |
-| **Above 100 is progress, not degree** | From the round it first happens, +10 per further round (110, 120…) |
+| **100** | It has started |
+| **Above 100 is progress, not degree** | From that round on, +10 per round (110, 120…) |
 
 The engine plays **its own last four scores** back to it (`10 → 10 → 15`) and calls it out: "see that — several rounds and it barely moved. That is not slow burn, that is stalling." **An order can be disobeyed; a ledger you wrote yourself is harder to argue with.** A round whose score did not rise is **marked as failed on the board** — with **one exception: the first round**. There the baseline is 0 anyway, and the round itself may quite reasonably be 0 (the scene has only just opened); scoring 0 against 0 would be a false charge, so the first round is never judged.
 
