@@ -205,7 +205,9 @@ describe('局面推进：世界自己会往前走', () => {
     expect(r18.content).toContain('也不要永远不结束')
 
     const [general] = buildSituationMessages({ ...base, rating: 'general' })
-    expect(general.content).not.toContain('成人向')
+    // 「建议开启成人向」那一节在总闸开着时是无条件出现的（导演要能主动提议），
+// 所以这里只断言"成人向的具体规则"不在
+expect(general.content).not.toContain('【本轮分级：成人向')
   })
 
   it('导演每一轮都可以派任务，不是只有僵局才派', () => {

@@ -149,7 +149,7 @@ describe('R18 分级', () => {
 
     const off = buildRoleplayMessages({ ...base, rating: 'r18' })[1].content
     expect(off).toContain('成人向')
-    expect(off).not.toContain('快速入戏')
+    expect(off).not.toContain('【快速入戏】')
 
     const on = buildRoleplayMessages({ ...base, rating: 'r18', direct: true })[1].content
     expect(on).toContain('快速入戏 —— 直接演性爱，不要绕')
@@ -180,7 +180,7 @@ describe('R18 分级', () => {
 
     // 没勾 R18 时它不该出现
     const general = buildRoleplayMessages({ ...base, rating: 'general', direct: true })[1].content
-    expect(general).not.toContain('快速入戏')
+    expect(general).not.toContain('【快速入戏】')
   })
 
   it('导演也会收到「快速入戏」，落在节奏与用词上', () => {
@@ -196,7 +196,8 @@ describe('R18 分级', () => {
 
     const off = buildSituationMessages({ ...base, rating: 'r18' })[0].content
     expect(off).toContain('成人向')
-    expect(off).not.toContain('快速入戏')
+    // 没勾快速入戏时，只有"什么时候填 routes"那句限定里会提到它
+    expect(off).not.toContain('【快速入戏】')
 
     const on = buildSituationMessages({
       ...base,
@@ -236,7 +237,7 @@ describe('R18 分级', () => {
 
     // 没勾 R18 时它不该出现
     const general = buildSituationMessages({ ...base, direct: true })[0].content
-    expect(general).not.toContain('快速入戏')
+    expect(general).not.toContain('【快速入戏】')
   })
 
   it('用词必须参考色情小说 —— 不许留临床/学术的说法', () => {
