@@ -333,7 +333,10 @@ function RoundBlock({ round, isLast, demo }: { round: Round; isLast: boolean; de
             </details>
           ) : null}
 
-          {situationData.state.routes?.length ? (
+          {/* 推荐方向是**面向未来**的选项，不是历史记录 —— 一旦有了下一轮，
+              那个局面就过去了，再点会填进与当下不符的内容。所以只在最新一轮显示。
+              （reason / holdUp / backstory / 不合格标记都是记录过去，照常保留。） */}
+          {isLast && situationData.state.routes?.length ? (
             <div className="situation-routes">
               <div className="situation-routes-head">
                 导演给了几条路 —— 点一条就填进输入框，你可以改完再发：
