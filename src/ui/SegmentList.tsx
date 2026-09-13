@@ -2,13 +2,21 @@ import { useState } from 'react'
 import { useAppStore } from '@/store/appStore'
 import { SEGMENT_KIND_HINT, SEGMENT_KIND_LABEL, type Segment, type SegmentKind } from '@/types/segment'
 
-const KIND_ORDER: SegmentKind[] = [
+/**
+ * 编辑区下拉框里能选哪些类别。
+ *
+ * 这个列表**必须覆盖 SegmentKind 的全部取值** —— 它是手写的，加新类别时
+ * 很容易忘记同步（`directive` 就漏过一次：简介里统计得出「指示×1」，
+ * 点开编辑下拉框里却没有这一项）。`tests/segment-kinds.spec.ts` 会盯着这件事。
+ */
+export const KIND_ORDER: SegmentKind[] = [
   'scene',
   'action',
   'speech',
   'inner',
   'narration',
   'worldfact',
+  'directive',
   'offscreen',
   'ambient',
   'unknown',
