@@ -183,7 +183,7 @@ Models are **pick-from-a-list**: you choose a provider and paste a key; the endp
 | **Text model** | DeepSeek | `https://api.deepseek.com` · `deepseek-flash` |
 | **Image model** | MiniMax | `https://api.minimax.io/v1` · `image-01` |
 
-**Scene cards can generate an image**: click "生图" and it turns that round's place, atmosphere and environmental description into a prompt for MiniMax; the result becomes **the backdrop of the whole interface while that card is stuck to the top** — scroll to that scene and the entire screen takes on that place, fading out as you scroll past. The picture is environment-first, with no faces in view (generated faces break easily, and fight whatever the reader already pictures).
+**Scene cards can generate an image**: click "生图" and it turns that round's place, atmosphere and environmental description into a prompt for MiniMax; the result becomes **the backdrop of the whole interface** — while you are reading that scene the screen takes on that place, cross-fading when the scene changes. The picture is environment-first, with no faces in view (generated faces break easily, and fight whatever the reader already pictures).
 
 Three details:
 
@@ -224,62 +224,15 @@ That is the built-in demo: it uses a scripted set of model responses and **actua
 
 ## Adult mode
 
-**Open the master switch first**: Settings → project → "allow adult mode". It is **off by default**; only once it is on does the "R18 mode" checkbox appear in the composer.
+An optional rating. **Open the master switch first** (Settings → project → "allow adult mode"; off by default) — only then does the "R18 mode" checkbox appear in the composer.
 
-R18 is not "flip a switch and the model talks dirty". **Every stage** of the engine has a matching treatment:
+It is a **separate rating**: on those rounds every stage of the engine adjusts — the setting becomes more private, your exteriorisation more direct, the people present notice more, and the director and characters may push more openly. The prose gets blunter too.
 
-| Stage | What it does under the adult rating |
-|---|---|
-| **Scene building** | The atmosphere may be more private and charged (light, distance, warmth, the texture of a silence), without changing anyone's situation or relationship |
-| **Your exteriorisation** | The traces your inner state leaves can be more direct — breathing, warmth, where a gaze lingers. But **how much leaks is still decided by the persona** |
-| **Information distribution** | Everyone present is more likely to notice the details on you. Spatial reasoning is unchanged — back turned, in another room, still missed |
-| **Director** | May assign actions with physical distance, testing and provocation in them, and may make the setting private |
-| **Characters** | May write sexual physical responses, and put explicit desire into their lines |
+**It is permission, not a requirement** — it happens when the story arrives there; if you do not lead, the director does not push. The rating lives on the **round**, so you can turn it on for one and off for the next. **The director can ask for it too**, and you can untick it at any time.
 
-**It is permission, not a requirement.** When the story arrives there, let it happen — do not dodge it, do not pull the camera back, do not fade out with "the next morning". If you do not lead, the director will not push; but the moment you bring the story there, it has to catch it. And in those scenes **the prose should be blunt, direct and crude** — euphemism is the mood killer.
+Ticking it also unlocks an optional **"straight into the scene"**: the director switches from "give him what he asks for" to "you are responsible for getting him there", and offers you a few concrete directions to pick from.
 
-**The rating lives on the round.** The checkbox stays ticked across reloads, but each round carries its own rating, so you can turn it on for one and off for the next. Rounds that had it on carry a red marker on the divider.
-
-**The director can ask for it too.** When it judges that the story has arrived somewhere, it makes the request and the client **ticks the box for you**. You can untick it at any time — that means you do not want to go there yet, and the director plays that round straight; it may ask again next round. **Neither side keeps score: the deciding factor is whether the box is ticked at that moment.**
-
-### Three lines
-
-Whichever round it is, three lines are written into the prompt as inviolable:
-
-1. **The personality does not change.** A restrained person is still restrained in that scene — only what they restrain changes.
-2. **Any advance has to be something *they* would do.** If the relationship is not there yet, it does not jump there.
-3. **Do not skip to the end.** The pace comes from the relationship and the moment, not from the rating.
-
-There is one more rule that is not a "line" but a **red line**, and it never moves at any rating: **the boundaries of the character you play are not anyone else's to decide.**
-
-### Straight into the scene: the director now has an *obligation* to lead
-
-Once R18 is on, a second checkbox appears next to it. The difference is one sentence:
-
-> **Plain mode is "give him what he asks for"; this is "you are responsible for getting him there".**
-
-Without waiting for you to speak or move, the director pushes the story that way; what you do not write, it arranges. It also has a hard rule: **this round's score must be higher than the previous one, or the round counts as a failure.**
-
-| Score | Meaning |
-|---|---|
-| **0** | Not a trace of it |
-| **20** | A lean (a gaze held too long, a hooked line, wrong distance), nothing physical yet |
-| **40** | Bodies meet — kissing, holding, touching through clothes |
-| **60** | Clothes off, skin out |
-| **80** | Past foreplay |
-| **100** | It has started |
-| **Above 100 is progress** | From that round on, +10 per round |
-
-The engine plays **its own last four scores** back to it (`10 → 10 → 15`) and calls it out: "several rounds and it barely moved — that is not slow burn, that is stalling." **An order can be disobeyed; a ledger you wrote yourself is harder to argue with.** Claiming 0 while writing undressing would not add up against the scene.
-
-It also **offers you a few roads at any time**, at the end of each round:
-
-> ▸ **Get closer under cover of the medicine kit** — I step aside from the doorway: "Come in, sit down first." Then I turn to dig out the kit.
-> ▸ **Tell him to get out of the wet clothes** — "Those need to come off." I pull an old shirt from the cupboard and hand it over.
-
-Clicking one drops it into the input box. Each is **your next step** (not a plot direction for you to translate), and **all of them lead there — only the route differs** (care, testing, saying it outright; none ends in "nothing happens").
-
-It also **writes the gap for you** — what happened between the last round and this one — because you do not want to write that stretch step by step. It is explicitly told **not to skimp**: *what the user minds is never length, it is emptiness.*
+Two lines never move: **the floor of the persona cannot change** (only its grey areas), and **the boundaries of the character you play are not anyone else's to decide.**
 
 ## Three mechanisms worth knowing
 
