@@ -298,6 +298,35 @@ describe('R18 分级', () => {
     expect(general).not.toContain('不要轻易判 missed')
   })
 
+  it('用户的人设必须给到导演和角色 —— 不给它就会凭空安个性别', () => {
+    const persona = '沈砚，男性，二十四岁，做古籍修复，手上总有洗不掉的浆糊味。'
+    const base = {
+      storyTitle: '测试',
+      pcName: '我',
+      doc: normalizeInput('我把门关上了。'),
+      segments: [],
+      sceneSetup: setup(),
+      drives: [],
+      pcPersona: persona,
+      rating: 'general' as const,
+    }
+
+    // 导演侧
+    const director = buildSituationMessages({ ...base })[0].content
+    expect(director).toContain(persona)
+    expect(director).toContain('权威设定')
+    expect(director).toContain('不要用"她/他"来指代他')
+
+    // 角色侧
+    const actor = buildRoleplayMessages({
+      bundle: { ...bundle(), pcPersona: persona, pcName: '我' },
+      project: DEFAULT_PROJECT_SETTINGS,
+    })[1].content
+    expect(actor).toContain(persona)
+    expect(actor).toContain('跟你说话的那个人')
+    expect(actor).toContain('不要用"她/他"来指代他')
+  })
+
   it('用词必须参考色情小说 —— 不许留临床/学术的说法', () => {
     const base = {
       storyTitle: '测试',

@@ -311,12 +311,14 @@ function renderBlockForRecap(block: SceneBlock): string {
       return `〔场景〕${block.text}`
     case 'world':
       return `〔局面〕${block.text}`
+    // 读这段的是导演（第三方）。用户自己写的是"我"，但在他眼里主角是"你"——
+    // 统一成第二人称，免得它把"我"当成某个在场角色。
     case 'pc-speech':
-      return `我：「${block.text}」`
+      return `你：「${block.text}」`
     case 'pc-action':
-      return `我：${block.text}`
+      return `你：${block.text}`
     case 'pc-cue':
-      return `（我的样子）${block.text}`
+      return `（你的样子）${block.text}`
     case 'speech':
       return `${block.characterName ?? '某人'}：「${block.text}」`
     case 'action':

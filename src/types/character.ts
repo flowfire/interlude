@@ -215,6 +215,8 @@ export interface HistoryRound {
 
 /** 派发给某一个角色 AI 的完整上下文。这是「点开看它收到了什么」的内容 */
 export interface ContextBundle {
+  /** 用户自己写的人设 —— 权威设定，角色和导演都得看到 */
+  pcPersona?: string
   characterId: string
   name: string
   card: CharacterCard

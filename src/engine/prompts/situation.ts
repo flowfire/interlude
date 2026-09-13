@@ -27,6 +27,8 @@ export interface SituationPromptInput {
   directStreak?: number
   /** 最近几轮导演自己打的分 —— 回放给它看，它自己就知道有没有在磨 */
   recentScores?: number[]
+  /** 用户自己写的人设 —— 权威设定 */
+  pcPersona?: string
   doc: NormalizedDoc
   segments: Segment[]
   sceneSetup: SceneSetup
@@ -323,6 +325,18 @@ const R18_SELF_CHECK_HINT = `
 `
 
 const SYSTEM = `你是「幕间」的**导演** —— 这一场戏归你。
+
+【先说清楚：那个用户扮演的人是谁】
+他叫「__PC_NAME__」。他自己写的人设是：
+
+__PC_PERSONA__
+
+**这是权威设定** —— 和它冲突的描写，一律以它为准。
+（踩过的坑：不给这段，模型会凭空给一个男性主角安上"她"。）
+
+**往下所有文本里的「你」都是他**，不是你自己，也不是别的角色。
+说他的时候用「你」；**不要用"她/他"来指代他** —— 那是第三人称，
+会让人以为场上还有第四个人。
 
 【先记住这一场戏的三层，各自站在哪里】
 - **用户**：他不是导演，他只负责提出「点」—— 一句话、一个动作、一个念头。
@@ -636,7 +650,14 @@ ${segmentLines || '（这一轮用户没有写具体内容）'}
   ]
     .filter(Boolean)
     .join('\n')
-  const system = hints ? `${SYSTEM}\n${hints}` : SYSTEM
+  // 把「用户是谁」渲染进 SYSTEM —— 角色和导演都得知道这件事
+  const system = (hints ? `${SYSTEM}\n${hints}` : SYSTEM)
+    .replace('__PC_NAME__', pcName || '我')
+    .replace(
+      '__PC_PERSONA__',
+      (input.pcPersona ?? '').trim() ||
+        '（他没写人设 —— 把握不准就不要给他安性别、年龄这类具体设定）',
+    )
 
   return [
     { role: 'system', content: system },

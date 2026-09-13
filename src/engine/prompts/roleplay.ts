@@ -215,6 +215,21 @@ function renderIdentity(bundle: ContextBundle, project: ProjectSettings): string
       '这是驱动你行动的东西。每一轮你都在朝它走，哪怕用户什么都没做。',
   )
 
+  // 用户自己写的人设 —— **权威设定**。
+  // 这里踩过坑：原来只给 scene 派生的 pcProfile（"站在门口"这种当下状态），
+  // 性别、年龄、职业全丢了，于是模型会写出"她"来称呼一个男性主角。
+  const pc = bundle.pcPersona?.trim()
+  parts.push(
+    [
+      `【跟你说话的那个人 —— ${bundle.pcName ?? project.pcName ?? '他'}】`,
+      pc || '（用户没填人设 —— 从素材里推断，把握不准就不要给他安性别、年龄这类具体设定）',
+      '',
+      `**往下所有文本里的「你」都是这个人，不是你自己。** 称呼他的时候用「你」；`,
+      '不要用"她/他"来指代他 —— 那是第三人称，会让读者以为场上还有第四个人。',
+      '上面这段是**权威设定**，和它冲突的描写一律以它为准。',
+    ].join('\n'),
+  )
+
   parts.push(`【你能做的事 —— 超出这个范围的事，你做不到】\n${bullets(card.persona.abilities ?? [], '（没有特别说明，按常理判断）')}`)
   parts.push(`【你察觉得到、而别人察觉不到的东西】\n${bullets(card.persona.perception ?? [], '（没有超出常人的感知）')}`)
 

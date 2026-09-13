@@ -28,6 +28,8 @@ export interface ContextBuildInput {
   segments: Segment[]
   cards: CharacterCard[]
   pcName: string
+  /** 用户自己写的人设 —— 原样带进 bundle，角色和导演都要看到 */
+  pcPersona?: string
   sceneSetup: SceneSetup
   /** 前几轮已经演过的内容（跨角色共享，给拆解 / 场面 / 阵容三个阶段的消歧用） */
   recap?: string
@@ -174,6 +176,7 @@ export function buildContextBundle(input: ContextBuildInput): ContextBundle {
     segments,
     cards,
     pcName,
+    pcPersona,
     sceneSetup,
     memories = [],
     pcCues = [],

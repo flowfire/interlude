@@ -29,6 +29,8 @@ export interface SituationStageInput {
   directStreak?: number
   /** 最近几轮导演自己打的性内容分 */
   recentScores?: number[]
+  /** 用户自己写的人设 —— 权威设定 */
+  pcPersona?: string
   previousRecap?: string
   previous?: { pressure: string; escalation: string; pace?: SituationPace } | null
 }
@@ -161,6 +163,7 @@ export async function runSituationStage(
     r18Streak,
     directStreak,
     recentScores,
+    pcPersona,
     previousRecap,
     previous,
   } = input
@@ -174,6 +177,7 @@ export async function runSituationStage(
     r18Streak,
     directStreak,
     recentScores,
+    pcPersona,
     doc,
     segments,
     sceneSetup,

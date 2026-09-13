@@ -362,6 +362,7 @@ async function executeStep(ctx: PipelineContext, step: Step): Promise<Step> {
         sceneSetup,
         cards: castOut?.characters ?? [],
         pcName: ctx.project.pcName,
+        pcPersona: ctx.project.pcPersona,
         storyTitle: ctx.project.storyTitle,
         idle: ctx.round.idle,
         rating: ctx.round.rating ?? 'general',
@@ -450,6 +451,7 @@ async function executeStep(ctx: PipelineContext, step: Step): Promise<Step> {
       const output = buildContextBundle({
         card,
         roundIndex: ctx.round.index,
+        pcPersona: ctx.project.pcPersona,
         earlierBeats,
         segments: ctx.round.idle ? [] : segments ?? [],
         cards: castOut.characters,

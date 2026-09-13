@@ -309,6 +309,14 @@ Click "edit the source" — the same pair of checkboxes is there. **Even if the 
 
 ---
 
+## About "you"
+
+You write in the first person, but **in every prompt the engine hands to an AI, you are "you"** — the director included. They will not refer to you as "he" or "she" (that is third person, and reads as though a fourth person were in the room).
+
+**The persona you write is authoritative.** It goes verbatim into the director's prompt and into every character's prompt, and anything that contradicts it loses. This one came from a real bug: the engine used to pass down only your *current appearance* (standing in the doorway, umbrella in hand) and **dropped gender, age and occupation** — so a male protagonist would get called "she".
+
+**So write the persona.** With just "me" and nothing else, the AI can only guess.
+
 ## Three mechanisms worth knowing
 
 **① Your lines are locked.** What you wrote as speech appears on stage verbatim; the AI can only add actions and micro-expressions.
