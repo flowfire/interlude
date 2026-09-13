@@ -183,7 +183,9 @@ Models are **pick-from-a-list**: you choose a provider and paste a key; the endp
 | **Text model** | DeepSeek | `https://api.deepseek.com` · `deepseek-flash` |
 | **Image model** | MiniMax | `https://api.minimax.io/v1` · `image-01` |
 
-(The image one is not called by the engine yet; the configuration is simply kept there.)
+**Scene cards can generate an image**: click "生图" and it turns that round's place, atmosphere and environmental description into a prompt for MiniMax; the result is **laid in as the background while the card is stuck to the top** — scroll to that scene and the backdrop is that place. The picture is environment-first, with no faces in view (generated faces break easily, and fight whatever the reader already pictures).
+
+(The image model is used only on scene cards for now; it does not run in the pipeline — one click, one image.)
 
 Both keys live only in your own browser's localStorage and are not sent anywhere else.
 

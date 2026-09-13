@@ -907,6 +907,50 @@ pre.code {
   margin-bottom: 8px;
 }
 /* 两栏：左宽（场景描述）右窄（细节）。吸顶又默认展开，高度必须压住。 */
+/* 生图：吸顶时把这张图作为背景铺上去（不吸顶时不显示，免得整天花着） */
+.scene-card.has-image {
+  position: sticky;
+  overflow: hidden;
+}
+.scene-card.has-image::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: var(--scene-image);
+  background-size: cover;
+  background-position: center;
+  opacity: 0;
+  transition: opacity 0.35s ease;
+  pointer-events: none;
+}
+.scene-card.has-image.stuck::before {
+  opacity: 0.3;
+}
+/* 图在上面，内容得压住它 */
+.scene-card.has-image.stuck {
+  background: color-mix(in srgb, var(--panel) 78%, transparent);
+}
+.scene-card > * {
+  position: relative;
+}
+/* 哨兵只有 1px —— 它滚出视口就是"吸顶了"的信号 */
+.scene-sentinel {
+  height: 1px;
+  margin-bottom: -1px;
+}
+.scene-image-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+.scene-image-error {
+  color: #e09b94;
+  font-size: 11.5px;
+}
 .scene-body {
   display: grid;
   grid-template-columns: minmax(0, 2.4fr) minmax(170px, 1fr);

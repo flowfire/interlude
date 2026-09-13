@@ -57,9 +57,15 @@ export interface AppState extends WorkspaceSnapshot {
   setComposer: (patch: Partial<ComposerState>) => void
 
   setLlm: (patch: Partial<LlmSettings>) => void
-  /** 生图模型（引擎暂时还没用它，配置先存着） */
+  /** 生图模型配置 */
   image: ImageSettings
   setImage: (patch: Partial<ImageSettings>) => void
+  /** 场面图：轮次 id → 图片地址。手动触发，不属于流水线 */
+  sceneImages: Record<string, string>
+  setSceneImage: (roundId: string, url: string) => void
+  /** 正在生图的轮次（生成中显示转圈，避免重复点） */
+  sceneImageBusy: string | null
+  setSceneImageBusy: (roundId: string | null) => void
   setProject: (patch: Partial<ProjectSettings>) => void
   setSettingsOpen: (open: boolean) => void
   setInspector: (stepId: string | null) => void
@@ -126,6 +132,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   ledger: [],
   llm: { ...DEFAULT_LLM_SETTINGS },
   image: { ...DEFAULT_IMAGE_SETTINGS },
+  sceneImages: {},
+  sceneImageBusy: null,
   project: { ...DEFAULT_PROJECT_SETTINGS },
   // 初始化时就把上次的勾选读回来（测试 / SSR 环境没有 localStorage，退回默认）
   composer: typeof localStorage === 'undefined' ? { ...DEFAULT_COMPOSER_STATE } : loadComposerState(),
@@ -175,6 +183,9 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   setLlm: (patch) => set((state) => ({ llm: { ...state.llm, ...patch } })),
   setImage: (patch) => set((state) => ({ image: { ...state.image, ...patch } })),
+  setSceneImage: (roundId, url) =>
+    set((state) => ({ sceneImages: { ...state.sceneImages, [roundId]: url } })),
+  setSceneImageBusy: (roundId) => set({ sceneImageBusy: roundId }),
   setProject: (patch) => set((state) => ({ project: { ...state.project, ...patch } })),
   setSettingsOpen: (settingsOpen) => set({ settingsOpen }),
   setInspector: (inspectorStepId) => set({ inspectorStepId }),

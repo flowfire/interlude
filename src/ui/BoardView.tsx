@@ -72,6 +72,46 @@ function RoundBlock({ round, isLast, demo }: { round: Round; isLast: boolean; de
   const composeData = getComposeOfRound(round.id)
   const situationData = getSituationOfRound(round.id)
   const routes = situationData?.state.routes ?? []
+  const sceneImages = useAppStore((state) => state.sceneImages)
+  const sceneImage = sceneImages[round.id] ?? ''
+  const sceneImageBusy = useAppStore((state) => state.sceneImageBusy) === round.id
+  const [imageError, setImageError] = useState('')
+  // 卡片吸顶了没有 —— 哨兵滚出视口就说明它已经贴到顶上
+  const [stuck, setStuck] = useState(false)
+  const sentinelRef = useRef<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    const node = sentinelRef.current
+    if (!node || typeof IntersectionObserver === 'undefined') return
+    const observer = new IntersectionObserver(([entry]) => setStuck(!entry.isIntersecting), {
+      threshold: 0,
+    })
+    observer.observe(node)
+    return () => observer.disconnect()
+  }, [])
+
+  const handleGenerateImage = async () => {
+    if (!setup) return
+    setImageError('')
+    useAppStore.getState().setSceneImageBusy(round.id)
+    try {
+      const { generateSceneImage, sceneImagePrompt } = await import('@/engine/image/client')
+      const url = await generateSceneImage({
+        prompt: sceneImagePrompt({
+          place: setup.place,
+          atmosphere: setup.atmosphere,
+          opening: setup.opening,
+          situation: setup.situation,
+        }),
+        settings: useAppStore.getState().image,
+      })
+      useAppStore.getState().setSceneImage(round.id, url)
+    } catch (error) {
+      setImageError(error instanceof Error ? error.message : '生图失败')
+    } finally {
+      useAppStore.getState().setSceneImageBusy(null)
+    }
+  }
   const exposureData = getExposureOfRound(round.id)
   const reactions = composeData?.scene.reactions ?? []
   const setup = sceneData?.setup
@@ -110,7 +150,14 @@ function RoundBlock({ round, isLast, demo }: { round: Round; isLast: boolean; de
           （多个 sticky 元素的天然行为，不需要 JS），时间线里也不再被它打断。 */}
       {/* 场景没变就不插新的场面条 —— sticky 的上一条会继续吸着，视觉上就是"沿用" */}
       {setup && !setup.unchanged ? (
-        <details className="scene-card" open>
+        <>
+          {/* 哨兵：它一滚出视口，就说明下面这张卡片已经吸到顶上了 */}
+          <div ref={sentinelRef} className="scene-sentinel" aria-hidden />
+        <details
+          className={`scene-card${sceneImage ? ' has-image' : ''}${stuck ? ' stuck' : ''}`}
+          style={sceneImage ? ({ '--scene-image': `url("${sceneImage}")` } as React.CSSProperties) : undefined}
+          open
+        >
           <summary className="scene-card-head">
             <span className="scene-label">场面</span>
             {setup.time ? <span className="scene-chip">{setup.time}</span> : null}
@@ -174,7 +221,16 @@ function RoundBlock({ round, isLast, demo }: { round: Round; isLast: boolean; de
               ) : null}
             </div>
           </div>
-        </details>
+
+            <div className="scene-image-row">
+              <button className="btn btn-sm" disabled={sceneImageBusy} onClick={() => void handleGenerateImage()}>
+                {sceneImageBusy ? '生成中…' : sceneImage ? '重新生图' : '生图'}
+              </button>
+              {sceneImage ? <span className="hint">吸顶时会作为背景显示</span> : null}
+              {imageError ? <span className="scene-image-error">{imageError}</span> : null}
+            </div>
+          </details>
+        </>
       ) : null}
 
       {/* 2. 你的输入 */}
