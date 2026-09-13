@@ -50,19 +50,23 @@ export default function App() {
       const box = scroller.getBoundingClientRect()
       const cards = scroller.querySelectorAll<HTMLElement>('[data-scene-card]')
 
-      // 找"贴在滚动区顶部的那张"。
+      // 取**最后一个已经滚过顶部的场面卡**，而不管它此刻还在不在视口里。
       //
-      // 判据要带一点容差（30px）：sticky 钉住的位置并不等于 CSS 里写的 top ——
-      // 它受滚动容器 padding 影响（实测钉在距容器顶 24px，而不是 -1px）。
-      // 原来卡死在 1px 上，于是**永远没有卡被认成吸顶**，背景就一直停在第一张。
+      // 两点都是从真实问题里学来的：
       //
-      // 同时要求 bottom 还在下方：被下一轮顶走的那张虽然 top 更靠上，
-      // 但它已经离开视口，不该再代表当前位置。
+      // · 容差 30px：sticky 实际钉住的位置受滚动容器 padding 影响，
+      //   并不等于 CSS 写的 top（实测距容器顶 24px，而不是 -1px）。
+      //   卡死在 1px 上会导致**永远没有卡被认成吸顶**。
+      //
+      // · **不break、取最后一个**：某一轮的场景没变时（unchanged）它不渲染
+      //   场面卡，上一张卡会被下面的内容推出视口 —— 如果这时候要求"卡片还在
+      //   视口里"，背景就会空掉。但它代表的场景并没有过去，应该继续沿用。
+      //   取最后一个滚过顶部的卡，正好就是"当前所在这一幕"的那张。
       let current: string | null = null
       for (const card of cards) {
-        const rect = card.getBoundingClientRect()
-        if (rect.top <= box.top + 30 && rect.bottom > box.top) {
+        if (card.getBoundingClientRect().top - box.top <= 30) {
           current = card.dataset.roundId ?? null
+        } else {
           break
         }
       }
