@@ -269,7 +269,14 @@ It also has a **hard rule**: **this round's sex score must be higher than the pr
 | **100** | Sex is happening |
 | **Above 100 is progress, not degree** | From the round it first happens, +10 per further round (110, 120…) |
 
-The engine plays **its own last four scores** back to it (`10 → 10 → 15`) and calls it out: "see that — several rounds and it barely moved. That is not slow burn, that is stalling." **An order can be disobeyed; a ledger you wrote yourself is harder to argue with.** A round whose score did not rise is **marked as failed on the board**.
+The engine plays **its own last four scores** back to it (`10 → 10 → 15`) and calls it out: "see that — several rounds and it barely moved. That is not slow burn, that is stalling." **An order can be disobeyed; a ledger you wrote yourself is harder to argue with.** A round whose score did not rise is **marked as failed on the board** — with **one exception: the first round**. There the baseline is 0 anyway, and the round itself may quite reasonably be 0 (the scene has only just opened); scoring 0 against 0 would be a false charge, so the first round is never judged.
+
+**It can offer you a few roads at any time.** In this mode the suggested directions are not a fallback for "I cannot push" but a **regular way of leading** — it can lay out the next few possibilities for you:
+
+> ▸ **Send A-Qi out to the back** — he gets up to fetch water, and by the time he is back the door is bolted.
+> ▸ **Make him account for those three years** — he will not, so you just keep sitting there. Eventually he breaks first.
+
+**Click one and it drops into the input box** (you can edit it), then you carry on. Every road leads there; whichever you pick beats standing still.
 
 **It also writes the relationship-building for you.** You do not want to write that stretch step by step, so it has to fill in *why the two of them ended up together* with a proper background passage, shown on the board (expanded by default). **It may not get away with one line** — "you have been together three months" is zero information and is explicitly listed as unacceptable. It has to say how they got there (which incident, which sentence, who backed down first) and what unspoken understanding or old debt sits between them.
 

@@ -297,7 +297,8 @@ describe('局面推进：世界自己会往前走', () => {
       directStreak: 1,
     })
 
-    expect(system.content).toContain('把选择权交回用户')
+    expect(system.content).toContain('routes 不是兜底 —— 是常规手段')
+    expect(system.content).toContain('推不动的时候**，routes 就从"手段"变成"义务"')
     // 三种处理的优先级要写清楚
     expect(system.content).toContain('能改就改')
     expect(system.content).toContain('确实改不了')

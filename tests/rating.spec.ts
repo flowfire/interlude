@@ -220,7 +220,8 @@ describe('R18 分级', () => {
     expect(on).toContain('这一轮的 sexScore 必须比上一轮高')
     expect(on).toContain('没涨 = **不合格**')
     // 推不动的时候有第三条路：不硬拗、不抗命，而是给用户几条可选方向
-    expect(on).toContain('把选择权交回用户')
+    expect(on).toContain('routes 不是兜底 —— 是常规手段')
+    expect(on).toContain('随时都可以给 2~3 个方向')
     expect(on).toContain('routes 是**给用户选的开场**')
     expect(on).toContain('让他在你这里养伤')
     // 光给词表不够，得给密度示范

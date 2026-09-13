@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useAppStore } from '@/store/appStore'
+import { isRoundStalled } from '@/utils/r18'
 import { SEGMENT_KIND_LABEL, type Segment, type SegmentKind } from '@/types/segment'
 import { SCENE_MODE_LABEL } from '@/types/scene'
 import { RATING_LABEL, type ContentRating, type Round } from '@/types/step'
@@ -357,9 +358,7 @@ function RoundBlock({ round, isLast, demo }: { round: Round; isLast: boolean; de
             </details>
           ) : null}
 
-          {round.rating === 'r18' &&
-          round.direct &&
-          situationData.state.sexScore <= situationData.state.prevSexScore ? (
+          {isRoundStalled(round, situationData.state) ? (
             <div className="situation-stalled">
               ⚠ 这一轮的分没有涨（{situationData.state.prevSexScore} → {situationData.state.sexScore}）
               —— 勾了快速模式却没主动引导，这轮不合格
