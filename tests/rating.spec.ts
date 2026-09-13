@@ -157,7 +157,7 @@ describe('R18 分级', () => {
     // 导演铺了台阶，演员别自己踩刹车
     expect(on).toContain('导演已经替你把台阶铺好了')
     // 写到什么程度必须说清楚：光给词表不够，得给密度示范
-    expect(on).toContain('性器官要写出来')
+    expect(on).toContain('这些都要明明白白写出来')
     expect(on).toContain('不要跳步')
     expect(on).toContain('回避就是没完成工作')
     expect(on).toContain('照着这个密度写')
@@ -197,7 +197,7 @@ describe('R18 分级', () => {
     expect(on).toContain('【快速入戏】')
     expect(on).toContain('尽快看到他们做爱')
     // act 要写明确的性进展，而不是含糊带过
-    expect(on).toContain('性器官要写出来')
+    expect(on).toContain('这些都要明明白白写出来')
     expect(on).toContain('过程要写出来')
     // 用词直白（用户要求：有必要就必须明确告知）
     expect(on).toContain('操、肏、屌、逼')
@@ -225,7 +225,7 @@ describe('R18 分级', () => {
     expect(on).toContain('routes 是**给用户选的开场**')
     expect(on).toContain('让他在你这里养伤')
     // 光给词表不够，得给密度示范
-    expect(on).toContain('性器官要写出来')
+    expect(on).toContain('这些都要明明白白写出来')
     expect(on).toContain('不许跳步')
     expect(on).toContain('一段合格的 act**（照这个密度写')
     expect(on).toContain('回避就是没完成工作')
@@ -249,11 +249,11 @@ describe('R18 分级', () => {
     expect(on).toContain('每一句都要携带信息')
     expect(on).toContain('不要水')
     // 性恰恰是用户勾 R18 要看的东西，一个字都不能跳
-    expect(on).toContain('性一个字都不能跳')
+    expect(on).toContain('做爱一个字都不能跳')
     expect(on).toContain('不能有"他们昨天做了什么"')
     expect(on).toContain('模棱两可的判断一律往更能导向做爱的方向选')
     // 场景不配合时有办法：把它改造成通向性的场面
-    expect(on).toContain('怎么把「看起来不相干」的场景改造成通向性的场面')
+    expect(on).toContain('怎么把「看起来不相干」的场景改造成通向做爱的场面')
     expect(on).toContain('一个陌生人站在门口')
     // 用户勾这个是为了保留期待感，不是为了让导演去猜他的口味
     expect(on).toContain('具体怎么做由你决定')
@@ -289,6 +289,36 @@ describe('R18 分级', () => {
 
     const general = buildPerceiveMessages({ ...base, rating: 'general' })[0].content
     expect(general).not.toContain('不要轻易判 missed')
+  })
+
+  it('用词必须参考色情小说 —— 不许留临床/学术的说法', () => {
+    const base = {
+      storyTitle: '测试',
+      pcName: '我',
+      doc: normalizeInput('我把门关上了。'),
+      segments: [],
+      sceneSetup: setup(),
+      drives: [],
+      rating: 'r18' as const,
+    }
+    const director = buildSituationMessages({ ...base, direct: true, r18Streak: 3, directStreak: 3 })[0].content
+    const actor = buildRoleplayMessages({ bundle: bundle(), project: DEFAULT_PROJECT_SETTINGS, rating: 'r18', direct: true })[1]
+      .content
+
+    // 勾了这个开关，用词就得像色情小说 —— 这些是必须出现的
+    for (const text of [director, actor]) {
+      expect(text).toContain('做爱')
+      expect(text).toContain('屌')
+      expect(text).toContain('逼')
+    }
+
+    // 而这些是临床/学术说法，一个都不许留（只看成人向那几段 ——
+    // SYSTEM 前面另有一处与性无关的「放了三天的那件事」）
+    const directorR18 = director.slice(director.indexOf('【本轮分级：成人向'))
+    for (const word of ['性内容', '性张力', '性器官', '性行为', '通向性', '性相关', '那件事']) {
+      expect(directorR18).not.toContain(word)
+      expect(actor).not.toContain(word)
+    }
   })
 
   it('导演也会收到分级 —— 他能直接指派角色做什么', () => {
