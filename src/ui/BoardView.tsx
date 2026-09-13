@@ -325,6 +325,24 @@ function RoundBlock({ round, isLast, demo }: { round: Round; isLast: boolean; de
             </details>
           ) : null}
 
+          {situationData.state.routes?.length ? (
+            <div className="situation-routes">
+              <div className="situation-routes-head">
+                这个局面直接入戏会崩，导演给了几条路 —— 点一条填进输入框，你可以改：
+              </div>
+              {situationData.state.routes.map((route, index) => (
+                <button
+                  key={index}
+                  className="situation-route"
+                  onClick={() => useAppStore.getState().injectDraft(`（${route.title}）${route.detail ? `\n${route.detail}` : ''}`)}
+                >
+                  <span className="situation-route-title">▸ {route.title}</span>
+                  {route.detail ? <span className="situation-route-detail">{route.detail}</span> : null}
+                </button>
+              ))}
+            </div>
+          ) : null}
+
           {situationData.state.holdUp?.trim() ? (
             <details className="situation-reason">
               <summary>为什么这一轮没有更进一步</summary>

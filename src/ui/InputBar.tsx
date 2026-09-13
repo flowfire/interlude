@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useAppStore } from '@/store/appStore'
 import { runRoundFor } from './usePipelineActions'
 import { IDLE_INPUT } from '@/types/step'
@@ -19,6 +19,7 @@ export default function InputBar() {
   const setProject = useAppStore((state) => state.setProject)
 
   const [draft, setDraft] = useState('')
+  const draftInjection = useAppStore((state) => state.draftInjection)
   const [personaOpen, setPersonaOpen] = useState(false)
   // 延续上一次的勾选（存在 localStorage 里），红色够显眼，不用每次重勾
   // 勾选状态住在 store 里 —— 导演宣告成人向收尾时要能替用户关掉它
@@ -38,6 +39,13 @@ export default function InputBar() {
   const handleDirectChange = (value: boolean) => {
     setComposer({ direct: value })
   }
+
+  // 别处（比如导演推荐的方向）往这里塞文字时，填进输入框让用户过目、修改
+  useEffect(() => {
+    if (!draftInjection) return
+    setDraft(draftInjection.text)
+    setPersonaOpen(false)
+  }, [draftInjection?.id])
 
   const handleSend = async () => {
     const text = draft.trim()

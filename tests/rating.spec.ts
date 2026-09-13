@@ -214,7 +214,10 @@ describe('R18 分级', () => {
     expect(on).toContain('都不算理由')
     // events 也不许写跟性无关的东西
     expect(on).toContain('不要拿一场跟性无关的冲突来"推进剧情"')
-    expect(on).toContain('holdUp 里必须写"具体的下一步"')
+    // 推不动的时候有第三条路：不硬拗、不抗命，而是给用户几条可选方向
+    expect(on).toContain('把选择权交回用户')
+    expect(on).toContain('routes 是**给用户选的开场**')
+    expect(on).toContain('让他在你这里养伤')
     // 光给词表不够，得给密度示范
     expect(on).toContain('性器官要写出来')
     expect(on).toContain('不许跳步')

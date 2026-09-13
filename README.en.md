@@ -244,6 +244,14 @@ The test narrows to one sentence too: **did anything new happen between their bo
 
 **Pressure to get in is high; pressure to get out is low** — that is deliberate.
 
+**When it cannot push, it asks you.** Some setups genuinely cannot go there yet — two people meeting for the first time, opposed identities, a life-or-death moment. The director will not force it (that breaks the scene), and will not pretend nothing happened either; instead it **puts a few directions on the card for you to pick**:
+
+> ▸ **Let him recover at your place** — he is hurt too badly to leave, so he has to come in. You will be under one roof for days; distance stops being the problem, his willingness is.
+> ▸ **Invite him in and get the story out** — he will tell part of it and hide the rest, and the parts you already know are exactly the parts he does not want known.
+> ▸ **Do not let him in, see what he does** — he stands there a while, and then you find him collapsed in the yard.
+
+**Click one and it drops into the input box** (you can edit it), then you carry on. The choice stays yours — the director just lays out how it could start.
+
 **It has to account for not moving forward.** Every round the director asks itself "did this go further than last round". If it did not, it has to say on the card where it got stuck — specifically ("that sentence of hers read as a refusal, he needs to check once before moving"), and empty phrases like "the time is not right" are explicitly called out as stalling. **The board carries a collapsed "why this round did not go further" you can open.**
 
 **And you can see the pressure.** The board shows "adult mode running for N rounds" — the very number the director has hanging over it. The longer it stalls, the bigger that number gets, and the uglier the deadline in its prompt looks.

@@ -277,6 +277,7 @@ const ROUND2_ROLEPLAY_LINYAN = {
 const ROUND1_SITUATION = {
   reason: '',
   holdUp: '',
+  routes: [],
   pressure: '林砚等了三天，他今天是有话要说的；柜台后面的阿七并不只是个擦杯子的伙计。',
   escalation: '如果你一直站着不坐下，林砚会先开口——他等不下去了。',
   events: [

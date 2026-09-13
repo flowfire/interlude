@@ -45,6 +45,7 @@ vi.mock('@/engine/llm/instance', () => {
       return {
         reason: '',
         holdUp: '',
+        routes: [],
         r18Streak: 1,
         pace: 'settle',
         r18Ended: h.r18Ended,

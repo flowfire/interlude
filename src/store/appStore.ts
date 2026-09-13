@@ -50,6 +50,9 @@ export interface AppState extends WorkspaceSnapshot {
 
   /** 输入区那两个勾选（R18 模式 / 快速入戏）—— 导演可以替用户把它关掉 */
   composer: ComposerState
+  /** 从别处往输入框里塞一段文字（比如导演推荐的方向） */
+  draftInjection: { text: string; id: number } | null
+  injectDraft: (text: string) => void
   setComposer: (patch: Partial<ComposerState>) => void
 
   setLlm: (patch: Partial<LlmSettings>) => void
@@ -121,6 +124,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   project: { ...DEFAULT_PROJECT_SETTINGS },
   // 初始化时就把上次的勾选读回来（测试 / SSR 环境没有 localStorage，退回默认）
   composer: typeof localStorage === 'undefined' ? { ...DEFAULT_COMPOSER_STATE } : loadComposerState(),
+  draftInjection: null,
   activeSessionId: null,
   selectedStepId: null,
   busy: false,
@@ -154,6 +158,9 @@ export const useAppStore = create<AppState>((set, get) => ({
         inspectorStepId: null,
       }
     }),
+
+  injectDraft: (text) =>
+    set({ draftInjection: { text, id: Date.now() + Math.random() } }),
 
   setComposer: (patch) => {
     const next = { ...get().composer, ...patch }

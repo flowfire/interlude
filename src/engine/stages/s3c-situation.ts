@@ -85,6 +85,19 @@ function normalizeDirections(raw: unknown, cards: CharacterCard[], pcName: strin
   return out
 }
 
+function normalizeRoutes(raw: unknown): SituationState['routes'] {
+  const out: SituationState['routes'] = []
+  for (const item of asArray(raw)) {
+    const record = asRecord(item)
+    const title = asText(record?.title).trim()
+    const detail = asText(record?.detail).trim()
+    if (!title) continue
+    out.push({ title, detail })
+    if (out.length >= 3) break
+  }
+  return out
+}
+
 function normalizeEvents(raw: unknown, pcName: string): SituationEvent[] {
   const out: SituationEvent[] = []
   for (const item of asArray(raw)) {
@@ -163,6 +176,7 @@ export async function runSituationStage(
     const parsed = data as {
       reason?: unknown
       holdUp?: unknown
+      routes?: unknown
       pace?: unknown
       r18Ended?: unknown
       pressure?: unknown
@@ -176,6 +190,7 @@ export async function runSituationStage(
       output: {
         reason: asText(parsed.reason).trim(),
         holdUp: asText(parsed.holdUp).trim(),
+        routes: normalizeRoutes(parsed.routes),
         r18Streak: Math.max(1, r18Streak ?? 1),
         pace: normalizePace(parsed.pace),
         r18Ended:
@@ -196,6 +211,7 @@ export async function runSituationStage(
       output: {
         reason: '',
         holdUp: '',
+        routes: [],
         r18Streak: Math.max(1, r18Streak ?? 1),
         pace: previous?.pace ?? 'build',
         r18Ended: false,

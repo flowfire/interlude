@@ -52,6 +52,7 @@ function card(name: string): CharacterCard {
 const situation: SituationState = {
   reason: '',
   holdUp: '',
+  routes: [],
   r18Streak: 1,
   pace: 'escalate',
   r18Ended: false,

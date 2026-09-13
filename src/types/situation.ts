@@ -92,6 +92,17 @@ export interface SituationState {
   holdUp: string
   /** 成人向已经连着几轮了 —— 就是压在导演身上的那个数字，页面上会显示 */
   r18Streak: number
+  /**
+   * 导演推荐的发展方向。
+   *
+   * 有些场面确实没法直接进入性（刚见面、身份对立、正在危险里）。
+   * 这时候导演**不许硬拗**（会跳戏）、**也不许交一份跟这个开关无关的正常剧情**
+   * （那是抗命），而是停下来问用户：我推不动，这儿有几条路，你挑一条。
+   *
+   * 用户点一下就等于把那段话填进输入框 —— 选择权始终在他手里，
+   * 导演只是把"可以怎么开场"摆出来。
+   */
+  routes: { title: string; detail: string }[]
   /** 这一轮在节奏上的位置 */
   pace: SituationPace
   /**
@@ -126,6 +137,7 @@ export interface SituationState {
 export const RawSituationSchema = z.object({
   reason: z.union([z.string(), z.number(), z.null()]).optional(),
   holdUp: z.union([z.string(), z.number(), z.null()]).optional(),
+  routes: z.union([z.array(z.unknown()), z.string(), z.null()]).optional(),
   pace: z.union([z.string(), z.number(), z.null()]).optional(),
   r18Ended: z.union([z.boolean(), z.string(), z.null()]).optional(),
   pressure: z.union([z.string(), z.number(), z.null()]).optional(),

@@ -22,6 +22,7 @@ const situation: SituationState = {
   ],
   reason: '',
   holdUp: '',
+  routes: [],
   r18Streak: 1,
   pace: 'escalate',
   r18Ended: false,
@@ -275,6 +276,34 @@ describe('局面推进：世界自己会往前走', () => {
     expect(late).toContain('判断标准只有一个')
     expect(late).toContain('都不算理由')
     expect(late).toContain('时机未到 · 气氛差一点')
+  })
+
+  it('推不动的时候给用户几条可选方向，而不是硬拗或抗命', () => {
+    const [system] = buildSituationMessages({
+      storyTitle: '测试',
+      pcName: '我',
+      doc: normalizeInput('我打开门，外面站着一个陌生人。'),
+      segments: [],
+      sceneSetup: setup,
+      drives: [],
+      rating: 'r18',
+      direct: true,
+      r18Streak: 1,
+      directStreak: 1,
+    })
+
+    expect(system.content).toContain('把选择权交回用户')
+    // 三种处理的优先级要写清楚
+    expect(system.content).toContain('能改就改')
+    expect(system.content).toContain('确实改不了')
+    // 明确两条禁令：不跳戏，也不许交一份无关的正常剧情
+    expect(system.content).toContain('不要跳戏')
+    expect(system.content).toContain('那是抗命')
+    // routes 是给用户选的开场，不是替他做决定
+    expect(system.content).toContain('给用户选的开场')
+    expect(system.content).toContain('让他在你这里养伤')
+    // 光说「做不到」不给方向，仍然算拖
+    expect(system.content).toContain('然后什么都不给，那就是在拖')
   })
 
   it('导演知道最近几轮的节奏，用来判断该不该收场', () => {
