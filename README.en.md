@@ -245,7 +245,16 @@ The test stays one sentence: **did anything new happen between their bodies this
 
 **Pressure to get in is high; pressure to get out is low** — that is deliberate.
 
-**"Straight into the scene" is not just faster.** It grants one extra privilege: **sex may be written as already-happened background** — "he has not left these three days, and neither of you has been out much" carries the whole process in one line, and the round goes straight to what comes after. Stacked on top: every ambiguous call (whether he would do it, how close they already are, whether anyone would notice) is **resolved towards the version that leads there**. 
+**The difference between the two modes is *what gets skipped*.**
+
+- **Normal mode**: you want to **drive the relationship yourself** — how they meet, how they get close, when it happens. The director only sets up the opportunity (a private setting, a moment alone); **whether to step through is yours**. If you do not write it, it will not cross that line for you.
+- **"Straight into the scene"**: **the relationship-building and the run-up are written into the background as things that already happened** — "you have known each other three months; whatever was going to happen already did", "he has been living here; you never slept in separate beds". One line turns *why it can happen* into established fact, so the round can start with no build-up at all.
+
+**But nothing about the sex itself gets skipped.** That is what you ticked R18 to see — the background may carry *how far the relationship has got*, never *what they did last night*. Writing the act into the background skips the entire point of the switch.
+
+One sentence to judge by: **the background carries "why they can"; the performance carries "how they do it".**
+
+Stacked on top: every ambiguous call (whether he would do it, how close they already are, whether anyone would notice) is **resolved towards the version that leads there**. 
 
 **When it cannot push, it asks you.** Some setups genuinely cannot go there yet — two people meeting for the first time, opposed identities, a life-or-death moment. The director will not force it (that breaks the scene), and will not pretend nothing happened either; instead it **puts a few directions on the card for you to pick**:
 
