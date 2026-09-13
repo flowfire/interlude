@@ -29,6 +29,8 @@ export interface SituationPromptInput {
   recentScores?: number[]
   /** 用户自己写的人设 —— 权威设定 */
   pcPersona?: string
+  /** 设置里是否允许成人向。关着的话，导演的世界里根本没有这回事 */
+  allowR18?: boolean
   doc: NormalizedDoc
   segments: Segment[]
   sceneSetup: SceneSetup
@@ -286,6 +288,22 @@ route 怎么写：
 压力计数会一直涨，用户看得见那个数字。
 `
 
+/**
+ * 导演可以建议开启成人向。
+ *
+ * 只写**规则**，不写客户端怎么处理 —— 模型看不到界面，也不需要知道
+ * "谁替谁勾上""能不能取消"。它要知道的只有两件事：
+ * 我可以建议；以及**只有这一轮标着成人向时我才能写成人向的内容**。
+ */
+const R18_ASK_HINT = `
+【R18】
+- 剧情走到这里、再纯情下去已经不合适了 —— 你可以在 suggestR18 里填 true，
+  **建议用户开启成人向**。
+- **只有这一轮标着【本轮分级：成人向】时，你才能输出成人向内容。**
+  没有那个标记，不管你怎么想，都照普通分级写。
+- 建议只是建议：这一轮仍然按当前分级来写，不要提前跳到成人向的内容上。
+`
+
 const R18_ENDING_HINT = `
 【什么时候收尾】
 做爱这件事有始有终：操完之后人会累、会沉默、会去想别的事、会睡着。
@@ -488,6 +506,8 @@ __PC_PERSONA__
 - 不要写"仿佛""似乎预示着"这类小说腔，也不要解释意义
 
 【输出格式】
+（suggestR18 这个字段无条件出现在这里，为的是保持 SYSTEM 字节一致、
+吃到 prompt cache；它的含义只在总闸开着时才会被解释。）
 必须把下面每个字段都写出来 —— **尤其是 sexScore，漏了就算这一轮没打分**：
 {
   "sexScore": 60,
@@ -641,6 +661,7 @@ ${segmentLines || '（这一轮用户没有写具体内容）'}
   const directStreak = Math.max(0, input.directStreak ?? 0)
   const hints = [
     rating === 'r18' ? R18_DIRECTOR_HINT : '',
+    input.allowR18 ? R18_ASK_HINT : '',
     rating === 'r18' ? R18_ENDING_HINT : '',
     rating === 'r18' && direct ? R18_DIRECT_HINT : '',
     rating === 'r18'

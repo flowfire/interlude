@@ -31,6 +31,8 @@ export interface SituationStageInput {
   recentScores?: number[]
   /** 用户自己写的人设 —— 权威设定 */
   pcPersona?: string
+  /** 设置里是否允许成人向 */
+  allowR18?: boolean
   previousRecap?: string
   previous?: { pressure: string; escalation: string; pace?: SituationPace } | null
 }
@@ -164,6 +166,7 @@ export async function runSituationStage(
     directStreak,
     recentScores,
     pcPersona,
+    allowR18,
     previousRecap,
     previous,
   } = input
@@ -178,6 +181,7 @@ export async function runSituationStage(
     directStreak,
     recentScores,
     pcPersona,
+    allowR18,
     doc,
     segments,
     sceneSetup,

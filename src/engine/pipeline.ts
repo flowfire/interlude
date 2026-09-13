@@ -384,6 +384,7 @@ async function executeStep(ctx: PipelineContext, step: Step): Promise<Step> {
         cards: castOut?.characters ?? [],
         pcName: ctx.project.pcName,
         pcPersona: ctx.project.pcPersona,
+        allowR18: ctx.project.allowR18,
         storyTitle: ctx.project.storyTitle,
         idle: ctx.round.idle,
         rating: ctx.round.rating ?? 'general',

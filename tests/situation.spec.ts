@@ -583,3 +583,33 @@ describe('场景可以不变', () => {
     expect(system.content).toContain('第一轮必须输出完整场景')
   })
 })
+
+describe('导演建议开启成人向', () => {
+  const base = {
+    storyTitle: '测试',
+    pcName: '我',
+    doc: normalizeInput('我推开门。'),
+    segments: [],
+    sceneSetup: setup,
+    drives: [],
+    rating: 'general' as const,
+  }
+
+  it('总闸开着：只告诉它两条规则，不交代客户端怎么处理', () => {
+    const [system] = buildSituationMessages({ ...base, allowR18: true })
+    expect(system.content).toContain('建议用户开启成人向')
+    expect(system.content).toContain('只有这一轮标着【本轮分级：成人向】时')
+    // 界面上的事它看不到，也不该操心
+    expect(system.content).not.toContain('客户端')
+    expect(system.content).not.toContain('自动勾')
+    expect(system.content).not.toContain('取消勾选')
+  })
+
+  it('总闸关着：它的世界里根本没有这回事', () => {
+    const [system] = buildSituationMessages({ ...base, allowR18: false })
+    expect(system.content).not.toContain('建议用户开启成人向')
+    // 输出格式里那个字段仍然在 —— 它是 SYSTEM 的一部分，无条件渲染，
+    // 为的是保持字节一致（prompt cache）。没有说明文字，它就是个普通字段名。
+    expect(system.content).not.toContain('【R18】')
+  })
+})
