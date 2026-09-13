@@ -32,6 +32,18 @@ function describeRunning(steps: Record<string, Step>): string {
   return `${names.slice(0, 2).join('、')} 等 ${names.length} 项 …`
 }
 
+/**
+ * 这一轮里导演是不是宣告了成人向收尾。
+ *
+ * 客户端据此自动退出成人向模式 —— 免得用户勾了一次就一路挂着，
+ * 陷进没完没了的 R18。关掉之后他随时可以再勾。
+ */
+function r18EndedIn(steps: Record<string, Step>): boolean {
+  const step = Object.values(steps).find((item) => item.stage === 'situation')
+  const state = step?.output as SituationState | undefined
+  return Boolean(state?.r18Ended)
+}
+
 function makeContext(roundId: string): PipelineContext {
   const state = useAppStore.getState()
   const round = state.rounds.find((item) => item.id === roundId)
@@ -67,6 +79,15 @@ export async function runRoundFor(roundId: string): Promise<void> {
     if (result.error) {
       useAppStore.getState().setError(result.error)
       return
+    }
+
+    // 导演有权给成人向踩刹车：他宣告收尾了，就把勾选替用户关掉
+    // （用户随时可以再勾回来，所以这里不需要问他）
+    if (r18EndedIn(result.steps)) {
+      const composer = useAppStore.getState().composer
+      if (composer.rating === 'r18' || composer.direct) {
+        useAppStore.getState().setComposer({ rating: 'general', direct: false })
+      }
     }
 
     const composeStep = result.composeStepId ? result.steps[result.composeStepId] : undefined

@@ -17,6 +17,12 @@ import {
 import type { Segment } from '@/types/segment'
 import { makeId } from '@/utils/id'
 import { nowIso } from '@/utils/time'
+import {
+  DEFAULT_COMPOSER_STATE,
+  loadComposerState,
+  saveComposerState,
+  type ComposerState,
+} from './localSettings'
 
 export interface WorkspaceSnapshot {
   sessions: Session[]
@@ -41,6 +47,10 @@ export interface AppState extends WorkspaceSnapshot {
 
   saveUndo: (label: string) => void
   undoLast: () => void
+
+  /** 输入区那两个勾选（R18 模式 / 快速入戏）—— 导演可以替用户把它关掉 */
+  composer: ComposerState
+  setComposer: (patch: Partial<ComposerState>) => void
 
   setLlm: (patch: Partial<LlmSettings>) => void
   setProject: (patch: Partial<ProjectSettings>) => void
@@ -109,6 +119,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   ledger: [],
   llm: { ...DEFAULT_LLM_SETTINGS },
   project: { ...DEFAULT_PROJECT_SETTINGS },
+  // 初始化时就把上次的勾选读回来（测试 / SSR 环境没有 localStorage，退回默认）
+  composer: typeof localStorage === 'undefined' ? { ...DEFAULT_COMPOSER_STATE } : loadComposerState(),
   activeSessionId: null,
   selectedStepId: null,
   busy: false,
@@ -142,6 +154,12 @@ export const useAppStore = create<AppState>((set, get) => ({
         inspectorStepId: null,
       }
     }),
+
+  setComposer: (patch) => {
+    const next = { ...get().composer, ...patch }
+    saveComposerState(next)
+    set({ composer: next })
+  },
 
   setLlm: (patch) => set((state) => ({ llm: { ...state.llm, ...patch } })),
   setProject: (patch) => set((state) => ({ project: { ...state.project, ...patch } })),

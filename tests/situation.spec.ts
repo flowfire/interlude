@@ -21,6 +21,7 @@ const situation: SituationState = {
     { kind: 'scene', text: '最前面那两头伏低了身子' },
   ],
   pace: 'escalate',
+  r18Ended: false,
   directions: [],
   order: ['金刚狼', '阿七'],
   usedModel: true,
@@ -184,6 +185,10 @@ describe('局面推进：世界自己会往前走', () => {
     expect(r18.content).toContain('人设不变')
     expect(r18.content).toContain('推进必须符合关系阶段')
     expect(r18.content).toContain('身体的边界是用户的，不是你的')
+    // 导演手里还有刹车：写完了要能宣告收尾，否则会一路挂着
+    expect(r18.content).toContain('成人向什么时候结束')
+    expect(r18.content).toContain('自动退出成人向模式')
+    expect(r18.content).toContain('也不要永远不结束')
 
     const [general] = buildSituationMessages({ ...base, rating: 'general' })
     expect(general.content).not.toContain('成人向')

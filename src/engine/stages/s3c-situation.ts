@@ -143,6 +143,7 @@ export async function runSituationStage(
 
     const parsed = data as {
       pace?: unknown
+      r18Ended?: unknown
       pressure?: unknown
       escalation?: unknown
       events?: unknown
@@ -153,6 +154,9 @@ export async function runSituationStage(
     return {
       output: {
         pace: normalizePace(parsed.pace),
+        r18Ended:
+          parsed.r18Ended === true ||
+          asText(parsed.r18Ended).trim().toLowerCase() === 'true',
         pressure: asText(parsed.pressure).trim() || previous?.pressure || '',
         escalation: asText(parsed.escalation).trim(),
         events: normalizeEvents(parsed.events, pcName),
@@ -167,6 +171,7 @@ export async function runSituationStage(
     return {
       output: {
         pace: previous?.pace ?? 'build',
+        r18Ended: false,
         pressure: previous?.pressure ?? '',
         escalation: previous?.escalation ?? '',
         events: [],

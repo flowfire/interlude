@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { useAppStore } from '@/store/appStore'
-import { loadComposerState, saveComposerState } from '@/store/localSettings'
 import { runRoundFor } from './usePipelineActions'
 import { IDLE_INPUT } from '@/types/step'
 
@@ -22,20 +21,19 @@ export default function InputBar() {
   const [draft, setDraft] = useState('')
   const [personaOpen, setPersonaOpen] = useState(false)
   // 延续上一次的勾选（存在 localStorage 里），红色够显眼，不用每次重勾
-  const [r18, setR18] = useState(() => loadComposerState().rating === 'r18')
-  const [direct, setDirect] = useState(() => loadComposerState().direct)
+  // 勾选状态住在 store 里 —— 导演宣告成人向收尾时要能替用户关掉它
+  const composer = useAppStore((state) => state.composer)
+  const setComposer = useAppStore((state) => state.setComposer)
+  const r18 = composer.rating === 'r18'
+  const direct = composer.direct
 
   const handleR18Change = (value: boolean) => {
-    setR18(value)
     // 关掉 R18 时「快速入戏」自动失效 —— 它只在成人向那一轮有意义
-    const nextDirect = value ? direct : false
-    if (!value) setDirect(false)
-    saveComposerState({ rating: value ? 'r18' : 'general', direct: nextDirect })
+    setComposer({ rating: value ? 'r18' : 'general', direct: value ? direct : false })
   }
 
   const handleDirectChange = (value: boolean) => {
-    setDirect(value)
-    saveComposerState({ rating: r18 ? 'r18' : 'general', direct: value })
+    setComposer({ direct: value })
   }
 
   const handleSend = async () => {

@@ -76,6 +76,14 @@ export interface SituationState {
   /** 这一轮在节奏上的位置 */
   pace: SituationPace
   /**
+   * 这一幕的成人向内容已经收尾。
+   *
+   * 导演有权踩刹车：性这件事有始有终，写完了就该回到别的方向去。
+   * 客户端看到它会**自动取消 R18 勾选**（用户随时可以再勾回来），
+   * 免得一路挂着陷入没完没了的成人向。
+   */
+  r18Ended: boolean
+  /**
    * 导演给每个角色的这一轮任务。
    *
    * 不是"僵局才点名" —— 导演每一轮都在安排这一场戏，这里是他安排的结果。
@@ -98,6 +106,7 @@ export interface SituationState {
 
 export const RawSituationSchema = z.object({
   pace: z.union([z.string(), z.number(), z.null()]).optional(),
+  r18Ended: z.union([z.boolean(), z.string(), z.null()]).optional(),
   pressure: z.union([z.string(), z.number(), z.null()]).optional(),
   escalation: z.union([z.string(), z.number(), z.null()]).optional(),
   events: z.union([z.array(z.unknown()), z.string(), z.null()]).optional(),

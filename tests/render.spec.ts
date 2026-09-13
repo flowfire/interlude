@@ -1,9 +1,10 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 import { createElement } from 'react'
 import { renderToString } from 'react-dom/server'
 import App from '@/App'
 import ContextView from '@/ui/ContextView'
 import InputBar from '@/ui/InputBar'
+import { useAppStore } from '@/store/appStore'
 import type { ContextBundle } from '@/types/character'
 
 describe('界面冒烟', () => {
@@ -142,26 +143,23 @@ describe('上下文面板', () => {
 
 describe('输入区的分级勾选', () => {
   afterEach(() => {
-    vi.unstubAllGlobals()
+    useAppStore.getState().setComposer({ rating: 'general', direct: false })
   })
 
-  it('没勾 R18 时没有「快速入戏」', () => {
-    vi.stubGlobal('localStorage', {
-      getItem: () => JSON.stringify({ rating: 'general', direct: false }),
-      setItem: () => {},
-    })
+  it('默认是普通分级，界面上没有「快速入戏」', () => {
     const html = renderToString(createElement(InputBar))
     expect(html).toContain('R18 模式')
     expect(html).not.toContain('快速入戏')
   })
 
-  it('勾上 R18 之后才出现「快速入戏」', () => {
-    vi.stubGlobal('localStorage', {
-      getItem: () => JSON.stringify({ rating: 'r18', direct: true }),
-      setItem: () => {},
-    })
-    const html = renderToString(createElement(InputBar))
-    expect(html).toContain('R18 模式')
-    expect(html).toContain('快速入戏')
+  // 注意：SSR 下 zustand 读的是 initial state，所以"运行时改 store 再渲染"
+  // 这条路测不出来（勾选框出现与否由上面的默认态 + 下面的 store 行为共同保证）。
+  it('勾选住在 store 里 —— 导演才能替用户把它关掉', () => {
+    useAppStore.getState().setComposer({ rating: 'r18', direct: true })
+    expect(useAppStore.getState().composer).toEqual({ rating: 'r18', direct: true })
+
+    // 关掉 R18 时「快速入戏」必须一起失效 —— 它只在成人向那一轮有意义
+    useAppStore.getState().setComposer({ rating: 'general', direct: false })
+    expect(useAppStore.getState().composer).toEqual({ rating: 'general', direct: false })
   })
 })

@@ -216,6 +216,8 @@ R18 is not "flip a switch and the model talks dirty". **Every stage** of the eng
 
 **It is counted per round.** The "R18 mode" checkbox in the composer stays checked across reloads, but the rating itself lives on the **round** — so you can turn it on for this round and off for the next, independently. When reading back, the rounds that had it on carry a red marker on the divider.
 
+**The director closes it out for you.** When a scene of that kind has run its course, the director can declare it finished in that round — and the client **unticks the box automatically**, back to normal. You do not have to worry about ticking it once and having it hang there forever; tick it again whenever you want.
+
 ### Three lines
 
 Whichever round it is, three lines are written into the prompt as inviolable:

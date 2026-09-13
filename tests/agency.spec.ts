@@ -51,6 +51,7 @@ function card(name: string): CharacterCard {
 
 const situation: SituationState = {
   pace: 'escalate',
+  r18Ended: false,
   pressure: '狼群在二十步外压成半圆',
   escalation: '再有两三息它们就会扑上来',
   events: [

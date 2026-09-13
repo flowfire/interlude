@@ -315,6 +315,9 @@ function RoundBlock({ round, isLast, demo }: { round: Round; isLast: boolean; de
               {event.text}
             </div>
           ))}
+          {situationData.state.r18Ended ? (
+            <div className="situation-escalation">这一幕收尾了 · R18 模式已自动关闭</div>
+          ) : null}
           {situationData.state.escalation ? (
             <div className="situation-escalation">下一步：{situationData.state.escalation}</div>
           ) : null}
