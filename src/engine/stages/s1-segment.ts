@@ -266,6 +266,8 @@ export async function runSegmentStage(
       temperature: client.settings.temperaturePrecise,
       json: true,
       label: 'segment',
+      // 纯结构活：判断"这句是台词还是动作"，不需要模型想很久
+      thinking: false,
       parse: (raw) => RawSegmenterResultSchema.parse(raw),
     })
 

@@ -266,6 +266,8 @@ export async function runPerceiveStage(
       temperature: client.settings.temperaturePrecise,
       json: true,
       label: 'perceive',
+      // 判定"谁背对着谁"是空间推理，不是创作；开着思维链只是慢
+      thinking: false,
       parse: (raw) => RawPerceiveSchema.parse(raw),
     })
 

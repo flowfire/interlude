@@ -943,6 +943,25 @@ pre.code {
   margin-top: 6px;
   color: #d8c9a8;
   font-size: 12.5px;
+}
+.situation-reason > summary {
+  cursor: pointer;
+  color: var(--text-faint);
+  font-size: 11.5px;
+  list-style: none;
+  user-select: none;
+}
+.situation-reason > summary::marker,
+.situation-reason > summary::-webkit-details-marker {
+  display: none;
+}
+.situation-reason > summary::before {
+  content: '▸ ';
+}
+.situation-reason[open] > summary::before {
+  content: '▾ ';
+}
+.situation-reason[open] {
   font-style: italic;
 }
 .situation-order {

@@ -12,6 +12,15 @@ export interface LlmSettings {
   maxRetries: number
   /** 是否请求 response_format: json_object（部分厂商不支持） */
   useJsonResponseFormat: boolean
+  /**
+   * 关闭思维链时，往请求体里合并的字段（JSON）。
+   *
+   * 各家服务商写法不同，所以不硬编码：
+   * 阿里云 Qwen 用 {"enable_thinking": false}；OpenAI 的推理模型用
+   * {"reasoning_effort": "none"}；有些中转用 {"thinking": {"type": "disabled"}}。
+   * 留空就什么都不加（等于所有步骤都按模型默认来）。
+   */
+  noThinkingBody: string
 }
 
 /** 项目级设定 */
@@ -41,6 +50,7 @@ export const DEFAULT_LLM_SETTINGS: LlmSettings = {
   timeoutMs: 120000,
   maxRetries: 2,
   useJsonResponseFormat: true,
+  noThinkingBody: '',
 }
 
 export const DEFAULT_PROJECT_SETTINGS: ProjectSettings = {

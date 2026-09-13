@@ -144,6 +144,25 @@ export default function SettingsDialog() {
             <span className="hint">部分中转站不支持这个参数，引擎遇到 400 会自动降级重试，也可以在这里直接关掉。</span>
           </div>
 
+          <div className="field">
+            <label>简单步骤关闭思维链</label>
+            <input
+              className="input"
+              placeholder='{"enable_thinking": false}'
+              value={llm.noThinkingBody}
+              onChange={(event) => setLlm({ noThinkingBody: event.target.value })}
+            />
+            <span className="hint">
+              各家写法不同，填成 JSON 就行：Qwen 是 {'{"enable_thinking": false}'}，
+              OpenAI 推理模型是 {'{"reasoning_effort": "none"}'}，
+              有的中转是 {'{"thinking": {"type": "disabled"}}'}。
+              留空 = 不改请求体。
+              <br />
+              生效的是<strong>拆解</strong>和<strong>信息分发</strong>这两步（判断"这句是台词还是动作"、
+              "谁背对着谁"，不需要模型想很久）；导演、角色、场景构建这些需要发挥的步骤照常。
+            </span>
+          </div>
+
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             <button className="btn" disabled={testing} onClick={handleTest}>
               {testing ? '测试中…' : '测试连接'}

@@ -316,7 +316,10 @@ function RoundBlock({ round, isLast, demo }: { round: Round; isLast: boolean; de
             </div>
           ))}
           {situationData.state.reason?.trim() ? (
-            <div className="situation-reason">为什么是此刻：{situationData.state.reason}</div>
+            <details className="situation-reason">
+              <summary>为什么是此刻</summary>
+              {situationData.state.reason}
+            </details>
           ) : null}
           {situationData.state.r18Ended ? (
             <div className="situation-escalation">这一幕收尾了 · R18 模式已自动关闭</div>

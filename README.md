@@ -165,6 +165,8 @@ npm run dev
 
 任何 **OpenAI 兼容**的接口都能用：DeepSeek、OpenAI、Kimi、Ollama、各种中转站。
 
+**简单步骤会自动关掉思维链**（如果你的服务商支持）：设置里填一个 JSON 参数（比如 Qwen 的 `{"enable_thinking": false}`），引擎会在**拆解**和**信息分发**这两步把它带上——判断"这句是台词还是动作""谁背对着谁"不需要模型想很久。导演、角色、场景构建这些需要发挥的步骤照常不关。留空就不改请求体。
+
 | 字段 | 例子 |
 |---|---|
 | baseUrl | `https://api.deepseek.com/v1` |

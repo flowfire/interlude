@@ -165,6 +165,8 @@ Open http://127.0.0.1:5273/ and fill in your model endpoint under "Settings" in 
 
 Any **OpenAI-compatible** endpoint works: DeepSeek, OpenAI, Kimi, Ollama, and the various proxies.
 
+**The simple steps turn off chain-of-thought automatically** (if your provider supports it): put a JSON snippet in settings (Qwen's `{"enable_thinking": false}`, say) and the engine will attach it on **segmentation** and **information distribution** — working out "is this line dialogue or action" and "who has their back to whom" does not need a long think. The director, the characters and scene building are left alone. Leave it empty and the request body is untouched.
+
 | Field | Example |
 |---|---|
 | baseUrl | `https://api.deepseek.com/v1` |
