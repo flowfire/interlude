@@ -176,13 +176,16 @@ When on, the engine attaches `{"thinking": {"type": "disabled"}}` to the corresp
 
 One aside: under thinking mode DeepSeek ignores `temperature` — that is their rule, not the engine's.
 
-| Field | Example |
-|---|---|
-| baseUrl | `https://api.deepseek.com` |
-| model | `deepseek-flash` |
-| apiKey | `sk-...` |
+Models are **pick-from-a-list**: you choose a provider and paste a key; the endpoint and model name come from the preset — so "wrong endpoint, wrong model name" is not your problem.
 
-The key lives only in your own browser's localStorage. It is not sent anywhere else.
+| | Currently | Endpoint and model it uses |
+|---|---|---|
+| **Text model** | DeepSeek | `https://api.deepseek.com` · `deepseek-flash` |
+| **Image model** | MiniMax | `https://api.minimax.io/v1` · `image-01` |
+
+(The image one is not called by the engine yet; the configuration is simply kept there.)
+
+Both keys live only in your own browser's localStorage and are not sent anywhere else.
 
 **Want to see it first?** No key needed:
 
