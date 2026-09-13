@@ -1,5 +1,12 @@
 import { useAppStore } from './appStore'
-import { loadLlmSettings, loadProjectSettings, saveLlmSettings, saveProjectSettings } from './localSettings'
+import {
+  loadImageSettings,
+  loadLlmSettings,
+  loadProjectSettings,
+  saveImageSettings,
+  saveLlmSettings,
+  saveProjectSettings,
+} from './localSettings'
 import { loadWorkspace, saveWorkspace } from './workspacePersist'
 import { migrateWorkspace } from './migrate'
 import { seedDemoWorkspace } from '@/demo'
@@ -23,6 +30,7 @@ export async function bootstrap(options: BootstrapOptions = {}): Promise<void> {
   }
 
   store.setLlm(loadLlmSettings())
+  store.setImage(loadImageSettings())
   store.setProject(loadProjectSettings())
 
   const loaded = await loadWorkspace()
@@ -37,6 +45,7 @@ export async function bootstrap(options: BootstrapOptions = {}): Promise<void> {
   let timer: ReturnType<typeof setTimeout> | undefined
   useAppStore.subscribe((state, prev) => {
     if (state.llm !== prev.llm) saveLlmSettings(state.llm)
+    if (state.image !== prev.image) saveImageSettings(state.image)
     if (state.project !== prev.project) saveProjectSettings(state.project)
 
     const workspaceChanged =

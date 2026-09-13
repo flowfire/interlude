@@ -3654,3 +3654,56 @@ README 里那两段也跟着压短了（原来拆成"两个关键①②"，其�
 
 **效果**：截图确认 —— 原来垂直堆叠的六七块现在并成两栏，
 高度大约降到一半，左栏留给了真正要读的场景描述。
+
+---
+
+### 第六十四轮变更：模型改成「选项式」，并加上生图模型
+
+**用户的要求**：
+
+> 设置里多一个生图模型。是选项式的，目前只支持 minimax。也就是用户只能：
+> 选择使用的模型（目前只能选择 minimax），然后填入 api。
+> 文字模型也如此处理，目前只支持 deepseek。
+
+**为什么这个改法是对的**：原来让用户手填 `baseUrl` 和 `model`，等于把
+"端点拼错、模型名拼错"的风险丢给了用户 —— 而这恰恰是最容易错、也最难自查的地方。
+改成选服务商，这两项由预设决定，用户只需要提供一个 Key。
+
+**① 类型：两张预设表**
+
+```ts
+TEXT_PROVIDERS  = [{ id: 'deepseek', label: 'DeepSeek',
+                     baseUrl: 'https://api.deepseek.com', model: 'deepseek-flash' }]
+IMAGE_PROVIDERS = [{ id: 'minimax',  label: 'MiniMax',
+                     baseUrl: 'https://api.minimax.io/v1', model: 'image-01',
+                     endpoint: '/image_generation' }]
+```
+
+MiniMax 的端点和模型名是**查了官方文档**确认的：
+`POST https://api.minimax.io/v1/image_generation`，`model: "image-01"`
+（[Text to Image Generation](https://platform.minimax.io/docs/api-reference/image-generation-t2i)）。
+
+`LlmSettings` 保留 `baseUrl` / `model` 两个字段（客户端仍要用），但**界面上不再让用户
+填** —— 选服务商时自动带上。这样客户端一行都不用改。
+
+**② 老数据迁移**
+
+加入"选服务商"之前存下的 localStorage 记录里没有 `provider`，而 `baseUrl` / `model`
+可能是用户手填的。`loadLlmSettings` 里加了一段：provider 不认识时**用预设覆盖**
+`baseUrl` / `model` —— 否则会出现"界面显示 A 家、请求打到 B 家"这种最难查的状态。
+
+**③ 生图设置**
+
+`ImageSettings { provider, apiKey }`，独立的 localStorage 键和独立的 store 字段
+（`image` / `setImage`）。设置面板里单独一区，hint 里如实写明
+**引擎暂时还没有调用它** —— 配置先放着，接入时直接用。
+
+**④ 思考模式开关的判断条件**
+
+从 `isDeepSeekModel(llm.model)` 改成 `llm.provider === 'deepseek'` ——
+现在模型名由服务商决定，直接看服务商更准确。
+
+**测试**：新增 `tests/providers.spec.ts` 四条 —— 文字模型目前只有 DeepSeek、
+生图模型目前只有 MiniMax 且端点/模型名/接口路径对得上、未知 id 退回第一家
+（不会得到 undefined）、默认配置可以直接用。
+两份 README 的配置段改成表格（文字模型 / 生图模型各自一行）。

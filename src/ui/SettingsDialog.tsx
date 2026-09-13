@@ -2,11 +2,18 @@ import { useState } from 'react'
 import { explainLlmError, formatAdvice } from '@/engine/llm/errors'
 import { llmClient } from '@/engine/llm/instance'
 import { useAppStore } from '@/store/appStore'
-import { isDeepSeekModel } from '@/types/settings'
+import {
+  IMAGE_PROVIDERS,
+  TEXT_PROVIDERS,
+  findImageProvider,
+  findTextProvider,
+} from '@/types/settings'
 
 export default function SettingsDialog() {
   const llm = useAppStore((state) => state.llm)
   const project = useAppStore((state) => state.project)
+  const image = useAppStore((state) => state.image)
+  const setImage = useAppStore((state) => state.setImage)
   const setLlm = useAppStore((state) => state.setLlm)
   const setProject = useAppStore((state) => state.setProject)
   const setSettingsOpen = useAppStore((state) => state.setSettingsOpen)
@@ -58,18 +65,28 @@ export default function SettingsDialog() {
         </div>
 
         <div className="modal-body">
-          <h3 className="panel-title">模型接口（OpenAI 兼容）</h3>
+          <h3 className="panel-title">文字模型</h3>
 
           <div className="field">
-            <label>接口地址 baseUrl</label>
-            <input
-              className="input"
-              value={llm.baseUrl}
-              placeholder="https://api.deepseek.com"
-              onChange={(event) => setLlm({ baseUrl: event.target.value })}
-            />
+            <label>模型服务商</label>
+            <select
+              className="select"
+              value={llm.provider}
+              onChange={(event) => {
+                const preset = findTextProvider(event.target.value)
+                // 端点和模型名跟着服务商走 —— 不让用户手填，就不会填错
+                setLlm({ provider: preset.id, baseUrl: preset.baseUrl, model: preset.model })
+              }}
+            >
+              {TEXT_PROVIDERS.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.label}
+                </option>
+              ))}
+            </select>
             <span className="hint">
-              填到 /v1 为止即可，会自动拼 /chat/completions。DeepSeek、OpenAI、Kimi、Ollama、各类中转站都适用。
+              目前只支持 {TEXT_PROVIDERS.map((item) => item.label).join('、')}。
+              端点和模型名（{findTextProvider(llm.provider).model}）由它决定，不用你填。
             </span>
           </div>
 
@@ -83,68 +100,6 @@ export default function SettingsDialog() {
               onChange={(event) => setLlm({ apiKey: event.target.value })}
             />
             <span className="hint">只保存在你自己浏览器的 localStorage 里，不会发往任何第三方服务器。</span>
-          </div>
-
-          <div className="field">
-            <label>模型名</label>
-            <input
-              className="input"
-              value={llm.model}
-              placeholder="deepseek-flash"
-              onChange={(event) => setLlm({ model: event.target.value })}
-            />
-          </div>
-
-          <div className="row-2">
-            <div className="field">
-              <label>拆解温度（越低越稳定）</label>
-              <input
-                className="input"
-                type="number"
-                step="0.05"
-                min="0"
-                max="2"
-                value={llm.temperaturePrecise}
-                onChange={(event) => setLlm({ temperaturePrecise: Number(event.target.value) })}
-              />
-            </div>
-            <div className="field">
-              <label>扮演温度（越高越有发挥）</label>
-              <input
-                className="input"
-                type="number"
-                step="0.05"
-                min="0"
-                max="2"
-                value={llm.temperatureCreative}
-                onChange={(event) => setLlm({ temperatureCreative: Number(event.target.value) })}
-              />
-            </div>
-          </div>
-
-          <div className="row-2">
-            <div className="field">
-              <label>并发上限</label>
-              <input
-                className="input"
-                type="number"
-                min="1"
-                max="16"
-                value={llm.maxConcurrency}
-                onChange={(event) => setLlm({ maxConcurrency: Math.max(1, Number(event.target.value) || 1) })}
-              />
-            </div>
-            <div className="field">
-              <label>超时（毫秒）</label>
-              <input
-                className="input"
-                type="number"
-                min="5000"
-                step="1000"
-                value={llm.timeoutMs}
-                onChange={(event) => setLlm({ timeoutMs: Math.max(5000, Number(event.target.value) || 60000) })}
-              />
-            </div>
           </div>
 
           <div className="field">
@@ -164,7 +119,7 @@ export default function SettingsDialog() {
             </span>
           </div>
 
-          {isDeepSeekModel(llm.model) ? (
+          {llm.provider === 'deepseek' ? (
             <>
               <div className="field">
                 <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -208,6 +163,43 @@ export default function SettingsDialog() {
               {testing ? '测试中…' : '测试连接'}
             </button>
             {testResult ? <span className="hint">{testResult}</span> : null}
+          </div>
+
+          <div className="divider" />
+
+          <h3 className="panel-title">生图模型</h3>
+
+          <div className="field">
+            <label>模型服务商</label>
+            <select
+              className="select"
+              value={image.provider}
+              onChange={(event) => setImage({ provider: event.target.value })}
+            >
+              {IMAGE_PROVIDERS.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.label}
+                </option>
+              ))}
+            </select>
+            <span className="hint">
+              目前只支持 {IMAGE_PROVIDERS.map((item) => item.label).join('、')}。
+              模型名（{findImageProvider(image.provider).model}）和接口地址由它决定。
+            </span>
+          </div>
+
+          <div className="field">
+            <label>API Key</label>
+            <input
+              className="input"
+              type="password"
+              value={image.apiKey}
+              placeholder="..."
+              onChange={(event) => setImage({ apiKey: event.target.value })}
+            />
+            <span className="hint">
+              同样是本地保存。引擎暂时还没有用到它 —— 配置先放在这儿，接入的时候直接用。
+            </span>
           </div>
 
           <div className="divider" />

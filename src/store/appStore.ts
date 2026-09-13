@@ -17,6 +17,7 @@ import {
 import type { Segment } from '@/types/segment'
 import { makeId } from '@/utils/id'
 import { nowIso } from '@/utils/time'
+import { DEFAULT_IMAGE_SETTINGS, type ImageSettings } from '@/types/settings'
 import {
   DEFAULT_COMPOSER_STATE,
   loadComposerState,
@@ -56,6 +57,9 @@ export interface AppState extends WorkspaceSnapshot {
   setComposer: (patch: Partial<ComposerState>) => void
 
   setLlm: (patch: Partial<LlmSettings>) => void
+  /** 生图模型（引擎暂时还没用它，配置先存着） */
+  image: ImageSettings
+  setImage: (patch: Partial<ImageSettings>) => void
   setProject: (patch: Partial<ProjectSettings>) => void
   setSettingsOpen: (open: boolean) => void
   setInspector: (stepId: string | null) => void
@@ -121,6 +125,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   steps: {},
   ledger: [],
   llm: { ...DEFAULT_LLM_SETTINGS },
+  image: { ...DEFAULT_IMAGE_SETTINGS },
   project: { ...DEFAULT_PROJECT_SETTINGS },
   // 初始化时就把上次的勾选读回来（测试 / SSR 环境没有 localStorage，退回默认）
   composer: typeof localStorage === 'undefined' ? { ...DEFAULT_COMPOSER_STATE } : loadComposerState(),
@@ -169,6 +174,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   setLlm: (patch) => set((state) => ({ llm: { ...state.llm, ...patch } })),
+  setImage: (patch) => set((state) => ({ image: { ...state.image, ...patch } })),
   setProject: (patch) => set((state) => ({ project: { ...state.project, ...patch } })),
   setSettingsOpen: (settingsOpen) => set({ settingsOpen }),
   setInspector: (inspectorStepId) => set({ inspectorStepId }),

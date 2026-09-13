@@ -1,14 +1,19 @@
 import {
+  DEFAULT_IMAGE_SETTINGS,
   DEFAULT_LLM_SETTINGS,
   DEFAULT_PROJECT_SETTINGS,
+  type ImageSettings,
   type LlmSettings,
   type ProjectSettings,
+  TEXT_PROVIDERS,
+  findTextProvider,
 } from '@/types/settings'
 import type { ContentRating } from '@/types/step'
 
 const LLM_KEY = 'interlude.llm'
 const PROJECT_KEY = 'interlude.project'
 const COMPOSER_KEY = 'interlude.composer'
+const IMAGE_KEY = 'interlude.image'
 
 /** 输入区上的一些选择，跨刷新记住 */
 export interface ComposerState {
@@ -43,8 +48,28 @@ function writeJson(key: string, value: unknown): void {
   }
 }
 
+export function loadImageSettings(): ImageSettings {
+  const raw = readJson(IMAGE_KEY) as Partial<ImageSettings> | null
+  return { ...DEFAULT_IMAGE_SETTINGS, ...(raw ?? {}) }
+}
+
+export function saveImageSettings(settings: ImageSettings): void {
+  writeJson(IMAGE_KEY, settings)
+}
+
 export function loadLlmSettings(): LlmSettings {
-  return { ...DEFAULT_LLM_SETTINGS, ...(readJson<LlmSettings>(LLM_KEY) ?? {}) }
+  const saved = readJson<Partial<LlmSettings>>(LLM_KEY) ?? {}
+  const known = TEXT_PROVIDERS.some((item) => item.id === saved.provider)
+  // 加入「选服务商」之前存下的老数据没有 provider，端点和模型名可能是手填的 ——
+  // 这时候用预设覆盖掉，免得界面显示 A 家、请求却打到 B 家
+  const preset = known ? findTextProvider(saved.provider ?? '') : TEXT_PROVIDERS[0]
+  return {
+    ...DEFAULT_LLM_SETTINGS,
+    ...saved,
+    provider: preset.id,
+    baseUrl: preset.baseUrl,
+    model: preset.model,
+  }
 }
 
 export function saveLlmSettings(settings: LlmSettings): void {

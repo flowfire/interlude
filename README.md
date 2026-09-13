@@ -176,13 +176,16 @@ npm run dev
 
 顺带一提：DeepSeek 在思考模式下会忽略 `temperature`，这是它的规定，不是引擎的问题。
 
-| 字段 | 例子 |
-|---|---|
-| baseUrl | `https://api.deepseek.com` |
-| model | `deepseek-flash` |
-| apiKey | `sk-...` |
+模型是**选项式**的：你只选服务商、填 Key，端点和模型名由它决定——"端点写错、模型名写错"这类问题就不用你操心了。
 
-Key 只存在你自己浏览器的 localStorage 里，不会发给任何第三方。
+| | 目前支持 | 它会用的端点与模型 |
+|---|---|---|
+| **文字模型** | DeepSeek | `https://api.deepseek.com` · `deepseek-flash` |
+| **生图模型** | MiniMax | `https://api.minimax.io/v1` · `image-01` |
+
+（生图那一项引擎暂时还没调用，配置先放在那儿。）
+
+两个 Key 都只存在你自己浏览器的 localStorage 里，不会发给任何第三方。
 
 **想先看看长什么样？** 不用配 Key，直接打开：
 

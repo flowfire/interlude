@@ -1,8 +1,77 @@
+/**
+ * 可选的文字模型服务商。
+ *
+ * 只列引擎**真的验证过**的那几家 —— 让用户选服务商而不是手填 baseUrl/model，
+ * 是为了不把"端点写错、模型名写错"这类问题丢给用户。要加新的就加一条。
+ */
+export interface TextProviderPreset {
+  id: string
+  label: string
+  baseUrl: string
+  model: string
+}
+
+export const TEXT_PROVIDERS: TextProviderPreset[] = [
+  {
+    id: 'deepseek',
+    label: 'DeepSeek',
+    baseUrl: 'https://api.deepseek.com',
+    model: 'deepseek-flash',
+  },
+]
+
+/**
+ * 可选的生图模型服务商。
+ *
+ * 引擎目前还没有调用它 —— 配置先放在这儿，接入的时候直接用。
+ */
+export interface ImageProviderPreset {
+  id: string
+  label: string
+  baseUrl: string
+  model: string
+  /** 生成接口的相对路径 */
+  endpoint: string
+}
+
+export const IMAGE_PROVIDERS: ImageProviderPreset[] = [
+  {
+    id: 'minimax',
+    label: 'MiniMax',
+    baseUrl: 'https://api.minimax.io/v1',
+    model: 'image-01',
+    endpoint: '/image_generation',
+  },
+]
+
+export function findTextProvider(id: string): TextProviderPreset {
+  return TEXT_PROVIDERS.find((item) => item.id === id) ?? TEXT_PROVIDERS[0]
+}
+
+export function findImageProvider(id: string): ImageProviderPreset {
+  return IMAGE_PROVIDERS.find((item) => item.id === id) ?? IMAGE_PROVIDERS[0]
+}
+
+/** 生图模型的配置 */
+export interface ImageSettings {
+  /** 服务商 id，见 IMAGE_PROVIDERS */
+  provider: string
+  apiKey: string
+}
+
+export const DEFAULT_IMAGE_SETTINGS: ImageSettings = {
+  provider: IMAGE_PROVIDERS[0].id,
+  apiKey: '',
+}
+
 /** 模型接口配置 */
 export interface LlmSettings {
+  /** 服务商 id，见 TEXT_PROVIDERS —— 用户在界面上只选这个 */
+  provider: string
+  /** 由服务商决定；保留在设置里是因为客户端要用，但界面上不让手填 */
   baseUrl: string
-  apiKey: string
   model: string
+  apiKey: string
   /** 拆解 / 编排这类需要稳定的任务 */
   temperaturePrecise: number
   /** 角色扮演这类需要发挥的任务 */
@@ -61,9 +130,10 @@ export interface ProjectSettings {
 }
 
 export const DEFAULT_LLM_SETTINGS: LlmSettings = {
-  baseUrl: 'https://api.deepseek.com',
+  provider: TEXT_PROVIDERS[0].id,
+  baseUrl: TEXT_PROVIDERS[0].baseUrl,
+  model: TEXT_PROVIDERS[0].model,
   apiKey: '',
-  model: 'deepseek-flash',
   temperaturePrecise: 0.2,
   temperatureCreative: 0.85,
   maxConcurrency: 4,
