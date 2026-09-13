@@ -202,7 +202,7 @@ describe('局面推进：世界自己会往前走', () => {
     // 三层定位
     expect(system.content).toContain('必须被采纳')
     expect(system.content).toContain('不要把决定权让出去')
-    expect(system.content).toContain('他们只负责演')
+    expect(system.content).toContain('他们也会自己推动剧情')
     // 派任务是本职，不限于僵局
     expect(system.content).toContain('每一轮都可以派，不是只有僵局才派')
     expect(system.content).toContain('用户扮演的角色永远不在名单里')
@@ -388,7 +388,7 @@ describe('角色得有自己的驱动力', () => {
   it('不再强迫角色开口说话', () => {
     const [system] = buildRoleplayMessages({ bundle: bundle(), project: DEFAULT_PROJECT_SETTINGS })
     expect(system.content).not.toContain('至少要说一句话')
-    expect(system.content).toContain('不是编剧')
+    expect(system.content).toContain('骨架，不是笼子')
     // 角色该去处理真正要紧的事，而不是回头指挥用户
     expect(system.content).toContain('如果真正该做的是动手，那就动手')
   })

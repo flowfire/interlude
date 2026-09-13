@@ -154,16 +154,21 @@ describe('交棒是只有导演知道的 meta 信息', () => {
 })
 
 describe('角色是演员，导演才是导演', () => {
-  it('system 里写死了「你不是编剧」', () => {
+  it('演员也能推动剧情，不只演导演给的那部分', () => {
     const [system] = buildRoleplayMessages({ bundle: bundle(), project: DEFAULT_PROJECT_SETTINGS })
-    expect(system.content).toContain('不是编剧')
-    expect(system.content).toContain('按这个人的性格，把分到你的部分演出来')
-    expect(system.content).toContain('不要替导演做决定')
+    expect(system.content).toContain('按这个人的性格，把这一轮演出来')
+    // 导演给的是骨架不是笼子
+    expect(system.content).toContain('骨架，不是笼子')
+    expect(system.content).toContain('你完全可以推动剧情')
+    expect(system.content).toContain('下一轮导演会接着处理')
+    // 但别人的事仍然不归他
+    expect(system.content).toContain('你自己的决定不用等谁来批准')
   })
 
   it('任务说明要求演出一个具体的人，而不是推动剧情', () => {
     const user = buildRoleplayMessages({ bundle: bundle(), project: DEFAULT_PROJECT_SETTINGS })[1].content
     expect(user).toContain('把这一轮演出来')
+    expect(user).toContain('想推动什么就推动什么')
     expect(user).toContain('让熟悉他的人一眼认出这就是他')
   })
 })
