@@ -650,7 +650,15 @@ export async function runFullRound(ctx: PipelineContext): Promise<FullRoundResul
 }
 
 async function runFullRoundInner(ctx: PipelineContext): Promise<FullRoundResult> {
-  let steps: StepIndex = { ...ctx.steps }
+  // **整轮跑 = 重新建一套步骤。**
+  // 这里主动把这一轮已有的旧步骤丢掉 —— 每个阶段都是 `createStep` 新建的，
+  // 不清就会在旧步骤旁边再建一遍，`mergeSteps` 一合并、进度表里就出现两套
+  // （用户看到过「第 8 轮 17 步」：两遍「规范化/拆解/场景构建/…」）。
+  //
+  // 这件事**不该指望调用方记得做** —— 放在这里，从哪条路进来都不会重复。
+  let steps: StepIndex = Object.fromEntries(
+    Object.entries(ctx.steps).filter(([, step]) => step.roundId !== ctx.round.id),
+  )
   const ledger = ctx.ledger
   const emit = () => ctx.onUpdate?.(steps, ledger)
 

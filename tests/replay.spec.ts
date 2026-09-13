@@ -214,3 +214,57 @@ describe('从这一轮重演', () => {
     expect(h.calls.some((label) => label.startsWith('roleplay:'))).toBe(true)
   })
 })
+
+describe('半截的轮次重演之后不会留下两套步骤', () => {
+  it('整轮重跑会先清掉旧的半截步骤 —— 进度表里不能出现两遍', async () => {
+    const { r2 } = await seedThreeRounds()
+
+    // 模拟"上次跑到一半断了"：把 perceive 之后的步骤全删掉，
+    // 只留前面那几步（这正是用户遇到的样子）
+    const store = useAppStore.getState()
+    const keep = new Set(['normalize', 'segment', 'scene', 'exposure', 'cast', 'situation'])
+    const trimmed: Record<string, (typeof store.steps)[string]> = {}
+    for (const [id, step] of Object.entries(store.steps)) {
+      if (step.roundId !== r2.id || keep.has(step.stage)) trimmed[id] = step
+    }
+    useAppStore.setState({ steps: trimmed })
+    const before = stepsOf(r2.id).length
+
+    await replayFromRound(r2.id)
+
+    const after = stepsOf(r2.id)
+    // 重演之后每一阶段只该出现一次
+    const stages = after.map((step) => step.stage)
+    expect(new Set(stages).size, `阶段有重复：${stages.join(',')}`).toBe(stages.length)
+    expect(after.length).toBeGreaterThan(before)
+    // 而且真的跑全了
+    expect(stages).toContain('compose')
+    expect(stages).toContain('roleplay')
+  })
+})
+
+describe('整轮跑自己负责去重', () => {
+  it('即使调用方忘了清，runFullRound 也不会留下两套步骤', async () => {
+    const { r2 } = await seedThreeRounds()
+    const { runFullRound } = await import('@/engine/pipeline')
+    const { llmClient } = await import('@/engine/llm/instance')
+
+    const store = useAppStore.getState()
+    const before = stepsOf(r2.id).length
+    expect(before).toBeGreaterThan(0)
+
+    // 故意**不**清理，直接带着旧步骤再跑一整轮
+    const round = store.rounds.find((item) => item.id === r2.id)!
+    await runFullRound({
+      client: llmClient,
+      project: store.project,
+      round,
+      rounds: store.rounds,
+      steps: store.steps,
+      ledger: store.ledger,
+    })
+
+    const stages = stepsOf(r2.id).map((step) => step.stage)
+    expect(new Set(stages).size, `阶段有重复：${stages.join(',')}`).toBe(stages.length)
+  })
+})
