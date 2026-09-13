@@ -102,8 +102,10 @@ textarea {
 .scene-backdrop.on {
   opacity: 0.22;
 }
-/* 内容浮在背景之上；两个背景层自己除外 */
-.app > *:not(.scene-backdrop) {
+/* 内容浮在背景之上；两个背景层自己除外。
+   这里必须用 :where() 把优先级压回 (0,1,0) —— 写成 `.app > *:not(...)` 是
+   (0,2,0)，会盖过 .modal-mask 自己的 position: fixed，弹窗就不再浮起来了。 */
+.app > *:where(:not(.scene-backdrop)) {
   position: relative;
   z-index: 1;
 }
