@@ -144,18 +144,18 @@ describe('导演可以宣告成人向收尾', () => {
   it('连着几轮成人向，成绩单上的轮数会累加', async () => {
     await freshWorkspace()
     await runR18Round('第一轮：我把门关上了。')
-    expect(h.situationPrompts.at(-1)).toContain('已经第 1 轮了')
+    expect(h.situationPrompts.at(-1)).toContain('成人向已连着 1 轮')
 
     await runR18Round('第二轮：我坐下了。')
     console.log('HINT >>>', (h.situationPrompts.at(-1) ?? '').match(/已经第 \d+ 轮了/)?.[0])
-    expect(h.situationPrompts.at(-1)).toContain('已经第 2 轮了')
+    expect(h.situationPrompts.at(-1)).toContain('成人向已连着 2 轮')
     expect(h.situationPrompts.at(-1)).toContain('其中 2 轮')
 
     // 中间断一轮普通分级，计数就该断
     const plain = useAppStore.getState().newRound('第三轮：我只是坐着。', 'general')
     await runRoundFor(plain.id)
     await runR18Round('第四轮：我又把门关上了。')
-    expect(h.situationPrompts.at(-1)).toContain('已经第 1 轮了')
+    expect(h.situationPrompts.at(-1)).toContain('成人向已连着 1 轮')
   })
 
   it('压力计数会写进产物里 —— 页面上那个数字得有来源', async () => {

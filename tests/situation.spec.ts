@@ -183,13 +183,13 @@ describe('局面推进：世界自己会往前走', () => {
     const [r18] = buildSituationMessages({ ...base, rating: 'r18' })
     expect(r18.content).toContain('【本轮分级：成人向】')
     // 落到导演的职责上：他能安排的是场面与剧情
-    expect(r18.content).toContain('摸、亲、脱、按，都可以直接写')
+    expect(r18.content).toContain('摸、亲、脱、按，都写出来')
     // 三条底线一条不少
-    expect(r18.content).toContain('人设不变')
-    expect(r18.content).toContain('推进必须符合关系阶段')
-    expect(r18.content).toContain('身体的边界是用户的，不是你的')
+    expect(r18.content).toContain('人设的**底**不变')
+    expect(r18.content).toContain('关系不凭空跳到')
+    expect(r18.content).toContain('身体边界是用户的，不归你决定')
     // 导演手里还有刹车：写完了要能宣告收尾，否则会一路挂着
-    expect(r18.content).toContain('成人向什么时候结束')
+    expect(r18.content).toContain('【什么时候收尾】')
     expect(r18.content).toContain('自动退出成人向模式')
     expect(r18.content).toContain('也不要永远不结束')
 
@@ -216,6 +216,38 @@ describe('局面推进：世界自己会往前走', () => {
     expect(system.content).toContain('用户扮演的角色永远不在名单里')
   })
 
+  it('按轮次直接下命令 —— 第几轮就必须做到什么，没有商量余地', () => {
+    const base = {
+      storyTitle: '测试',
+      pcName: '我',
+      doc: normalizeInput('我把门关上了。'),
+      segments: [],
+      sceneSetup: setup,
+      drives: [],
+      rating: 'r18' as const,
+    }
+    const system = (streak: number, direct: boolean) =>
+      buildSituationMessages({
+        ...base,
+        direct,
+        r18Streak: streak,
+        directStreak: direct ? streak : 0,
+      })[0].content
+
+    // 普通成人向：一轮一个台阶，到点就必须做
+    expect(system(1, false)).toContain('这一轮要出现**明确的欲望**')
+    expect(system(2, false)).toContain('必须有实质的身体接触')
+    expect(system(3, false)).toContain('必须进入性行为')
+    expect(system(4, false)).toContain('你已经超期了')
+    expect(system(5, false)).toContain('没有第三条路')
+
+    // 快速入戏：标准更硬，第一轮就要到位
+    expect(system(1, true)).toContain('这一轮直接开始做爱')
+    expect(system(1, true)).toContain('不是铺垫，不是前戏')
+    expect(system(2, true)).toContain('必须已经在做，或者已经做完')
+    expect(system(3, true)).toContain('还在铺垫，就是失败')
+  })
+
   it('成人向拖了几轮会写进导演的成绩单，轮数越多越难看', () => {
     const base = {
       storyTitle: '测试',
@@ -228,22 +260,18 @@ describe('局面推进：世界自己会往前走', () => {
     }
 
     const first = buildSituationMessages({ ...base, r18Streak: 1, directStreak: 0 })[0].content
-    expect(first).toContain('已经第 1 轮了')
-    expect(first).toContain('第 1 轮：可以从容安排')
+    expect(first).toContain('成人向已连着 1 轮')
+    expect(first).toContain('这一轮要出现**明确的欲望**')
 
     const late = buildSituationMessages({ ...base, r18Streak: 5, directStreak: 3 })[0].content
-    expect(late).toContain('已经第 5 轮了')
-    // 三个阶段各自有名字，导演才知道自己在哪一段
-    expect(late).toContain('阶段一：进入')
-    expect(late).toContain('阶段二：实质动作')
-    expect(late).toContain('阶段三：决定要不要继续')
-    // 进不去才是失职；进去了不催
-    expect(late).toContain('这是失职')
-    expect(late).toContain('没人催你')
-    // 成绩单里也点明了要先判断「开始了没有」
-    expect(late).toContain('这件事开始了没有')
-    // 退出终究要有个头，但压力比进入小
-    expect(late).toContain('第 10 轮以后：该收尾了')
+    // 第 5 轮：直接下命令，不再讲道理
+    expect(late).toContain('成人向已连着 5 轮')
+    expect(late).toContain('你已经超期了')
+    expect(late).toContain('没有第三条路')
+    // 判断标准只有一个，而且明确点破哪些借口不算理由
+    expect(late).toContain('判断标准只有一个')
+    expect(late).toContain('都不算理由')
+    expect(late).toContain('时机未到 · 气氛差一点')
   })
 
   it('导演知道最近几轮的节奏，用来判断该不该收场', () => {

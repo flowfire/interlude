@@ -194,31 +194,31 @@ describe('R18 分级', () => {
     }
 
     const on = buildSituationMessages({ ...base, rating: 'r18', direct: true })[0].content
-    expect(on).toContain('快速入戏 —— 用最短的路让他们做爱')
-    expect(on).toContain('别再一轮一轮磨了')
+    expect(on).toContain('【快速入戏】')
+    expect(on).toContain('尽快看到他们做爱')
     // act 要写明确的性进展，而不是含糊带过
-    expect(on).toContain('明确的性行为')
-    expect(on).toContain('谁对谁做了什么')
+    expect(on).toContain('性器官要写出来')
+    expect(on).toContain('过程要写出来')
     // 用词直白（用户要求：有必要就必须明确告知）
     expect(on).toContain('操、肏、屌、逼')
     expect(on).toContain('不许用这些糊过去')
     // 理由必须建立在已经发生过的事上，不是随便挑一个转折点
     expect(on).toContain('为什么是此刻')
-    expect(on).toContain('放在任何一轮都成立')
+    expect(on).toContain('放哪儿都成立的话')
     // 这一轮的第一要务是推进成人向，不是"随便推进一点剧情"
     expect(on).toContain('第一要务')
-    expect(on).toContain('你不是在"随便推进一点剧情"，你是在把这两个人推向性')
-    expect(on).toContain('跑题 = 失职')
+    expect(on).toContain('第一要务就是这件事')
+    expect(on).toContain('一样都不许跑题')
     // reason 必须是"性内容能往前一步"的理由，不能是跑题的剧情转折
-    expect(on).toContain('为什么这一轮他们之间的性内容能往前一步')
-    expect(on).toContain('那是剧情推进')
+    expect(on).toContain('为什么是此刻他们能往前一步')
+    expect(on).toContain('都不算理由')
     // events 也不许写跟性无关的东西
-    expect(on).toContain('不要写跟性无关的世界事件')
-    expect(on).toContain('让它成为理由 —— 然后再进')
+    expect(on).toContain('不要拿一场跟性无关的冲突来"推进剧情"')
+    expect(on).toContain('做不到就在 holdUp 里承认卡住了')
     // 光给词表不够，得给密度示范
     expect(on).toContain('性器官要写出来')
-    expect(on).toContain('不要跳步')
-    expect(on).toContain('一段合格的 act 长这样')
+    expect(on).toContain('不许跳步')
+    expect(on).toContain('一段合格的 act**（照这个密度写')
     expect(on).toContain('回避就是没完成工作')
     // 快速入戏那一段里，「那件事」这类回避指代一次都不许出现
     const directHint = on.slice(on.indexOf('【快速入戏'))
@@ -226,17 +226,17 @@ describe('R18 分级', () => {
     // 含糊说法只允许出现在"不许用这些"的反例清单里
     expect((directHint.match(/融为一体/g) ?? []).length).toBe(1)
     expect(directHint).toContain('不许用这些糊过去')
-    expect(on).toContain('就得开始操')
+    expect(on).toContain('这一轮直接开始做爱')
     // 用户勾这个是为了保留期待感，不是为了让导演去猜他的口味
-    expect(on).toContain('具体怎么操由你决定')
+    expect(on).toContain('具体怎么做由你决定')
     expect(on).toContain('不要停下来揣测')
     // 压缩的是过程，不是逻辑：既不能跳戏，也不能拖
-    expect(on).toContain('把过程压缩成一步')
-    expect(on).toContain('这是跳戏')
-    expect(on).toContain('跨度极大，但每一步都接得上')
-    expect(on).toContain('别再一轮一轮磨了')
+    expect(on).toContain('压缩过程，不是跳过逻辑')
+    expect(on).toContain('这种断裂的写法不行')
+    expect(on).toContain('跨度可以极大')
+    expect(on).toContain('一样都不许跑题')
     // 判定标准要能量化，否则导演不知道做到没有
-    expect(on).toContain('这一轮结束时他们到哪一步了')
+    expect(on).toContain('有没有出现身体上的新进展')
     // 红线不松
     expect(on).toContain('用户扮演的角色一个字都不能替他写')
 
@@ -286,7 +286,7 @@ describe('R18 分级', () => {
     })
 
     expect(messages[0].content).toContain('成人向')
-    expect(messages[0].content).toContain('身体的边界是用户的，不是你的')
+    expect(messages[0].content).toContain('身体边界是用户的，不归你决定')
   })
 
   it('场景构建也会收到分级，但只放氛围、不动人物处境', () => {

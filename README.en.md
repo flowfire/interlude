@@ -229,14 +229,18 @@ R18 is not "flip a switch and the model talks dirty". **Every stage** of the eng
 
 **It is counted per round.** The "R18 mode" checkbox in the composer stays checked across reloads, but the rating itself lives on the **round** — so you can turn it on for this round and off for the next, independently. When reading back, the rounds that had it on carry a red marker on the divider.
 
-**The director carries a tempo map.** It gets a counter that is never shown in the UI — "how many rounds has the adult mode been running" — and paces itself against three stages:
+**Each round, the director receives an order, not a reminder.** The counter (how many rounds the adult mode has been running) goes straight into the prompt, and the instruction hardens by round:
 
-| Stage | Roughly | Pressure |
-|---|---|---|
-| **Getting in** | rounds 1–3 | highest. Still not in by round 3 is dragging; still not started after round 4 is a failure |
-| **The act itself** | rounds 4–6 | none. Follow the bodies and the mood, but every round should bring something new |
-| **Deciding whether to continue** | rounds 7–9 | lowest. Carry on (with a reason), move somewhere else, or close it out |
-| *(longer)* | 10+ | time to close, unless the scene genuinely still has something to give |
+| Round | What it is told it must do |
+|---|---|
+| 1 | Make the desire explicit: a gaze held too long, a line crossed, a touch that was not needed |
+| 2 | **Physical contact is mandatory** (kissing, touching, undressing — at least one, written concretely) |
+| 3 | **Sex has to start this round** |
+| 4 and beyond | **You are overdue**: either it is already happening (or just finished), or you close it out — **there is no third option** |
+
+With "straight into the scene" ticked, the bar is harder: **round 1 starts it outright**, and from round 2 it must already be under way or over.
+
+The test narrows to one sentence too: **did anything new happen between their bodies this round.** If not, the round failed, however lively the plot was. And excuses like "the time is not right", "the mood is not quite there" and "someone came by" are **listed in the prompt as not counting as reasons**.
 
 **Pressure to get in is high; pressure to get out is low** — that is deliberate.
 
