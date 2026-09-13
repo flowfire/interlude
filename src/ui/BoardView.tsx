@@ -3,7 +3,7 @@ import { useAppStore } from '@/store/appStore'
 import { isRoundStalled } from '@/utils/r18'
 import { SEGMENT_KIND_LABEL, type Segment, type SegmentKind } from '@/types/segment'
 import { SCENE_MODE_LABEL, type SceneSetup } from '@/types/scene'
-import { RATING_LABEL, type ContentRating, type Round } from '@/types/step'
+import { RATING_LABEL, type ContentRating, type Round, type Step } from '@/types/step'
 import { isRoundDraftDirty } from '@/utils/roundDraft'
 import {
   getComposeOfRound,
@@ -56,11 +56,7 @@ function demoParam(): string | null {
  * 现在只有一条，位置固定，**内容随当前场景更新**：场景没变时它纹丝不动，
  * 真的换了场景才刷新一次。
  */
-function SceneBar({ firstRoundId }: { firstRoundId: string }) {
-  const activeRoundId = useAppStore((state) => state.sceneRoundId)
-  // 还没滚到任何一轮（第一段剧情之前）→ 用第一轮 —— 它就是要进入的那个场景。
-  // 和背景取图的规则保持一致。
-  const sceneRoundId = activeRoundId ?? firstRoundId
+function SceneCard({ sceneRoundId }: { sceneRoundId: string }) {
   const steps = useAppStore((state) => state.steps)
   const sceneImages = useAppStore((state) => state.sceneImages)
   const busy = useAppStore((state) => state.sceneImageBusy) === sceneRoundId
@@ -70,14 +66,13 @@ function SceneBar({ firstRoundId }: { firstRoundId: string }) {
   const detailsRef = useRef<HTMLDetailsElement>(null)
 
   const setup = useMemo(() => {
-    if (!sceneRoundId) return null
     const step = Object.values(steps).find(
       (item) => item.roundId === sceneRoundId && item.stage === 'scene' && item.status === 'done',
     )
     return (step?.output as SceneSetup | undefined) ?? null
   }, [steps, sceneRoundId])
 
-  const sceneImage = sceneRoundId ? (sceneImages[sceneRoundId] ?? '') : ''
+  const sceneImage = sceneImages[sceneRoundId] ?? ''
 
   // 换了场景就重算开合：有图默认收起（有图就能脑补环境，描述不必再占着）
   useEffect(() => {
@@ -85,7 +80,7 @@ function SceneBar({ firstRoundId }: { firstRoundId: string }) {
     setImageError('')
   }, [sceneRoundId, sceneImage])
 
-  if (!setup || !sceneRoundId) return null
+  if (!setup) return null
 
   const generate = async () => {
     setImageError('')
@@ -111,7 +106,7 @@ function SceneBar({ firstRoundId }: { firstRoundId: string }) {
   }
 
   return (
-    <details className="scene-card" ref={detailsRef} open>
+    <details className="scene-card" ref={detailsRef} data-scene-card data-round-id={sceneRoundId} open>
       <summary className="scene-card-head">
         <span className="scene-label">场面</span>
         {setup.time ? <span className="scene-chip">{setup.time}</span> : null}
@@ -525,6 +520,28 @@ export default function BoardView() {
     .sort((a, b) => a.index - b.index)
 
   const bottomRef = useRef<HTMLDivElement>(null)
+  const steps = useAppStore((state) => state.steps)
+
+  /**
+   * 按**场景**把轮次分组 —— UI 的单位是场景，不是轮次。
+   *
+   * 轮次只是内容上的分段；同一个人待在同一个地方的那几轮，在界面上属于同一个
+   * 场景，共用一张卡。沿用了上一个场景的轮次并进上一组，不新开卡。
+   * 这样"卡被顶上来"只在真的换场景时发生。
+   */
+  const sceneGroups = useMemo(() => {
+    const groups: { sceneRoundId: string; rounds: Round[] }[] = []
+    for (const round of rounds) {
+      const sceneStep = Object.values(steps).find(
+        (item: Step) => item.roundId === round.id && item.stage === 'scene' && item.status === 'done',
+      )
+      const setup = sceneStep?.output as SceneSetup | undefined
+      if (!setup) continue
+      if (setup.unchanged && groups.length) groups[groups.length - 1].rounds.push(round)
+      else groups.push({ sceneRoundId: round.id, rounds: [round] })
+    }
+    return groups
+  }, [rounds, steps])
   const lastCount = useRef(rounds.length)
 
   // 新的一轮出现时滑到它那里
@@ -555,14 +572,21 @@ export default function BoardView() {
         <h2>{session?.title ?? '对话'}</h2>
         <span className="hint">{rounds.length} 轮</span>
       </div>
-      <SceneBar firstRoundId={rounds[0]?.id ?? ''} />
-      {rounds.map((round, index) => (
-        <RoundBlock
-          key={round.id}
-          round={round}
-          isLast={index === rounds.length - 1}
-          demo={demoParam()}
-        />
+      {sceneGroups.map((group) => (
+        // 一个场景 = 一张卡 + 它覆盖的那些轮次。
+        // 卡 sticky 在**这一组**里，所以它从场景开始一直粘到下一个场景出现，
+        // 中途不会因为"换了一轮"就被推走 —— 只有真的换了场景，下一张卡才顶上来。
+        <div className="scene-group" key={group.sceneRoundId}>
+          <SceneCard sceneRoundId={group.sceneRoundId} />
+          {group.rounds.map((round) => (
+            <RoundBlock
+              key={round.id}
+              round={round}
+              isLast={round.id === rounds[rounds.length - 1]?.id}
+              demo={demoParam()}
+            />
+          ))}
+        </div>
       ))}
       <div ref={bottomRef} />
     </div>

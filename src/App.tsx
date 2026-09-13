@@ -53,24 +53,19 @@ export default function App() {
     const update = () => {
       timer = undefined
       const box = scroller.getBoundingClientRect()
-      const blocks = scroller.querySelectorAll<HTMLElement>('[data-round-block]')
+      const blocks = scroller.querySelectorAll<HTMLElement>('[data-scene-card]')
 
-      // 取**最后一个已经滚过顶部的轮次**里、**带来过新场景**的那一轮。
+      // 取**最后一个已经滚过顶部的那张场景卡** —— 它代表当前所在的场景。
       //
-      // 为什么要"带来过新场景"这层过滤：沿用了上一个场景的轮次，场景本身仍然
-      // 属于更早那一轮 —— 顶部那条场面条和背景都该继续指着它，而不是跟着
-      // 轮次号往前跳。以前是每轮各渲染一张卡、靠 sticky 顶替，视觉上会看到
-      // "一张新卡被推上来"；现在只有一条卡，内容随场景更新。
+      // 卡的数量等于**场景数**（不是轮次数）：同一个场景覆盖好几轮时共用一张卡。
+      // 所以这里不需要任何"轮次"的概念，扫一遍卡就行。
       //
       // 30px 容差：sticky 实际钉住的位置受滚动容器 padding 影响，并不等于
       // CSS 里写的 top。
       let current: string | null = null
       for (const block of blocks) {
-        if (block.getBoundingClientRect().top - box.top <= 30) {
-          if (block.dataset.hasScene === '1') current = block.dataset.roundId ?? null
-        } else {
-          break
-        }
+        if (block.getBoundingClientRect().top - box.top <= 30) current = block.dataset.roundId ?? null
+        else break
       }
       const store = useAppStore.getState()
       if (store.sceneRoundId !== current) store.setSceneRoundId(current)
