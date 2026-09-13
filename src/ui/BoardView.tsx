@@ -169,6 +169,27 @@ function RoundBlock({ round, isLast, demo }: { round: Round; isLast: boolean; de
               {SCENE_MODE_LABEL[setup.inputMode]}
             </span>
             {!setup.usedModel ? <span className="chip">规则降级</span> : null}
+
+            {/* 生图按钮放在摘要行里：这张卡片必须尽可能矮，
+                任何新东西都得挤进已有的行，不能另起一行 */}
+            <button
+              className={`scene-image-btn${imageError ? ' error' : ''}`}
+              disabled={sceneImageBusy}
+              title={
+                imageError ||
+                (sceneImage
+                  ? '重新生成这个场面的图（吸顶时会铺成背景）'
+                  : '按这个场面的描写生成一张图，吸顶时铺成背景')
+              }
+              onClick={(event) => {
+                // 摘要行整行是开合开关，按钮不能把它一起触发
+                event.preventDefault()
+                event.stopPropagation()
+                void handleGenerateImage()
+              }}
+            >
+              {sceneImageBusy ? '生成中' : imageError ? '生图失败' : sceneImage ? '重新生图' : '生图'}
+            </button>
           </summary>
 
           {/* 吸顶 + 默认展开，所以高度要压住：左右两栏，
@@ -221,14 +242,6 @@ function RoundBlock({ round, isLast, demo }: { round: Round; isLast: boolean; de
               ) : null}
             </div>
           </div>
-
-            <div className="scene-image-row">
-              <button className="btn btn-sm" disabled={sceneImageBusy} onClick={() => void handleGenerateImage()}>
-                {sceneImageBusy ? '生成中…' : sceneImage ? '重新生图' : '生图'}
-              </button>
-              {sceneImage ? <span className="hint">吸顶时会作为背景显示</span> : null}
-              {imageError ? <span className="scene-image-error">{imageError}</span> : null}
-            </div>
           </details>
         </>
       ) : null}
