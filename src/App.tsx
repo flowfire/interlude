@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import TopBar from './ui/TopBar'
 import SessionList from './ui/SessionList'
 import InputBar from './ui/InputBar'
@@ -6,6 +7,7 @@ import StepHistoryPanel from './ui/StepHistoryPanel'
 import StepInspector from './ui/StepInspector'
 import SettingsDialog from './ui/SettingsDialog'
 import { useAppStore } from './store/appStore'
+import { pickBackdrop } from './utils/sceneBackdrop'
 
 export default function App() {
   const settingsOpen = useAppStore((state) => state.settingsOpen)
@@ -14,7 +16,19 @@ export default function App() {
   const setError = useAppStore((state) => state.setError)
   const busy = useAppStore((state) => state.busy)
   const statusText = useAppStore((state) => state.statusText)
-  const activeSceneImage = useAppStore((state) => state.activeSceneImage)
+  const stuckRoundId = useAppStore((state) => state.stuckRoundId)
+  const sceneImages = useAppStore((state) => state.sceneImages)
+  const rounds = useAppStore((state) => state.rounds)
+  const sessionId = useAppStore((state) => state.activeSessionId)
+
+  const firstRoundId = useMemo(
+    () =>
+      rounds
+        .filter((round) => round.sessionId === sessionId)
+        .sort((a, b) => a.index - b.index)[0]?.id ?? '',
+    [rounds, sessionId],
+  )
+  const activeSceneImage = pickBackdrop({ stuckRoundId, firstRoundId, sceneImages })
 
   return (
     <div

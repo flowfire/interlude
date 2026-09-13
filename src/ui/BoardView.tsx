@@ -90,13 +90,12 @@ function RoundBlock({ round, isLast, demo }: { round: Round; isLast: boolean; de
     return () => observer.disconnect()
   }, [])
 
-  // 吸顶 → 图铺成整屏背景；不吸顶 → 撤掉（翻到别处不该还挂着上一个场景）
+  // 只报告"我在不在吸顶"，图由顶层统一决定（因为"一张都没吸顶"时另有规则）
   useEffect(() => {
-    if (!sceneImage) return
     const store = useAppStore.getState()
-    if (stuck) store.setActiveSceneImage(sceneImage)
-    else if (store.activeSceneImage === sceneImage) store.setActiveSceneImage('')
-  }, [stuck, sceneImage])
+    if (stuck) store.setStuckRoundId(round.id)
+    else if (store.stuckRoundId === round.id) store.setStuckRoundId(null)
+  }, [stuck, round.id])
 
   // 卡片开合：**有图就默认收起** —— 有图就能脑补环境了，描述不必再占着。
   // 初值直接看有没有图（sceneImages 是从 localStorage 同步读出来的，
