@@ -311,7 +311,10 @@ export async function replayFromRound(roundId: string): Promise<void> {
       .filter((step) => step.roundId === roundId)
       .sort((a, b) => a.createdAt.localeCompare(b.createdAt))[0]
 
-    if (!firstStep) {
+    // 没有步骤、或者这一轮**上次没跑完**（缺 perceive 之后那几步）——
+    // 这两种都得跑完整的一轮。`rerunFrom` 只会重跑已存在的下游，
+    // 不存在的会被跳过，所以它补不齐断掉的轮次：用户反复重演也没用。
+    if (!firstStep || !roundIsComplete(ctx.steps, roundId)) {
       await runRoundFor(roundId)
       return
     }
