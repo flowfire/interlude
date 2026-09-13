@@ -31,7 +31,7 @@ describe('模型服务商预设', () => {
 
     const minimax = IMAGE_PROVIDERS[0]
     expect(minimax.label).toBe('MiniMax')
-    expect(minimax.baseUrl).toBe('https://api.minimax.io/v1')
+    expect(minimax.baseUrl).toBe('https://api.minimaxi.com/v1')
     expect(minimax.model).toBe('image-01')
     expect(minimax.endpoint).toBe('/image_generation')
   })

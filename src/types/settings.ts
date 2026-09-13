@@ -38,7 +38,9 @@ export const IMAGE_PROVIDERS: ImageProviderPreset[] = [
   {
     id: 'minimax',
     label: 'MiniMax',
-    baseUrl: 'https://api.minimax.io/v1',
+    // 实测：国内站的 key 在国际站（api.minimax.io）会报 2049 invalid api key，
+    // 反过来也一样 —— 两家是分开的账号体系。这里用国内站。
+    baseUrl: 'https://api.minimaxi.com/v1',
     model: 'image-01',
     endpoint: '/image_generation',
   },

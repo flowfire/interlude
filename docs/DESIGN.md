@@ -3786,3 +3786,48 @@ MiniMax 的端点和模型名是**查了官方文档**确认的：
 **这条约束的通用形式**（写在这儿免得再忘）：**场面卡片是吸顶的，
 它每多一行，就多永久占用一行屏幕。所以往里加任何东西之前，
 先问"能不能挤进已有的行"。** 加不进去的，才考虑折叠或挪走。
+
+---
+
+### 第六十七轮变更：实测 MiniMax —— 域名修正、hover 文案、失败原因 tooltip
+
+**用户给了 key 让实测**，测出三件事。
+
+**① 我默认的域名是错的**
+
+| 域名 | 结果 |
+|---|---|
+| `api.minimax.io`（我原来写的） | `2049 invalid api key` |
+| **`api.minimaxi.com`** | ✅ 出图 |
+| `api.minimax.chat` | ✅ 出图 |
+
+**国内站和国际站是分开的账号体系，key 不通用。** 中文用户手里的多半是国内站的，
+所以默认改成 `https://api.minimaxi.com/v1`。
+
+**② 浏览器可以直连 —— 纯前端方案成立**
+
+这是之前最不确定的一点（如果 CORS 被拦，就得加一层本地代理）。实测：
+
+```
+OPTIONS https://api.minimaxi.com/v1/image_generation
+HTTP/2 200
+access-control-allow-origin: http://127.0.0.1:5273
+access-control-allow-headers: ...Authorization...
+```
+
+预检通过、实际 POST 也带 CORS 头 —— **不需要代理**。
+
+**③ 端到端跑通**
+
+不是 curl，而是拿我写的 `generateSceneImage()` 真跑了一遍（临时用例 + 环境变量传 key，
+跑完即删，仓库里不留 key）：端点拼接、请求体、`pickUrl` 解析全部正确，
+回来的就是阿里云 OSS 的图片地址。
+
+**④ 界面两处**
+
+- **hover 时把「生图」换成「重新生图」**（只在已经有图时）。按钮给固定
+  `min-width: 62px` —— 否则文字一变宽，摘要行的布局会跟着抖。
+- **失败原因改自定义 tooltip**：原生 `title` 有延迟、样式不可控，而且鼠标一移开
+  就没了。现在按钮下面浮一块深色小卡片，写完整的报错原文；同时把
+  `.scene-card.has-image` 上的 `overflow: hidden` 去掉（它会把浮出来的 tooltip 裁掉，
+  而 `::before` 本身是 `inset: 0`，并不需要父级裁剪）。

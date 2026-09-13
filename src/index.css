@@ -910,7 +910,6 @@ pre.code {
 /* 生图：吸顶时把这张图作为背景铺上去（不吸顶时不显示，免得整天花着） */
 .scene-card.has-image {
   position: sticky;
-  overflow: hidden;
 }
 .scene-card.has-image::before {
   content: '';
@@ -939,8 +938,46 @@ pre.code {
   margin-bottom: -1px;
 }
 /* 摘要行里的生图按钮 —— 不占新的一行，所以卡片高度不变 */
-.scene-image-btn {
+.scene-image-tip {
+  position: relative;
   margin-left: auto;
+  display: inline-flex;
+}
+/* 失败原因：自己做 tooltip，原生 title 有延迟、样式也不可控 */
+.scene-image-tip-text {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 20;
+  width: max-content;
+  max-width: 340px;
+  padding: 6px 9px;
+  border-radius: 4px;
+  border: 1px solid rgba(200, 90, 80, 0.5);
+  background: #2a2320;
+  color: #e0b0a9;
+  font-size: 11.5px;
+  line-height: 1.55;
+  white-space: normal;
+  display: none;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+}
+.scene-image-tip:hover .scene-image-tip-text {
+  display: block;
+}
+/* hover 时把「生图」换成「重新生图」—— 固定宽度，免得文字一变就抖动 */
+.scene-image-btn-hover {
+  display: none;
+}
+.scene-image-btn:hover .scene-image-btn-idle {
+  display: none;
+}
+.scene-image-btn:hover .scene-image-btn-hover {
+  display: inline;
+}
+.scene-image-btn {
+  min-width: 62px;
+  text-align: center;
   padding: 2px 8px;
   border: 1px solid rgba(94, 176, 168, 0.4);
   border-radius: 3px;

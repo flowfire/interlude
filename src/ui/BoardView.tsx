@@ -172,24 +172,41 @@ function RoundBlock({ round, isLast, demo }: { round: Round; isLast: boolean; de
 
             {/* 生图按钮放在摘要行里：这张卡片必须尽可能矮，
                 任何新东西都得挤进已有的行，不能另起一行 */}
-            <button
-              className={`scene-image-btn${imageError ? ' error' : ''}`}
-              disabled={sceneImageBusy}
-              title={
-                imageError ||
-                (sceneImage
-                  ? '重新生成这个场面的图（吸顶时会铺成背景）'
-                  : '按这个场面的描写生成一张图，吸顶时铺成背景')
-              }
-              onClick={(event) => {
-                // 摘要行整行是开合开关，按钮不能把它一起触发
-                event.preventDefault()
-                event.stopPropagation()
-                void handleGenerateImage()
-              }}
-            >
-              {sceneImageBusy ? '生成中' : imageError ? '生图失败' : sceneImage ? '重新生图' : '生图'}
-            </button>
+            <span className="scene-image-tip">
+              <button
+                className={`scene-image-btn${imageError ? ' error' : ''}`}
+                disabled={sceneImageBusy}
+                title={
+                  imageError
+                    ? undefined
+                    : sceneImage
+                      ? '重新生成这个场面的图（吸顶时会铺成背景）'
+                      : '按这个场面的描写生成一张图，吸顶时铺成背景'
+                }
+                onClick={(event) => {
+                  // 摘要行整行是开合开关，按钮不能把它一起触发
+                  event.preventDefault()
+                  event.stopPropagation()
+                  void handleGenerateImage()
+                }}
+              >
+                {sceneImageBusy ? (
+                  '生成中'
+                ) : imageError ? (
+                  '生图失败'
+                ) : sceneImage ? (
+                  <>
+                    <span className="scene-image-btn-idle">生图</span>
+                    <span className="scene-image-btn-hover">重新生图</span>
+                  </>
+                ) : (
+                  '生图'
+                )}
+              </button>
+              {/* 失败时鼠标移上去能看到原因 —— 原生 title 有延迟、样式也不可控，
+                  所以自己做了一个 */}
+              {imageError ? <span className="scene-image-tip-text">{imageError}</span> : null}
+            </span>
           </summary>
 
           {/* 吸顶 + 默认展开，所以高度要压住：左右两栏，
