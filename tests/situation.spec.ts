@@ -312,10 +312,13 @@ describe('局面推进：世界自己会往前走', () => {
     expect(system.content).toContain('然后什么都不给，那就是在拖')
     // 关键：告诉它 routes 会被渲染成按钮 —— 否则它会当成可选字段忽略，
     // 把方向写成 holdUp 里的一段散文，用户点不了
-    expect(system.content).toContain('routes 是要被渲染成按钮的')
+    expect(system.content).toContain('routes 是给用户用的')
+    // 关键：必须是「用户视角、能直接用的」，不是剧情走向的描述
+    expect(system.content).toContain('写成「他能直接说出口的话 / 做得出的动作」')
+    expect(system.content).toContain('不是剧情往哪走的描述')
+    expect(system.content).toContain('他点下去还得自己重写一遍，这个按钮就白给了')
+    expect(system.content).toContain('我侧身让开门口')
     expect(system.content).toContain('写在 holdUp 里没用')
-    expect(system.content).toContain('那是一段文字，用户点不了')
-    expect(system.content).toContain('别把方向塞进 events 或 pressure')
   })
 
   it('导演知道最近几轮的节奏，用来判断该不该收场', () => {

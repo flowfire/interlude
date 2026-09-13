@@ -271,12 +271,14 @@ It also has a **hard rule**: **this round's sex score must be higher than the pr
 
 The engine plays **its own last four scores** back to it (`10 → 10 → 15`) and calls it out: "see that — several rounds and it barely moved. That is not slow burn, that is stalling." **An order can be disobeyed; a ledger you wrote yourself is harder to argue with.** A round whose score did not rise is **marked as failed on the board** — with **one exception: the first round**. There the baseline is 0 anyway, and the round itself may quite reasonably be 0 (the scene has only just opened); scoring 0 against 0 would be a false charge, so the first round is never judged.
 
-**It can offer you a few roads at any time.** In this mode the suggested directions are not a fallback for "I cannot push" but a **regular way of leading** — it can lay out the next few possibilities for you:
+**It can offer you a few roads at any time.** In this mode the suggested directions are not a fallback for "I cannot push" but a **regular way of leading**.
 
-> ▸ **Send A-Qi out to the back** — he gets up to fetch water, and by the time he is back the door is bolted.
-> ▸ **Make him account for those three years** — he will not, so you just keep sitting there. Eventually he breaks first.
+What matters is how they are written: **each one is your next step** — the line you say, the move you make — **and clicking it drops it into the input box ready to send as-is**:
 
-**Click one and it drops into the input box** (you can edit it), then you carry on. Every road leads there; whichever you pick beats standing still.
+> ▸ **Let him in to recover** — I step aside from the doorway: "Come in, sit down first." Then I turn to dig out the medicine kit — the blood on his sleeve has already dried brown.
+> ▸ **Ask who he is first** — I keep my hand on the frame and do not move aside: "Who are you looking for?" My voice comes out steadier than I expected.
+
+It is **not** a plot direction for you to translate yourself ("let him recover at your place: he is hurt too badly to leave" is god's-eye view). Every road leads there; whichever you pick beats standing still.
 
 **It also writes the relationship-building for you.** You do not want to write that stretch step by step, so it has to fill in *why the two of them ended up together* with a proper background passage, shown on the board (expanded by default). **It may not get away with one line** — "you have been together three months" is zero information and is explicitly listed as unacceptable. It has to say how they got there (which incident, which sentence, who backed down first) and what unspoken understanding or old debt sits between them.
 
