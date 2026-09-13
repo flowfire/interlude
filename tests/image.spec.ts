@@ -76,3 +76,39 @@ describe('场面生图', () => {
     }
   })
 })
+
+describe('场面图的持久化与自动生图开关', () => {
+  it('生成过的图会落盘 —— 刷新不该丢（一次生成要花钱和时间）', async () => {
+    const store: Record<string, string> = {}
+    const original = globalThis.localStorage
+    globalThis.localStorage = {
+      getItem: (key: string) => store[key] ?? null,
+      setItem: (key: string, value: string) => {
+        store[key] = value
+      },
+      removeItem: (key: string) => {
+        delete store[key]
+      },
+      key: () => null,
+      length: 0,
+      clear: () => {},
+    } as unknown as Storage
+
+    try {
+      const { saveSceneImages, loadSceneImages } = await import('@/store/localSettings')
+      saveSceneImages({ 'round-1': 'https://img.example/a.png' })
+      expect(loadSceneImages()).toEqual({ 'round-1': 'https://img.example/a.png' })
+
+      // 脏数据要能挡住 —— 非字符串、空串都不收
+      store['interlude.sceneImages'] = JSON.stringify({ ok: 'https://a', bad: 123, empty: '' })
+      expect(loadSceneImages()).toEqual({ ok: 'https://a' })
+    } finally {
+      globalThis.localStorage = original
+    }
+  })
+
+  it('自动生图默认关着', async () => {
+    const { DEFAULT_IMAGE_SETTINGS } = await import('@/types/settings')
+    expect(DEFAULT_IMAGE_SETTINGS.autoGenerate ?? false).toBe(false)
+  })
+})

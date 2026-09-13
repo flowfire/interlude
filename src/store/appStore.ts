@@ -21,7 +21,9 @@ import { DEFAULT_IMAGE_SETTINGS, type ImageSettings } from '@/types/settings'
 import {
   DEFAULT_COMPOSER_STATE,
   loadComposerState,
+  loadSceneImages,
   saveComposerState,
+  saveSceneImages,
   type ComposerState,
 } from './localSettings'
 
@@ -60,9 +62,15 @@ export interface AppState extends WorkspaceSnapshot {
   /** 生图模型配置 */
   image: ImageSettings
   setImage: (patch: Partial<ImageSettings>) => void
-  /** 场面图：轮次 id → 图片地址。手动触发，不属于流水线 */
+  /** 场面图：轮次 id → 图片地址。手动触发（或开着自动生图时自动跑），不属于流水线 */
   sceneImages: Record<string, string>
   setSceneImage: (roundId: string, url: string) => void
+  /**
+   * 当前吸顶那张场面卡的图 —— 它会铺成**整个界面**的背景。
+   * 不吸顶时清空，免得翻到别处还挂着上一个场景。
+   */
+  activeSceneImage: string
+  setActiveSceneImage: (url: string) => void
   /** 正在生图的轮次（生成中显示转圈，避免重复点） */
   sceneImageBusy: string | null
   setSceneImageBusy: (roundId: string | null) => void
@@ -132,8 +140,9 @@ export const useAppStore = create<AppState>((set, get) => ({
   ledger: [],
   llm: { ...DEFAULT_LLM_SETTINGS },
   image: { ...DEFAULT_IMAGE_SETTINGS },
-  sceneImages: {},
+  sceneImages: typeof localStorage === 'undefined' ? {} : loadSceneImages(),
   sceneImageBusy: null,
+  activeSceneImage: '',
   project: { ...DEFAULT_PROJECT_SETTINGS },
   // 初始化时就把上次的勾选读回来（测试 / SSR 环境没有 localStorage，退回默认）
   composer: typeof localStorage === 'undefined' ? { ...DEFAULT_COMPOSER_STATE } : loadComposerState(),
@@ -183,8 +192,12 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   setLlm: (patch) => set((state) => ({ llm: { ...state.llm, ...patch } })),
   setImage: (patch) => set((state) => ({ image: { ...state.image, ...patch } })),
-  setSceneImage: (roundId, url) =>
-    set((state) => ({ sceneImages: { ...state.sceneImages, [roundId]: url } })),
+  setSceneImage: (roundId, url) => {
+    const next = { ...get().sceneImages, [roundId]: url }
+    saveSceneImages(next)
+    set({ sceneImages: next })
+  },
+  setActiveSceneImage: (url) => set({ activeSceneImage: url }),
   setSceneImageBusy: (roundId) => set({ sceneImageBusy: roundId }),
   setProject: (patch) => set((state) => ({ project: { ...state.project, ...patch } })),
   setSettingsOpen: (settingsOpen) => set({ settingsOpen }),

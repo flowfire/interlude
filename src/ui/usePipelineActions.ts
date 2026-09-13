@@ -44,6 +44,44 @@ function r18EndedIn(steps: Record<string, Step>): boolean {
   return Boolean(state?.r18Ended)
 }
 
+/**
+ * 开着「自动生图」时，这一轮出现了新场景就顺手画一张。
+ *
+ * 三条前提，缺一不做：开关开着、有 Key、这一轮**确实换了场景**
+ * （沿用上一个的那种不画 —— 同一个地方画两张是浪费钱）。
+ * 失败也不打扰：静默记在卡片上，用户可以手动重试。
+ */
+async function autoGenerateSceneImage(roundId: string): Promise<void> {
+  const state = useAppStore.getState()
+  if (!state.image.autoGenerate || !state.image.apiKey.trim()) return
+  if (state.sceneImages[roundId]) return
+
+  const sceneStep = Object.values(state.steps).find(
+    (item) => item.roundId === roundId && item.stage === 'scene' && item.status === 'done',
+  )
+  const setup = sceneStep?.output as SceneSetup | undefined
+  if (!setup || setup.unchanged || setup.fallbackReason) return
+
+  state.setSceneImageBusy(roundId)
+  try {
+    const { generateSceneImage, sceneImagePrompt } = await import('@/engine/image/client')
+    const url = await generateSceneImage({
+      prompt: sceneImagePrompt({
+        place: setup.place,
+        atmosphere: setup.atmosphere,
+        opening: setup.opening,
+        situation: setup.situation,
+      }),
+      settings: useAppStore.getState().image,
+    })
+    useAppStore.getState().setSceneImage(roundId, url)
+  } catch {
+    // 自动生图失败不弹错 —— 手动点一下就能看到原因
+  } finally {
+    useAppStore.getState().setSceneImageBusy(null)
+  }
+}
+
 function makeContext(roundId: string): PipelineContext {
   const state = useAppStore.getState()
   const round = state.rounds.find((item) => item.id === roundId)
@@ -80,6 +118,8 @@ export async function runRoundFor(roundId: string): Promise<void> {
       useAppStore.getState().setError(result.error)
       return
     }
+
+    void autoGenerateSceneImage(roundId)
 
     // 导演有权给成人向踩刹车：他宣告收尾了，就把勾选替用户关掉
     // （用户随时可以再勾回来，所以这里不需要问他）

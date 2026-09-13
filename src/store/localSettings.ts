@@ -14,6 +14,7 @@ const LLM_KEY = 'interlude.llm'
 const PROJECT_KEY = 'interlude.project'
 const COMPOSER_KEY = 'interlude.composer'
 const IMAGE_KEY = 'interlude.image'
+const SCENE_IMAGES_KEY = 'interlude.sceneImages'
 
 /** 输入区上的一些选择，跨刷新记住 */
 export interface ComposerState {
@@ -46,6 +47,25 @@ function writeJson(key: string, value: unknown): void {
   } catch (error) {
     console.warn('[interlude] 写入本地设置失败', key, error)
   }
+}
+
+/**
+ * 场面图：轮次 id → 图片地址。
+ *
+ * 存下来，刷新不丢 —— 生成一次要花钱和时间，丢掉太可惜。
+ */
+export function loadSceneImages(): Record<string, string> {
+  const raw = readJson<Record<string, unknown>>(SCENE_IMAGES_KEY)
+  if (!raw || typeof raw !== 'object') return {}
+  const out: Record<string, string> = {}
+  for (const [key, value] of Object.entries(raw)) {
+    if (typeof value === 'string' && value) out[key] = value
+  }
+  return out
+}
+
+export function saveSceneImages(images: Record<string, string>): void {
+  writeJson(SCENE_IMAGES_KEY, images)
 }
 
 export function loadImageSettings(): ImageSettings {

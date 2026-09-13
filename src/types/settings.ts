@@ -59,6 +59,11 @@ export interface ImageSettings {
   /** 服务商 id，见 IMAGE_PROVIDERS */
   provider: string
   apiKey: string
+  /**
+   * 自动生图：只要出现了新的场景（不是"沿用上一个"的那种）就自动画一张。
+   * 默认关 —— 它会花钱，而且不是每个人都想要。
+   */
+  autoGenerate?: boolean
 }
 
 export const DEFAULT_IMAGE_SETTINGS: ImageSettings = {

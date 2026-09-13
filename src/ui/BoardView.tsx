@@ -90,6 +90,17 @@ function RoundBlock({ round, isLast, demo }: { round: Round; isLast: boolean; de
     return () => observer.disconnect()
   }, [])
 
+  // 吸顶 → 图铺成整屏背景；不吸顶 → 撤掉（翻到别处不该还挂着上一个场景）
+  useEffect(() => {
+    if (!sceneImage) return
+    const store = useAppStore.getState()
+    if (stuck) store.setActiveSceneImage(sceneImage)
+    else if (store.activeSceneImage === sceneImage) store.setActiveSceneImage('')
+  }, [stuck, sceneImage])
+
+  // 卡片开合：生图成功后自动收起 —— 有图就能脑补环境了，描述不必再占着
+  const [sceneOpen, setSceneOpen] = useState(true)
+
   const handleGenerateImage = async () => {
     if (!setup) return
     setImageError('')
@@ -106,6 +117,8 @@ function RoundBlock({ round, isLast, demo }: { round: Round; isLast: boolean; de
         settings: useAppStore.getState().image,
       })
       useAppStore.getState().setSceneImage(round.id, url)
+      // 有图了就不用再摊着那段环境描写
+      setSceneOpen(false)
     } catch (error) {
       setImageError(error instanceof Error ? error.message : '生图失败')
     } finally {
@@ -154,9 +167,9 @@ function RoundBlock({ round, isLast, demo }: { round: Round; isLast: boolean; de
           {/* 哨兵：它一滚出视口，就说明下面这张卡片已经吸到顶上了 */}
           <div ref={sentinelRef} className="scene-sentinel" aria-hidden />
         <details
-          className={`scene-card${sceneImage ? ' has-image' : ''}${stuck ? ' stuck' : ''}`}
-          style={sceneImage ? ({ '--scene-image': `url("${sceneImage}")` } as React.CSSProperties) : undefined}
-          open
+          className={`scene-card${stuck ? ' stuck' : ''}`}
+          open={sceneOpen}
+          onToggle={(event) => setSceneOpen((event.currentTarget as HTMLDetailsElement).open)}
         >
           <summary className="scene-card-head">
             <span className="scene-label">场面</span>

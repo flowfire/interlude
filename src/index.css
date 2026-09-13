@@ -76,6 +76,28 @@ textarea {
   overflow: hidden;
 }
 
+/* 当前吸顶那张场面卡的图 —— 铺成整个界面的背景。
+   压得很暗：它是氛围，不是内容，不能跟正文抢注意力。 */
+.app::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background-image: var(--app-scene-image);
+  background-size: cover;
+  background-position: center;
+  opacity: 0;
+  transition: opacity 0.6s ease;
+  pointer-events: none;
+}
+.app.has-scene-image::before {
+  opacity: 0.18;
+}
+.app > * {
+  position: relative;
+  z-index: 1;
+}
+
 .topbar {
   display: flex;
   align-items: center;
@@ -906,33 +928,8 @@ pre.code {
 .scene-card:not([open]) {
   margin-bottom: 8px;
 }
-/* 两栏：左宽（场景描述）右窄（细节）。吸顶又默认展开，高度必须压住。 */
-/* 生图：吸顶时把这张图作为背景铺上去（不吸顶时不显示，免得整天花着） */
-.scene-card.has-image {
-  position: sticky;
-}
-.scene-card.has-image::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background-image: var(--scene-image);
-  background-size: cover;
-  background-position: center;
-  opacity: 0;
-  transition: opacity 0.35s ease;
-  pointer-events: none;
-}
-.scene-card.has-image.stuck::before {
-  opacity: 0.3;
-}
-/* 图在上面，内容得压住它 */
-.scene-card.has-image.stuck {
-  background: color-mix(in srgb, var(--panel) 78%, transparent);
-}
-.scene-card > * {
-  position: relative;
-}
-/* 哨兵只有 1px —— 它滚出视口就是"吸顶了"的信号 */
+/* 哨兵只有 1px —— 它滚出视口就是"这张卡片吸顶了"的信号，
+   吸顶时会把它的图交给整个界面的背景（见 .app::before） */
 .scene-sentinel {
   height: 1px;
   margin-bottom: -1px;
@@ -965,16 +962,6 @@ pre.code {
 .scene-image-tip:hover .scene-image-tip-text {
   display: block;
 }
-/* hover 时把「生图」换成「重新生图」—— 固定宽度，免得文字一变就抖动 */
-.scene-image-btn-hover {
-  display: none;
-}
-.scene-image-btn:hover .scene-image-btn-idle {
-  display: none;
-}
-.scene-image-btn:hover .scene-image-btn-hover {
-  display: inline;
-}
 .scene-image-btn {
   min-width: 62px;
   text-align: center;
@@ -1000,6 +987,17 @@ pre.code {
   border-color: rgba(200, 90, 80, 0.7);
   color: #e09b94;
 }
+/* hover 时把「生图」换成「重新生图」—— 按钮宽度固定，免得文字一变就抖动 */
+.scene-image-btn-hover {
+  display: none;
+}
+.scene-image-btn:hover .scene-image-btn-idle {
+  display: none;
+}
+.scene-image-btn:hover .scene-image-btn-hover {
+  display: inline;
+}
+/* 两栏：左宽（场景描述）右窄（细节）。吸顶又默认展开，高度必须压住。 */
 .scene-body {
   display: grid;
   grid-template-columns: minmax(0, 2.4fr) minmax(170px, 1fr);

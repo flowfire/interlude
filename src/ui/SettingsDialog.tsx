@@ -197,8 +197,21 @@ export default function SettingsDialog() {
               placeholder="..."
               onChange={(event) => setImage({ apiKey: event.target.value })}
             />
+            <span className="hint">同样是本地保存，不会发给任何第三方。</span>
+          </div>
+
+          <div className="field">
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <input
+                type="checkbox"
+                checked={Boolean(image.autoGenerate)}
+                onChange={(event) => setImage({ autoGenerate: event.target.checked })}
+              />
+              自动生图
+            </label>
             <span className="hint">
-              同样是本地保存。引擎暂时还没有用到它 —— 配置先放在这儿，接入的时候直接用。
+              只要这一轮出现了<strong>新的场景</strong>（不是沿用上一个），就自动画一张。默认关 ——
+              它会花钱，而且出图要等几秒。
             </span>
           </div>
 

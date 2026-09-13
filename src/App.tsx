@@ -14,9 +14,17 @@ export default function App() {
   const setError = useAppStore((state) => state.setError)
   const busy = useAppStore((state) => state.busy)
   const statusText = useAppStore((state) => state.statusText)
+  const activeSceneImage = useAppStore((state) => state.activeSceneImage)
 
   return (
-    <div className="app">
+    <div
+      className={`app${activeSceneImage ? ' has-scene-image' : ''}`}
+      style={
+        activeSceneImage
+          ? ({ '--app-scene-image': `url("${activeSceneImage}")` } as React.CSSProperties)
+          : undefined
+      }
+    >
       <TopBar />
       <div className="layout with-left">
         <SessionList />

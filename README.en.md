@@ -183,9 +183,13 @@ Models are **pick-from-a-list**: you choose a provider and paste a key; the endp
 | **Text model** | DeepSeek | `https://api.deepseek.com` · `deepseek-flash` |
 | **Image model** | MiniMax | `https://api.minimax.io/v1` · `image-01` |
 
-**Scene cards can generate an image**: click "生图" and it turns that round's place, atmosphere and environmental description into a prompt for MiniMax; the result is **laid in as the background while the card is stuck to the top** — scroll to that scene and the backdrop is that place. The picture is environment-first, with no faces in view (generated faces break easily, and fight whatever the reader already pictures).
+**Scene cards can generate an image**: click "生图" and it turns that round's place, atmosphere and environmental description into a prompt for MiniMax; the result becomes **the backdrop of the whole interface while that card is stuck to the top** — scroll to that scene and the entire screen takes on that place, fading out as you scroll past. The picture is environment-first, with no faces in view (generated faces break easily, and fight whatever the reader already pictures).
 
-(The image model is used only on scene cards for now; it does not run in the pipeline — one click, one image.)
+Three details:
+
+- **The description collapses once the image arrives** — with a picture there is nothing left to spell out, and the text need not hold the screen.
+- **Images are kept**, so a refresh does not lose them (each one costs money and time).
+- Settings has an **"auto-generate"** switch (off by default): with it on, a new scene gets an image automatically. Rounds that reuse the previous scene are skipped — two pictures of the same room is waste.
 
 Both keys live only in your own browser's localStorage and are not sent anywhere else.
 
