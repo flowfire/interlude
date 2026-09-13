@@ -98,8 +98,10 @@ function RoundBlock({ round, isLast, demo }: { round: Round; isLast: boolean; de
     else if (store.activeSceneImage === sceneImage) store.setActiveSceneImage('')
   }, [stuck, sceneImage])
 
-  // 卡片开合：生图成功后自动收起 —— 有图就能脑补环境了，描述不必再占着
-  const [sceneOpen, setSceneOpen] = useState(true)
+  // 卡片开合：**有图就默认收起** —— 有图就能脑补环境了，描述不必再占着。
+  // 初值直接看有没有图（sceneImages 是从 localStorage 同步读出来的，
+  // 所以刷新之后也算得对，不会又摊开一次）。
+  const [sceneOpen, setSceneOpen] = useState(!sceneImage)
 
   const handleGenerateImage = async () => {
     if (!setup) return

@@ -3914,3 +3914,30 @@ access-control-allow-headers: ...Authorization...
 给 `scripts/shot.sh` 加了 `--virtual-time-budget=6000`，之后一次就出图了。
 **这条值得记住：以后凡是"截图看起来没生效"的排查，先怀疑截图时机，
 再怀疑代码。**
+
+---
+
+### 第七十轮变更：场面卡片的收起状态跟着「有没有图」走
+
+**用户的问题**：
+
+> 我说"生成图之后默认收起"，这个没有持久化，一刷新就没了。
+
+对。`sceneOpen` 是纯内存的 `useState(true)` —— 生图成功时确实收起了，
+但刷新之后重新挂载，又回到 `true`（展开）。
+
+修法很简单，因为**判断依据其实已经持久化了**：
+
+```ts
+const [sceneOpen, setSceneOpen] = useState(!sceneImage)
+```
+
+`sceneImages` 是在 store 初始化时**同步**从 localStorage 读出来的
+（`typeof localStorage === 'undefined' ? {} : loadSceneImages()`），
+所以首次渲染时 `sceneImage` 已经有值 —— 初值算得对，刷新不会又摊开一次。
+
+没有为"收起"单独存一个字段：**它的正确值完全由"有没有图"决定**，
+再存一份就是两个真相来源，迟早会不一致。
+
+**验证**：临时往 demo 里塞了一张内联 SVG（不依赖网络）截图 ——
+卡片确实以收起状态出现（只剩一行摘要），同时整屏背景也铺上了。
