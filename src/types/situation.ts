@@ -93,6 +93,17 @@ export interface SituationState {
   /** 成人向已经连着几轮了 —— 就是压在导演身上的那个数字，页面上会显示 */
   r18Streak: number
   /**
+   * 导演给自己这一轮打的「性内容分」。
+   *
+   * 0 = 完全没有性内容，也没有往那去的倾向；50 = 有实质的身体接触；
+   * 100 = 已经在做爱；100 以上不再是程度而是进度 —— 从第一次做爱那轮算起，
+   * 每多一轮 +10（110、120……）。
+   *
+   * 填的是**这一轮结束时的分**。引擎会把最近几轮的分回传给它，
+   * 它自己就能看出"我磨了三轮"——比外部命令更管用。
+   */
+  sexScore: number
+  /**
    * 导演推荐的发展方向。
    *
    * 有些场面确实没法直接进入性（刚见面、身份对立、正在危险里）。
@@ -136,6 +147,7 @@ export interface SituationState {
 
 export const RawSituationSchema = z.object({
   reason: z.union([z.string(), z.number(), z.null()]).optional(),
+  sexScore: z.union([z.number(), z.string(), z.null()]).optional(),
   holdUp: z.union([z.string(), z.number(), z.null()]).optional(),
   routes: z.union([z.array(z.unknown()), z.string(), z.null()]).optional(),
   pace: z.union([z.string(), z.number(), z.null()]).optional(),

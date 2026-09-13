@@ -47,6 +47,7 @@ vi.mock('@/engine/llm/instance', () => {
         holdUp: '',
         routes: [],
         r18Streak: 1,
+        sexScore: 0,
         pace: 'settle',
         r18Ended: h.r18Ended,
         pressure: '',
@@ -142,21 +143,21 @@ describe('导演可以宣告成人向收尾', () => {
     expect(useAppStore.getState().composer).toEqual({ rating: 'general', direct: false })
   })
 
-  it('连着几轮成人向，成绩单上的轮数会累加', async () => {
+  it('连着几轮成人向，轮次与历史评分一起回放给导演', async () => {
     await freshWorkspace()
     await runR18Round('第一轮：我把门关上了。')
-    expect(h.situationPrompts.at(-1)).toContain('成人向已连着 1 轮')
+    expect(h.situationPrompts.at(-1)).toContain('这是第一轮，还没有历史评分')
 
     await runR18Round('第二轮：我坐下了。')
-    console.log('HINT >>>', (h.situationPrompts.at(-1) ?? '').match(/已经第 \d+ 轮了/)?.[0])
-    expect(h.situationPrompts.at(-1)).toContain('成人向已连着 2 轮')
-    expect(h.situationPrompts.at(-1)).toContain('其中 2 轮')
+    expect(h.situationPrompts.at(-1)).toContain('现在要打的是第 2 轮')
+    // 上一轮它自己打的分会被回放给它 —— 它自己看得到有没有在涨
+    expect(h.situationPrompts.at(-1)).toContain('最近几轮你自己打的分')
 
     // 中间断一轮普通分级，计数就该断
     const plain = useAppStore.getState().newRound('第三轮：我只是坐着。', 'general')
     await runRoundFor(plain.id)
     await runR18Round('第四轮：我又把门关上了。')
-    expect(h.situationPrompts.at(-1)).toContain('成人向已连着 1 轮')
+    expect(h.situationPrompts.at(-1)).toContain('现在要打的是第 1 轮')
   })
 
   it('压力计数会写进产物里 —— 页面上那个数字得有来源', async () => {

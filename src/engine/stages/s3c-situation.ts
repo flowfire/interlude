@@ -27,6 +27,8 @@ export interface SituationStageInput {
   r18Streak?: number
   /** 其中多少轮还勾了快速入戏 */
   directStreak?: number
+  /** 最近几轮导演自己打的性内容分 */
+  recentScores?: number[]
   previousRecap?: string
   previous?: { pressure: string; escalation: string; pace?: SituationPace } | null
 }
@@ -83,6 +85,13 @@ function normalizeDirections(raw: unknown, cards: CharacterCard[], pcName: strin
     if (out.length >= MAX_DIRECTIONS) break
   }
   return out
+}
+
+/** 性内容分：0~100 是程度，100 以上是"做了几轮"的进度 */
+function normalizeScore(raw: unknown): number {
+  const value = Number(raw)
+  if (!Number.isFinite(value) || value < 0) return 0
+  return Math.min(Math.round(value), 400)
 }
 
 function normalizeRoutes(raw: unknown): SituationState['routes'] {
@@ -145,6 +154,7 @@ export async function runSituationStage(
     direct,
     r18Streak,
     directStreak,
+    recentScores,
     previousRecap,
     previous,
   } = input
@@ -157,6 +167,7 @@ export async function runSituationStage(
     direct,
     r18Streak,
     directStreak,
+    recentScores,
     doc,
     segments,
     sceneSetup,
@@ -175,6 +186,7 @@ export async function runSituationStage(
 
     const parsed = data as {
       reason?: unknown
+      sexScore?: unknown
       holdUp?: unknown
       routes?: unknown
       pace?: unknown
@@ -192,6 +204,7 @@ export async function runSituationStage(
         holdUp: asText(parsed.holdUp).trim(),
         routes: normalizeRoutes(parsed.routes),
         r18Streak: Math.max(1, r18Streak ?? 1),
+        sexScore: normalizeScore(parsed.sexScore),
         pace: normalizePace(parsed.pace),
         r18Ended:
           parsed.r18Ended === true ||
@@ -213,6 +226,7 @@ export async function runSituationStage(
         holdUp: '',
         routes: [],
         r18Streak: Math.max(1, r18Streak ?? 1),
+        sexScore: 0,
         pace: previous?.pace ?? 'build',
         r18Ended: false,
         pressure: previous?.pressure ?? '',

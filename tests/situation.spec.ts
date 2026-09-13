@@ -24,6 +24,7 @@ const situation: SituationState = {
   holdUp: '',
   routes: [],
   r18Streak: 1,
+  sexScore: 0,
   pace: 'escalate',
   r18Ended: false,
   directions: [],
@@ -217,7 +218,7 @@ describe('局面推进：世界自己会往前走', () => {
     expect(system.content).toContain('用户扮演的角色永远不在名单里')
   })
 
-  it('按轮次直接下命令 —— 第几轮就必须做到什么，没有商量余地', () => {
+  it('用自评替代硬性命令 —— 它自己看得见进度', () => {
     const base = {
       storyTitle: '测试',
       pcName: '我',
@@ -227,55 +228,51 @@ describe('局面推进：世界自己会往前走', () => {
       drives: [],
       rating: 'r18' as const,
     }
-    const system = (streak: number, direct: boolean) =>
+    const sys = (streak: number, scores: number[], direct = false) =>
       buildSituationMessages({
         ...base,
         direct,
         r18Streak: streak,
         directStreak: direct ? streak : 0,
+        recentScores: scores,
       })[0].content
 
-    // 普通成人向：一轮一个台阶，到点就必须做
-    expect(system(1, false)).toContain('这一轮要出现**明确的欲望**')
-    expect(system(2, false)).toContain('必须有实质的身体接触')
-    expect(system(3, false)).toContain('必须进入性行为')
-    expect(system(4, false)).toContain('你已经超期了')
-    expect(system(5, false)).toContain('没有第三条路')
+    // 评分表要写明白：0 是程度的下限，100 是"已经在做"，100 以上是进度
+    const first = sys(1, [])
+    expect(first).toContain('【先给这一轮打分')
+    expect(first).toContain('**100**：已经在做爱')
+    expect(first).toContain('100 以上是进度，不是程度')
+    expect(first).toContain('每多一轮 +10')
+    expect(first).toContain('这是第一轮，还没有历史评分')
 
-    // 快速入戏：第一轮要么直接进入，要么把场面改造成「只剩一步」——
-    // 但不能交出一份跟性无关的正常剧情（命令必须够得着，否则整条会被无视）
-    expect(system(1, true)).toContain('把两个人之间的物理距离拉到最近')
-    expect(system(1, true)).toContain('只剩一步')
-    expect(system(1, true)).toContain('不许交出一份跟性无关的正常剧情')
-    // 第二轮起就没有借口了
-    expect(system(2, true)).toContain('必须进入性行为，或者已经在做')
-    expect(system(2, true)).toContain('没有理由再绕')
+    // 历史回放给它看，而且它自己该看出没在涨
+    const stuck = sys(4, [10, 10, 15])
+    expect(stuck).toContain('10 → 10 → 15')
+    expect(stuck).toContain('现在要打的是第 4 轮')
+    expect(stuck).toContain('连着几轮几乎没动')
+    expect(stuck).toContain('那不是在慢热，那是在磨')
+
+    // 涨得正常就不点破
+    expect(sys(4, [0, 50, 100])).not.toContain('连着几轮几乎没动')
   })
 
-  it('成人向拖了几轮会写进导演的成绩单，轮数越多越难看', () => {
-    const base = {
+  it('判断标准与借口清单还在 —— 自评不是放松要求', () => {
+    const [system] = buildSituationMessages({
       storyTitle: '测试',
       pcName: '我',
       doc: normalizeInput('我把门关上了。'),
       segments: [],
       sceneSetup: setup,
       drives: [],
-      rating: 'r18' as const,
-    }
+      rating: 'r18',
+      r18Streak: 5,
+      directStreak: 3,
+      recentScores: [10, 10, 15],
+    })
 
-    const first = buildSituationMessages({ ...base, r18Streak: 1, directStreak: 0 })[0].content
-    expect(first).toContain('成人向已连着 1 轮')
-    expect(first).toContain('这一轮要出现**明确的欲望**')
-
-    const late = buildSituationMessages({ ...base, r18Streak: 5, directStreak: 3 })[0].content
-    // 第 5 轮：直接下命令，不再讲道理
-    expect(late).toContain('成人向已连着 5 轮')
-    expect(late).toContain('你已经超期了')
-    expect(late).toContain('没有第三条路')
-    // 判断标准只有一个，而且明确点破哪些借口不算理由
-    expect(late).toContain('判断标准只有一个')
-    expect(late).toContain('都不算理由')
-    expect(late).toContain('时机未到 · 气氛差一点')
+    expect(system.content).toContain('判断标准只有一个')
+    expect(system.content).toContain('都不算理由')
+    expect(system.content).toContain('时机未到 · 气氛差一点')
   })
 
   it('推不动的时候给用户几条可选方向，而不是硬拗或抗命', () => {

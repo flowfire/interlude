@@ -54,6 +54,7 @@ const situation: SituationState = {
   holdUp: '',
   routes: [],
   r18Streak: 1,
+  sexScore: 0,
   pace: 'escalate',
   r18Ended: false,
   pressure: '狼群在二十步外压成半圆',

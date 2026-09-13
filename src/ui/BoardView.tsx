@@ -350,9 +350,12 @@ function RoundBlock({ round, isLast, demo }: { round: Round; isLast: boolean; de
             </details>
           ) : null}
 
-          {round.rating === 'r18' && situationData.state.r18Streak > 1 ? (
+          {round.rating === 'r18' ? (
             <div className="situation-streak">
-              成人向已持续 {situationData.state.r18Streak} 轮
+              成人向第 {situationData.state.r18Streak} 轮 · 性内容{' '}
+              {situationData.state.sexScore >= 100
+                ? `已经在做（第 ${Math.round((situationData.state.sexScore - 100) / 10) + 1} 轮）`
+                : `${situationData.state.sexScore} / 100`}
             </div>
           ) : null}
           {situationData.state.r18Ended ? (

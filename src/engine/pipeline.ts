@@ -185,6 +185,21 @@ function r18StreakOf(ctx: PipelineContext): { r18Streak: number; directStreak: n
   return { r18Streak, directStreak }
 }
 
+/**
+ * 最近几轮导演自己打的性内容分（按时间顺序）。
+ *
+ * 回放给它看 —— 它自己就会发现"连着三轮没动"，比外面塞一条命令管用。
+ */
+function recentSexScores(ctx: PipelineContext): number[] {
+  const ids = sessionRoundIds(ctx)
+  return Object.values(ctx.steps)
+    .filter((item) => item.stage === 'situation' && item.status === 'done')
+    .filter((item) => (!ids || ids.has(item.roundId)) && item.roundId !== ctx.round.id)
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+    .slice(-4)
+    .map((item) => (item.output as SituationState | undefined)?.sexScore ?? 0)
+}
+
 function previousSituation(
   ctx: PipelineContext,
 ): { pressure: string; escalation: string; pace: SituationPace; recentPaces: SituationPace[] } | null {
@@ -354,6 +369,7 @@ async function executeStep(ctx: PipelineContext, step: Step): Promise<Step> {
         previousRecap: buildRecap(ctx),
         previous: previousSituation(ctx),
         ...r18StreakOf(ctx),
+        recentScores: recentSexScores(ctx),
       })
       return done(step, output, { model: result?.model, cost: costOf(result, startedAt) })
     }

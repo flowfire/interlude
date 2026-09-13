@@ -229,20 +229,23 @@ R18 is not "flip a switch and the model talks dirty". **Every stage** of the eng
 
 **It is counted per round.** The "R18 mode" checkbox in the composer stays checked across reloads, but the rating itself lives on the **round** — so you can turn it on for this round and off for the next, independently. When reading back, the rounds that had it on carry a red marker on the divider.
 
-**Each round, the director receives an order, not a reminder.** The counter (how many rounds the adult mode has been running) goes straight into the prompt, and the instruction hardens by round:
+**It scores itself each round, and it can see its own history.** Rather than being told from outside "you must do X this round", it keeps its own books:
 
-| Round | What it is told it must do |
+| Score | Meaning |
 |---|---|
-| 1 | Make the desire explicit: a gaze held too long, a line crossed, a touch that was not needed |
-| 2 | **Physical contact is mandatory** (kissing, touching, undressing — at least one, written concretely) |
-| 3 | **Sex has to start this round** |
-| 4 and beyond | **You are overdue**: either it is already happening (or just finished), or you close it out — **there is no third option** |
+| **0** | No sexual content and no lean towards it |
+| **20** | A lean (a gaze held too long, a hooked line, wrong distance) but nothing physical |
+| **50** | Real physical contact (kissing, touching, undressing) |
+| **100** | Sex is happening |
+| **Above 100 is progress, not degree** | From the round it first happens, +10 per further round (110, 120…) |
 
-With "straight into the scene" ticked, the bar is harder: **round 1 starts it outright**, and from round 2 it must already be under way or over.
+The engine plays **its own last four scores** back to it (`10 → 10 → 15`) and calls it out: "see that — several rounds and it barely moved. That is not slow burn, that is stalling." **An order can be disobeyed; a ledger you wrote yourself is harder to argue with.**
 
-The test narrows to one sentence too: **did anything new happen between their bodies this round.** If not, the round failed, however lively the plot was. And excuses like "the time is not right", "the mood is not quite there" and "someone came by" are **listed in the prompt as not counting as reasons**.
+The test stays one sentence: **did anything new happen between their bodies this round.** If not, the round failed, however lively the plot was. And excuses like "the time is not right", "the mood is not quite there", "someone came by" are listed in the prompt as **not counting as reasons**.
 
 **Pressure to get in is high; pressure to get out is low** — that is deliberate.
+
+**"Straight into the scene" is not just faster.** It grants one extra privilege: **sex may be written as already-happened background** — "he has not left these three days, and neither of you has been out much" carries the whole process in one line, and the round goes straight to what comes after. Stacked on top: every ambiguous call (whether he would do it, how close they already are, whether anyone would notice) is **resolved towards the version that leads there**. 
 
 **When it cannot push, it asks you.** Some setups genuinely cannot go there yet — two people meeting for the first time, opposed identities, a life-or-death moment. The director will not force it (that breaks the scene), and will not pretend nothing happened either; instead it **puts a few directions on the card for you to pick**:
 

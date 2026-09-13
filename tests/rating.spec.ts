@@ -229,7 +229,10 @@ describe('R18 分级', () => {
     // 含糊说法只允许出现在"不许用这些"的反例清单里
     expect((directHint.match(/融为一体/g) ?? []).length).toBe(1)
     expect(directHint).toContain('不许用这些糊过去')
-    expect(on).toContain('把两个人之间的物理距离拉到最近')
+    // 快速模式和普通成人向的真正区别：允许把过程写成已经发生过的背景
+    expect(on).toContain('可以把性写成「已经发生过的背景」')
+    expect(on).toContain('这是快速模式和普通成人向最大的区别')
+    expect(on).toContain('模棱两可的判断一律往更能导向做爱的方向选')
     // 场景不配合时有办法：把它改造成通向性的场面
     expect(on).toContain('怎么把「看起来不相干」的场景改造成通向性的场面')
     expect(on).toContain('一个陌生人站在门口')
