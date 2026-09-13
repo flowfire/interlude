@@ -146,9 +146,9 @@ describe('输入区的分级勾选', () => {
     useAppStore.getState().setComposer({ rating: 'general', direct: false })
   })
 
-  it('默认是普通分级，界面上没有「快速入戏」', () => {
+  it('没开总闸时，输入区看不到任何成人向的东西', () => {
     const html = renderToString(createElement(InputBar))
-    expect(html).toContain('R18 模式')
+    expect(html).not.toContain('R18 模式')
     expect(html).not.toContain('快速入戏')
   })
 

@@ -34,6 +34,13 @@ export interface ProjectSettings {
   freedomLevel: 'low' | 'medium' | 'high'
   /** 时间跳跃时是否自动补全各角色在空白期的经历 */
   interludeFill: boolean
+  /**
+   * 允许使用成人向模式。
+   *
+   * 默认关闭 —— 开了之后输入区才会出现「R18 模式」那个勾选框。
+   * 这是场外的总闸：不勾它，界面上根本看不到成人向相关的任何东西。
+   */
+  allowR18: boolean
   /** 给知名角色联网查资料（维基百科，免 key；失败静默跳过） */
   researchEnabled: boolean
   /** 误读强度：角色之间理解偏差的程度 */
@@ -59,6 +66,7 @@ export const DEFAULT_PROJECT_SETTINGS: ProjectSettings = {
   storyTitle: '未命名故事',
   freedomLevel: 'medium',
   interludeFill: true,
+  allowR18: false,
   researchEnabled: true,
   misreadLevel: 'medium',
 }

@@ -39,6 +39,7 @@ export function demoProject(): ProjectSettings {
     storyTitle: '城南茶馆',
     freedomLevel: 'medium',
     interludeFill: true,
+    allowR18: true,
     researchEnabled: false,
     misreadLevel: 'medium',
   }

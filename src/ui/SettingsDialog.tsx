@@ -224,6 +224,27 @@ export default function SettingsDialog() {
             <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <input
                 type="checkbox"
+                checked={project.allowR18}
+                onChange={(event) => {
+                  const next = event.target.checked
+                  setProject({ allowR18: next })
+                  // 关掉总闸时把输入区的勾选一起复原 ——
+                  // 否则它会变成一个看不见、却还在生效的开关
+                  if (!next) useAppStore.getState().setComposer({ rating: 'general', direct: false })
+                }}
+              />
+              允许使用成人向模式
+            </label>
+            <span className="hint">
+              默认关闭。勾上之后，输入区才会出现<strong>「R18 模式」</strong>那个勾选框
+              （以及它下面的「快速入戏」）。不勾这一项，界面上不会出现任何成人向相关的东西。
+            </span>
+          </div>
+
+          <div className="field">
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <input
+                type="checkbox"
                 checked={project.researchEnabled}
                 onChange={(event) => setProject({ researchEnabled: event.target.checked })}
               />

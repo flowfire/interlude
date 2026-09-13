@@ -67,6 +67,7 @@ function RoundBlock({ round, isLast, demo }: { round: Round; isLast: boolean; de
 
   const segmentsData = getSegmentsOfRound(round.id)
   const sceneData = getSceneOfRound(round.id)
+  const project = useAppStore((state) => state.project)
   const composeData = getComposeOfRound(round.id)
   const situationData = getSituationOfRound(round.id)
   const exposureData = getExposureOfRound(round.id)
@@ -223,6 +224,7 @@ function RoundBlock({ round, isLast, demo }: { round: Round; isLast: boolean; de
               <button className="btn" disabled={busy} onClick={() => setEditing(false)}>
                 取消
               </button>
+              {project?.allowR18 ? (
               <label
                 className={`r18-toggle ${ratingDraft === 'r18' ? 'on' : ''}`}
                 title="这一轮往成人向推进 —— 只影响角色能自己控制的那部分，不改人设，也不一步到位"
@@ -235,7 +237,8 @@ function RoundBlock({ round, isLast, demo }: { round: Round; isLast: boolean; de
                 />
                 R18 模式
               </label>
-              {ratingDraft === 'r18' ? (
+              ) : null}
+              {project?.allowR18 && ratingDraft === 'r18' ? (
                 <label
                   className={`r18-toggle ${directDraft ? 'on' : ''}`}
                   title="这一轮直接进入性描写，不再铺垫。人物模糊地带倾向成人向，写死的底线不变"

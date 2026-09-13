@@ -206,6 +206,8 @@ That is the built-in demo: it uses a scripted set of model responses and **actua
 
 ## Adult mode
 
+**Open the master switch first**: Settings → project → "allow adult mode". It is **off by default**; only once it is on does the "R18 mode" checkbox appear in the composer. With it off, nothing adult-related shows up anywhere in the UI.
+
 R18 is not "flip a switch and the model talks dirty". **Every stage** of the engine has a corresponding treatment:
 
 | Stage | What it does under the adult rating |

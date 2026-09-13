@@ -26,6 +26,9 @@ export default function InputBar() {
   const setComposer = useAppStore((state) => state.setComposer)
   const r18 = composer.rating === 'r18'
   const direct = composer.direct
+  // 总闸关着的时候，哪怕勾选状态还留着也不生效 —— 免得出现"看不见但还在跑"的开关
+  const liveR18 = project.allowR18 && r18
+  const liveDirect = liveR18 && direct
 
   const handleR18Change = (value: boolean) => {
     // 关掉 R18 时「快速入戏」自动失效 —— 它只在成人向那一轮有意义
@@ -39,7 +42,7 @@ export default function InputBar() {
   const handleSend = async () => {
     const text = draft.trim()
     if (!text || busy) return
-    const round = newRound(text, r18 ? 'r18' : 'general', false, r18 && direct)
+    const round = newRound(text, liveR18 ? 'r18' : 'general', false, liveDirect)
     setDraft('')
     await runRoundFor(round.id)
   }
@@ -47,7 +50,7 @@ export default function InputBar() {
   /** 主动交棒：这一轮我什么都不做，让场面和角色自己往前走 */
   const handleIdle = async () => {
     if (busy) return
-    const round = newRound(IDLE_INPUT, r18 ? 'r18' : 'general', true, r18 && direct)
+    const round = newRound(IDLE_INPUT, liveR18 ? 'r18' : 'general', true, liveDirect)
     await runRoundFor(round.id)
   }
 
@@ -106,6 +109,7 @@ export default function InputBar() {
           什么都不做
         </button>
 
+        {project.allowR18 ? (
         <label
           className={`r18-toggle ${r18 ? 'on' : ''}`}
           title={
@@ -122,8 +126,9 @@ export default function InputBar() {
           />
           R18 模式
         </label>
+        ) : null}
 
-        {r18 ? (
+        {project.allowR18 && r18 ? (
           <label
             className={`r18-toggle ${direct ? 'on' : ''}`}
             title={
