@@ -284,12 +284,19 @@ export async function runCastStage(
     })
 
     const created = mergeWithPresent(normalizeCastResult(data, project.pcName, research), fresh)
+
+    // 模型有时候会把 characters 交成空数组 —— 而场景那边明明给了在场名单。
+    // 这时候不能就当真没人：**按名单兜底建卡**，否则这一轮会连一个角色反应都没有，
+    // 界面上看起来就是"剧情断在局面那里"。
+    const fallback = created.length ? created : buildCastFromPresent(fresh)
+
     return {
       output: {
-        characters: [...known, ...created],
+        characters: [...known, ...fallback],
         usedModel: true,
         reusedCount: known.length,
-        researchedCount: created.filter((card) => card.source === 'wiki').length,
+        researchedCount: fallback.filter((card) => card.source === 'wiki').length,
+        ...(created.length ? {} : { fallbackReason: '模型没有给出任何角色，按在场名单兜底' }),
       },
       result,
     }
