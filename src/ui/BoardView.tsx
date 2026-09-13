@@ -71,6 +71,7 @@ function RoundBlock({ round, isLast, demo }: { round: Round; isLast: boolean; de
   const project = useAppStore((state) => state.project)
   const composeData = getComposeOfRound(round.id)
   const situationData = getSituationOfRound(round.id)
+  const routes = situationData?.state.routes ?? []
   const exposureData = getExposureOfRound(round.id)
   const reactions = composeData?.scene.reactions ?? []
   const setup = sceneData?.setup
@@ -333,31 +334,6 @@ function RoundBlock({ round, isLast, demo }: { round: Round; isLast: boolean; de
             </details>
           ) : null}
 
-          {/* 推荐方向是**面向未来**的选项，不是历史记录 —— 一旦有了下一轮，
-              那个局面就过去了，再点会填进与当下不符的内容。所以只在最新一轮显示。
-              （reason / holdUp / backstory / 不合格标记都是记录过去，照常保留。） */}
-          {isLast && situationData.state.routes?.length ? (
-            <div className="situation-routes">
-              <div className="situation-routes-head">
-                导演给了几条路 —— 点一条就填进输入框，你可以改完再发：
-              </div>
-              {situationData.state.routes.map((route, index) => (
-                <button
-                  key={index}
-                  className="situation-route"
-                  onClick={() =>
-                    // 每一条本身就是「用户视角、能直接发」的内容，所以只注入正文；
-                    // 标题已经在按钮上给他看过了
-                    useAppStore.getState().injectDraft(route.detail?.trim() || route.title)
-                  }
-                >
-                  <span className="situation-route-title">▸ {route.title}</span>
-                  {route.detail ? <span className="situation-route-detail">{route.detail}</span> : null}
-                </button>
-              ))}
-            </div>
-          ) : null}
-
           {situationData.state.holdUp?.trim() ? (
             <details className="situation-reason">
               <summary>为什么这一轮没有更进一步</summary>
@@ -401,6 +377,29 @@ function RoundBlock({ round, isLast, demo }: { round: Round; isLast: boolean; de
               defaultOpenContext={demo === 'context' && isLast && index === 0}
               defaultOpenInner={demo === 'inner' && isLast && index === 0}
             />
+          ))}
+        </div>
+      ) : null}
+
+      {/* 可选方向放在**本轮最后** —— 用户一般是看完所有角色的演出之后才做选择。
+          它也是唯一"面向未来"的字段：一旦有了下一轮，那个局面就过去了，
+          再点会填进与当下不符的内容，所以只在最新一轮显示。 */}
+      {isLast && routes.length ? (
+        <div className="situation-routes">
+          <div className="situation-routes-head">可选方向</div>
+          {routes.map((route, index) => (
+            <button
+              key={index}
+              className="situation-route"
+              onClick={() =>
+                // 每一条本身就是「用户视角、能直接发」的内容，所以只注入正文；
+                // 标题已经在按钮上给他看过了
+                useAppStore.getState().injectDraft(route.detail?.trim() || route.title)
+              }
+            >
+              <span className="situation-route-title">▸ {route.title}</span>
+              {route.detail ? <span className="situation-route-detail">{route.detail}</span> : null}
+            </button>
           ))}
         </div>
       ) : null}
