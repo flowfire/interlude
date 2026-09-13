@@ -1,5 +1,6 @@
 import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useAppStore } from '@/store/appStore'
+import { groupRoundsByScene } from '@/utils/sceneGroups'
 import { isRoundStalled } from '@/utils/r18'
 import { SEGMENT_KIND_LABEL, type Segment, type SegmentKind } from '@/types/segment'
 import { SCENE_MODE_LABEL, type SceneSetup } from '@/types/scene'
@@ -526,27 +527,8 @@ export default function BoardView() {
 
   const bottomRef = useRef<HTMLDivElement>(null)
   const steps = useAppStore((state) => state.steps)
-
-  /**
-   * 按**场景**把轮次分组 —— UI 的单位是场景，不是轮次。
-   *
-   * 轮次只是内容上的分段；同一个人待在同一个地方的那几轮，在界面上属于同一个
-   * 场景，共用一张卡。沿用了上一个场景的轮次并进上一组，不新开卡。
-   * 这样"卡被顶上来"只在真的换场景时发生。
-   */
-  const sceneGroups = useMemo(() => {
-    const groups: { sceneRoundId: string; rounds: Round[] }[] = []
-    for (const round of rounds) {
-      const sceneStep = Object.values(steps).find(
-        (item: Step) => item.roundId === round.id && item.stage === 'scene' && item.status === 'done',
-      )
-      const setup = sceneStep?.output as SceneSetup | undefined
-      if (!setup) continue
-      if (setup.unchanged && groups.length) groups[groups.length - 1].rounds.push(round)
-      else groups.push({ sceneRoundId: round.id, rounds: [round] })
-    }
-    return groups
-  }, [rounds, steps])
+  // 按场景分组（说明见 utils/sceneGroups）
+  const sceneGroups = useMemo(() => groupRoundsByScene(rounds, steps), [rounds, steps])
   const lastCount = useRef(rounds.length)
 
   // 新的一轮出现时滑到它那里
@@ -587,7 +569,9 @@ export default function BoardView() {
               <RoundDivider round={round} />
               {/* 场景卡跟在它所属那一轮的分隔符后面 —— 分隔符是这一轮的标题，
                   场景是这一轮的内容。后面的轮次若沿用同一场景，就不再插卡。 */}
-              {index === 0 ? <SceneCard sceneRoundId={group.sceneRoundId} /> : null}
+              {index === 0 && group.sceneRoundId ? (
+                <SceneCard sceneRoundId={group.sceneRoundId} />
+              ) : null}
               <RoundBlock
                 round={round}
                 isLast={round.id === rounds[rounds.length - 1]?.id}
