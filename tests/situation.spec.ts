@@ -248,8 +248,12 @@ describe('局面推进：世界自己会往前走', () => {
     // 评分表要写明白：0 是程度的下限，100 是"已经在做"，100 以上是进度
     const first = sys(1, [])
     expect(first).toContain('【先给这一轮打分')
-    expect(first).toContain('**100**：已经在做爱')
-    expect(first).toContain('100 以上是进度，不是程度')
+    expect(first).toContain('**100**：插进去了，正在做')
+    expect(first).toContain('100 以上是进度')
+    // 校准：脱了露了就已经 60 往上了，不许给 0
+    expect(first).toContain('脱了、露了')
+    expect(first).toContain('不是「做完没有」')
+    expect(first).toContain('给 0 是在骗自己')
     expect(first).toContain('每多一轮 +10')
     expect(first).toContain('这是第一轮，还没有历史评分')
 
@@ -262,6 +266,28 @@ describe('局面推进：世界自己会往前走', () => {
 
     // 涨得正常就不点破
     expect(sys(4, [0, 50, 100])).not.toContain('连着几轮几乎没动')
+  })
+
+  it('评分字段必须出现在输出格式里 —— 漏了它模型就不会填，界面上永远是 0', () => {
+    const [system] = buildSituationMessages({
+      storyTitle: '测试',
+      pcName: '我',
+      doc: normalizeInput('我把门关上了。'),
+      segments: [],
+      sceneSetup: setup,
+      drives: [],
+      rating: 'r18',
+      direct: true,
+      r18Streak: 3,
+      directStreak: 3,
+      recentScores: [20, 40],
+    })
+
+    // 这是踩过的坑：提示词正文里讲了半天怎么打分，输出格式的 JSON 里却没有
+    // sexScore 这个键 —— 模型自然不输出，引擎读不到就兜成 0。
+    const formatSection = system.content.slice(system.content.indexOf('【输出格式】'))
+    expect(formatSection).toContain('"sexScore"')
+    expect(system.content).toContain('漏了就算这一轮没打分')
   })
 
   it('判断标准与借口清单还在 —— 自评不是放松要求', () => {

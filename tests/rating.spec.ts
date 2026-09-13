@@ -242,8 +242,10 @@ describe('R18 分级', () => {
     expect(directHint).toContain('不许用这些糊过去')
     // 快速模式：用户把「感情建立」交给导演替他写 —— 但他要看，
     // 所以导演不许用一句话糊过去（这是最容易偷懒的地方）
-    expect(on).toContain('主动引导的手段之一：把感情建立替你写掉')
-    expect(on).toContain('用户不想自己一步一步写这段')
+    expect(on).toContain('把「上一轮到这一轮之间」替你写掉')
+    expect(on).toContain('这不是角色的来历')
+    expect(on).toContain('人物小传')
+    expect(on).toContain('会和"上一轮他明明已经站在你屋里了"直接打架')
     expect(on).toContain('用一句话糊过去是不合格的')
     expect(on).toContain('我们的关系维持了三个月')
     // 不要在意字数，但也不许水

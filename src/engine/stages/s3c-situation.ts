@@ -87,9 +87,15 @@ function normalizeDirections(raw: unknown, cards: CharacterCard[], pcName: strin
   return out
 }
 
-/** 性内容分：0~100 是程度，100 以上是"做了几轮"的进度 */
+/**
+ * 性内容分：0~100 是程度，100 以上是"做了几轮"的进度。
+ *
+ * 解析要宽容 —— 模型常写成 "60 分" 或 "60分" 这种，用 Number() 会得到 NaN，
+ * 再被兜成 0，看起来就像"它打了 0 分"（其实它打了 60）。
+ */
 function normalizeScore(raw: unknown): number {
-  const value = Number(raw)
+  const value =
+    typeof raw === 'number' ? raw : Number.parseFloat(String(raw ?? '').replace(/[^\d.-]/g, ''))
   if (!Number.isFinite(value) || value < 0) return 0
   return Math.min(Math.round(value), 400)
 }
