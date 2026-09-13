@@ -2436,3 +2436,55 @@ demo 里把 `allowR18` 打开了（它第 2 轮本来就是 R18），否则演�
 
 **测试**：`tests/render.spec.ts` 那条改成「没开总闸时，输入区看不到任何成人向的东西」
 （默认态就是关的，SSR 下正好可测）。
+
+---
+
+### 第三十八轮变更：思考模式改成 DeepSeek 专属；顺手把过时的默认配置修了
+
+**用户的意见**：
+
+> 那个思考模式的开关，你就纯粹只写 deepseek 版本的 —— 当用户的模型用的是
+> deepseek 模型的时候有这个开关，其它模型没有。另外你去搜一下 deepseek 最新的
+> 模型端点、模型 id 和配置，你现在的过时了。
+
+**去查了官方文档**（[思考模式](https://api-docs.deepseek.com/zh-cn/guides/thinking_mode/)、
+[模型 & 价格](https://api-docs.deepseek.com/zh-cn/quick_start/pricing)），
+结果比"过时"更严重 —— **默认配置整个是错的**：
+
+| | 之前写的 | 现在（2026 官方文档） |
+|---|---|---|
+| 模型 ID | `deepseek-chat` | `deepseek-flash`（DeepSeek-V4.1-Flash）；另有 `deepseek-v4-pro` |
+| BASE URL | `https://api.deepseek.com/v1` | `https://api.deepseek.com` |
+| 思考模式 | 没处理 | **默认打开**，可用 `{"thinking": {"type": "disabled"}}` 关掉 |
+| 上下文 / 输出 | 没写 | 1M / 最大 384K |
+| 附带发现 | —— | **思考模式下 `temperature` 不生效**（传了不报错，但被忽略） |
+
+**① 思考模式开关改成 DeepSeek 专属**
+
+上一版我让用户自己填一个 JSON 片段（`noThinkingBody`），理由是"各家字段不同，
+引擎不猜"。用户说得对：**与其让每个人去研究自己服务商的字段，不如只支持
+一个确定的**。DeepSeek 的写法是明确的，其它家先不管。
+
+所以：
+
+- `LlmSettings.noThinkingBody: string` → `deepseekNoThinking: boolean`（默认 **true**）；
+- 新增 `isDeepSeekModel(model)`：`/^deepseek/i`，客户端和设置界面共用；
+- `client.ts` 里三个条件同时成立才加参数：这一步标了 `thinking === false`、
+  用户没关这个优化、**而且当前模型是 DeepSeek**；
+- 设置面板那一项**只在模型名是 `deepseek-*` 时才出现**，hint 里直接写明会带上
+  `{"thinking": {"type": "disabled"}}`。
+
+**② 默认配置修掉**
+
+`baseUrl` → `https://api.deepseek.com`，`model` → `deepseek-flash`；
+设置面板的两个 placeholder 和两份 README 的配置表同步。
+
+**③ 文档里补了一句提醒**
+
+思考模式下 `temperature` 会被忽略（官方规定）—— 我们的简单步骤现在关掉了思考，
+所以那两步的 `temperaturePrecise` 反而是生效的，符合预期。
+
+**测试**：`tests/thinking.spec.ts` 六条重写 —— 认得出 DeepSeek 的模型名
+（含大小写、含非 DeepSeek 的反例）、标了 `thinking: false` 的步骤带参数、
+**导演和演员不带**、**非 DeepSeek 模型一个字段都不加**、用户关掉优化时也不加、
+其它请求字段原样保留。

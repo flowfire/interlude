@@ -1,5 +1,5 @@
 import { LlmError, type ChatMessage, type ChatOptions, type ChatResult, type ChatUsage } from '@/types/llm'
-import type { LlmSettings } from '@/types/settings'
+import { isDeepSeekModel, type LlmSettings } from '@/types/settings'
 import { extractJson } from './json'
 
 const RETRYABLE_STATUS = new Set([408, 409, 425, 429, 500, 502, 503, 504, 522, 524])
@@ -56,24 +56,6 @@ function mergeSignals(outer: AbortSignal | undefined, timeoutMs: number) {
   }
 }
 
-/**
- * 把用户填的「关闭思维链参数」解析成可以合并进请求体的对象。
- *
- * 填错（不是 JSON、不是对象）就当没填 —— 宁可多花点时间思考，
- * 也不要因为一个设置项写错让整个请求失败。
- */
-function noThinkingFields(raw: string | undefined): Record<string, unknown> {
-  if (!raw?.trim()) return {}
-  try {
-    const parsed = JSON.parse(raw)
-    return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
-      ? (parsed as Record<string, unknown>)
-      : {}
-  } catch {
-    return {}
-  }
-}
-
 export interface ChatJsonOptions extends ChatOptions {
   /** 把解析出来的 JSON 转成期望的结构；抛错会触发一次「修复重试」 */
   parse: (raw: unknown) => unknown
@@ -114,9 +96,10 @@ export class LlmClient {
       if (options.maxTokens) body.max_tokens = options.maxTokens
       if (useJsonFormat) body.response_format = { type: 'json_object' }
 
-      // 简单步骤关掉思维链：字段由用户按服务商自己填，引擎不猜
-      if (options.thinking === false) {
-        Object.assign(body, noThinkingFields(settings.noThinkingBody))
+      // 简单步骤关掉思考模式 —— 只对 DeepSeek 做，因为只有它这个开关是确定的：
+      // 它的思考模式默认开着，而"这句是台词还是动作"并不需要它。
+      if (options.thinking === false && settings.deepseekNoThinking && isDeepSeekModel(body.model as string)) {
+        body.thinking = { type: 'disabled' }
       }
 
       try {

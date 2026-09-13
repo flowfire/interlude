@@ -13,14 +13,23 @@ export interface LlmSettings {
   /** 是否请求 response_format: json_object（部分厂商不支持） */
   useJsonResponseFormat: boolean
   /**
-   * 关闭思维链时，往请求体里合并的字段（JSON）。
+   * 简单步骤（拆解、信息分发）关掉思考模式 —— **只对 DeepSeek 生效**。
    *
-   * 各家服务商写法不同，所以不硬编码：
-   * 阿里云 Qwen 用 {"enable_thinking": false}；OpenAI 的推理模型用
-   * {"reasoning_effort": "none"}；有些中转用 {"thinking": {"type": "disabled"}}。
-   * 留空就什么都不加（等于所有步骤都按模型默认来）。
+   * DeepSeek 的思考模式默认是开的，而"这句是台词还是动作""谁背对着谁"
+   * 这类判断并不需要它；关掉能明显变快。其它服务商的字段各家不同，
+   * 引擎不猜也不碰。
    */
-  noThinkingBody: string
+  deepseekNoThinking: boolean
+}
+
+/**
+ * 这个模型是不是 DeepSeek 家的。
+ *
+ * 只有 DeepSeek 才有「关掉思考模式」这个我们认得的开关 ——
+ * 其它服务商的字段各家不同，引擎不猜也不碰，界面上也就不露那一项。
+ */
+export function isDeepSeekModel(model: string): boolean {
+  return /^deepseek/i.test((model || '').trim())
 }
 
 /** 项目级设定 */
@@ -48,16 +57,16 @@ export interface ProjectSettings {
 }
 
 export const DEFAULT_LLM_SETTINGS: LlmSettings = {
-  baseUrl: 'https://api.deepseek.com/v1',
+  baseUrl: 'https://api.deepseek.com',
   apiKey: '',
-  model: 'deepseek-chat',
+  model: 'deepseek-flash',
   temperaturePrecise: 0.2,
   temperatureCreative: 0.85,
   maxConcurrency: 4,
   timeoutMs: 120000,
   maxRetries: 2,
   useJsonResponseFormat: true,
-  noThinkingBody: '',
+  deepseekNoThinking: true,
 }
 
 export const DEFAULT_PROJECT_SETTINGS: ProjectSettings = {

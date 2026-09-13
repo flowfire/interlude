@@ -165,12 +165,14 @@ Open http://127.0.0.1:5273/ and fill in your model endpoint under "Settings" in 
 
 Any **OpenAI-compatible** endpoint works: DeepSeek, OpenAI, Kimi, Ollama, and the various proxies.
 
-**The simple steps turn off chain-of-thought automatically** (if your provider supports it): put a JSON snippet in settings (Qwen's `{"enable_thinking": false}`, say) and the engine will attach it on **segmentation** and **information distribution** — working out "is this line dialogue or action" and "who has their back to whom" does not need a long think. The director, the characters and scene building are left alone. Leave it empty and the request body is untouched.
+**On DeepSeek, the simple steps turn thinking mode off automatically.** Thinking is on by default there, and **segmentation** plus **information distribution** — working out "is this line dialogue or action" and "who has their back to whom" — do not need it. The engine attaches `{"thinking": {"type": "disabled"}}` on those requests, which is noticeably faster. The director, the characters and scene building keep it on. You can turn the optimisation off in settings (the option only appears when the model name starts with `deepseek-`; other providers use different fields and the engine does not guess).
+
+One aside: under thinking mode DeepSeek ignores `temperature` — that is their rule, not the engine's.
 
 | Field | Example |
 |---|---|
-| baseUrl | `https://api.deepseek.com/v1` |
-| model | `deepseek-chat` |
+| baseUrl | `https://api.deepseek.com` |
+| model | `deepseek-flash` |
 | apiKey | `sk-...` |
 
 The key lives only in your own browser's localStorage. It is not sent anywhere else.

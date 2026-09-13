@@ -165,12 +165,14 @@ npm run dev
 
 任何 **OpenAI 兼容**的接口都能用：DeepSeek、OpenAI、Kimi、Ollama、各种中转站。
 
-**简单步骤会自动关掉思维链**（如果你的服务商支持）：设置里填一个 JSON 参数（比如 Qwen 的 `{"enable_thinking": false}`），引擎会在**拆解**和**信息分发**这两步把它带上——判断"这句是台词还是动作""谁背对着谁"不需要模型想很久。导演、角色、场景构建这些需要发挥的步骤照常不关。留空就不改请求体。
+**用 DeepSeek 的话，简单步骤会自动关掉思考模式。** DeepSeek 的思考模式默认是开的，而**拆解**、**信息分发**这两步（判断"这句是台词还是动作""谁背对着谁"）用不上它——引擎会在这些请求里带上 `{"thinking": {"type": "disabled"}}`，明显快不少。导演、角色、场景构建这些需要发挥的步骤照常开着。设置里可以关掉这个优化（那一项只在模型名是 `deepseek-*` 时才显示，别的服务商的字段各家不同，引擎不猜也不碰）。
+
+顺带一提：DeepSeek 在思考模式下会忽略 `temperature`，这是它的规定，不是引擎的问题。
 
 | 字段 | 例子 |
 |---|---|
-| baseUrl | `https://api.deepseek.com/v1` |
-| model | `deepseek-chat` |
+| baseUrl | `https://api.deepseek.com` |
+| model | `deepseek-flash` |
 | apiKey | `sk-...` |
 
 Key 只存在你自己浏览器的 localStorage 里，不会发给任何第三方。

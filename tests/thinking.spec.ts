@@ -1,17 +1,23 @@
 import { describe, expect, it, vi, afterEach } from 'vitest'
 import { LlmClient } from '@/engine/llm/client'
-import { DEFAULT_LLM_SETTINGS, type LlmSettings } from '@/types/settings'
+import { DEFAULT_LLM_SETTINGS, isDeepSeekModel, type LlmSettings } from '@/types/settings'
 
 /**
- * 简单步骤关掉思维链。
+ * 简单步骤关掉思考模式 —— **只对 DeepSeek**。
  *
- * 拆解、信息分发这种只需要基本逻辑的活，开着思维链纯属浪费时间；
- * 导演、演员那种需要"人性"的步骤才值得让模型想一想。
- * 具体往请求体里加什么字段各家不同，所以由设置里的 JSON 决定 —— 引擎不猜。
+ * DeepSeek 的思考模式默认是开的（见 api-docs.deepseek.com 的「思考模式」），
+ * 而"这句是台词还是动作""谁背对着谁"这类判断用不上它，关掉会明显变快。
+ * 其它服务商的对应字段各家不同，引擎不猜也不碰。
  */
 
 function clientWith(patch: Partial<LlmSettings>) {
-  const settings: LlmSettings = { ...DEFAULT_LLM_SETTINGS, baseUrl: 'https://example.test/v1', apiKey: 'k', model: 'm', ...patch }
+  const settings: LlmSettings = {
+    ...DEFAULT_LLM_SETTINGS,
+    baseUrl: 'https://api.deepseek.com',
+    apiKey: 'k',
+    model: 'deepseek-flash',
+    ...patch,
+  }
   return new LlmClient(() => settings)
 }
 
@@ -30,36 +36,34 @@ function captureBody() {
   return bodies
 }
 
-describe('简单步骤关闭思维链', () => {
+describe('DeepSeek：简单步骤关掉思考模式', () => {
   afterEach(() => {
     vi.unstubAllGlobals()
   })
 
-  it('没填参数时，请求体原样不动', async () => {
+  it('认得出 DeepSeek 的模型名', () => {
+    expect(isDeepSeekModel('deepseek-flash')).toBe(true)
+    expect(isDeepSeekModel('deepseek-v4-pro')).toBe(true)
+    expect(isDeepSeekModel('DeepSeek-Chat')).toBe(true)
+    expect(isDeepSeekModel('gpt-5')).toBe(false)
+    expect(isDeepSeekModel('qwen-plus')).toBe(false)
+    expect(isDeepSeekModel('')).toBe(false)
+  })
+
+  it('标了 thinking: false 的步骤，请求体里带上关闭参数', async () => {
     const bodies = captureBody()
-    await clientWith({ noThinkingBody: '' }).chatJson([{ role: 'user', content: 'hi' }], {
+    await clientWith({}).chatJson([{ role: 'user', content: 'hi' }], {
       label: 'segment',
       thinking: false,
       parse: (raw) => raw,
     })
 
-    expect(bodies[0]).not.toHaveProperty('enable_thinking')
-    expect(bodies[0]).not.toHaveProperty('reasoning_effort')
+    expect(bodies[0].thinking).toEqual({ type: 'disabled' })
   })
 
-  it('标了 thinking: false 的步骤，会把参数合并进请求体', async () => {
+  it('导演和演员照常开着思考 —— 没标就不加参数', async () => {
     const bodies = captureBody()
-    await clientWith({ noThinkingBody: '{"enable_thinking": false}' }).chatJson(
-      [{ role: 'user', content: 'hi' }],
-      { label: 'segment', thinking: false, parse: (raw) => raw },
-    )
-
-    expect(bodies[0].enable_thinking).toBe(false)
-  })
-
-  it('没标 thinking 的步骤不受影响 —— 导演和演员照常想', async () => {
-    const bodies = captureBody()
-    const client = clientWith({ noThinkingBody: '{"enable_thinking": false}' })
+    const client = clientWith({})
 
     await client.chatJson([{ role: 'user', content: 'hi' }], { label: 'situation', parse: (raw) => raw })
     await client.chatJson([{ role: 'user', content: 'hi' }], {
@@ -68,29 +72,41 @@ describe('简单步骤关闭思维链', () => {
       parse: (raw) => raw,
     })
 
-    expect(bodies[0]).not.toHaveProperty('enable_thinking')
-    expect(bodies[1]).not.toHaveProperty('enable_thinking')
+    expect(bodies[0].thinking).toBeUndefined()
+    expect(bodies[1].thinking).toBeUndefined()
   })
 
-  it('参数写坏了就当没填 —— 不能因为一个设置项让请求失败', async () => {
+  it('不是 DeepSeek 的模型，一个字段都不加', async () => {
     const bodies = captureBody()
-    await clientWith({ noThinkingBody: 'enable_thinking=false' }).chatJson(
-      [{ role: 'user', content: 'hi' }],
-      { label: 'segment', thinking: false, parse: (raw) => raw },
-    )
+    await clientWith({ model: 'gpt-5' }).chatJson([{ role: 'user', content: 'hi' }], {
+      label: 'segment',
+      thinking: false,
+      parse: (raw) => raw,
+    })
 
-    expect(bodies[0].enable_thinking).toBeUndefined()
-    expect(bodies[0].model).toBe('m')
+    expect(bodies[0].thinking).toBeUndefined()
   })
 
-  it('数组也不算合法参数', async () => {
+  it('用户把这一项关掉时，DeepSeek 也不加', async () => {
     const bodies = captureBody()
-    await clientWith({ noThinkingBody: '["enable_thinking"]' }).chatJson(
-      [{ role: 'user', content: 'hi' }],
-      { label: 'segment', thinking: false, parse: (raw) => raw },
-    )
+    await clientWith({ deepseekNoThinking: false }).chatJson([{ role: 'user', content: 'hi' }], {
+      label: 'segment',
+      thinking: false,
+      parse: (raw) => raw,
+    })
 
-    expect(bodies[0]).not.toHaveProperty('0')
-    expect(bodies[0].model).toBe('m')
+    expect(bodies[0].thinking).toBeUndefined()
+  })
+
+  it('别的请求参数原样保留', async () => {
+    const bodies = captureBody()
+    await clientWith({}).chatJson([{ role: 'user', content: 'hi' }], {
+      label: 'segment',
+      thinking: false,
+      parse: (raw) => raw,
+    })
+
+    expect(bodies[0].model).toBe('deepseek-flash')
+    expect(bodies[0]).toHaveProperty('messages')
   })
 })

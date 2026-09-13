@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { explainLlmError, formatAdvice } from '@/engine/llm/errors'
 import { llmClient } from '@/engine/llm/instance'
 import { useAppStore } from '@/store/appStore'
+import { isDeepSeekModel } from '@/types/settings'
 
 export default function SettingsDialog() {
   const llm = useAppStore((state) => state.llm)
@@ -50,7 +51,7 @@ export default function SettingsDialog() {
             <input
               className="input"
               value={llm.baseUrl}
-              placeholder="https://api.deepseek.com/v1"
+              placeholder="https://api.deepseek.com"
               onChange={(event) => setLlm({ baseUrl: event.target.value })}
             />
             <span className="hint">
@@ -75,7 +76,7 @@ export default function SettingsDialog() {
             <input
               className="input"
               value={llm.model}
-              placeholder="deepseek-chat"
+              placeholder="deepseek-flash"
               onChange={(event) => setLlm({ model: event.target.value })}
             />
           </div>
@@ -144,24 +145,28 @@ export default function SettingsDialog() {
             <span className="hint">部分中转站不支持这个参数，引擎遇到 400 会自动降级重试，也可以在这里直接关掉。</span>
           </div>
 
-          <div className="field">
-            <label>简单步骤关闭思维链</label>
-            <input
-              className="input"
-              placeholder='{"enable_thinking": false}'
-              value={llm.noThinkingBody}
-              onChange={(event) => setLlm({ noThinkingBody: event.target.value })}
-            />
-            <span className="hint">
-              各家写法不同，填成 JSON 就行：Qwen 是 {'{"enable_thinking": false}'}，
-              OpenAI 推理模型是 {'{"reasoning_effort": "none"}'}，
-              有的中转是 {'{"thinking": {"type": "disabled"}}'}。
-              留空 = 不改请求体。
-              <br />
-              生效的是<strong>拆解</strong>和<strong>信息分发</strong>这两步（判断"这句是台词还是动作"、
-              "谁背对着谁"，不需要模型想很久）；导演、角色、场景构建这些需要发挥的步骤照常。
-            </span>
-          </div>
+          {isDeepSeekModel(llm.model) ? (
+            <div className="field">
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <input
+                  type="checkbox"
+                  checked={llm.deepseekNoThinking}
+                  onChange={(event) => setLlm({ deepseekNoThinking: event.target.checked })}
+                />
+                简单步骤关掉思考模式
+              </label>
+              <span className="hint">
+                DeepSeek 的思考模式默认是开的，而<strong>拆解</strong>和<strong>信息分发</strong>
+                这两步（判断"这句是台词还是动作""谁背对着谁"）用不上它 ——
+                关掉会明显变快。引擎会在这些步骤的发出去的请求里带上
+                {' '}
+                <code>{'{"thinking": {"type": "disabled"}}'}</code>
+                ，导演、角色、场景构建这些需要发挥的步骤照常开着。
+                <br />
+                正在用其它模型，所以这一项不显示。
+              </span>
+            </div>
+          ) : null}
 
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             <button className="btn" disabled={testing} onClick={handleTest}>
