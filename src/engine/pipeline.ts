@@ -84,6 +84,19 @@ export function upstreamStepsByStage(steps: StepIndex, stepId: string, stage: St
 }
 
 /** 找当前对话里上一轮已经完成的场景，用来给这一轮的场景构建提供连续性 */
+/** 上一轮的完整场景（沿用用） */
+function findPreviousSceneSetup(ctx: PipelineContext): SceneSetup | null {
+  const ids = sessionRoundIds(ctx)
+  const previous = Object.values(ctx.steps)
+    .filter((step) => step.stage === 'scene' && step.status === 'done')
+    .filter((step) => (!ids || ids.has(step.roundId)) && step.roundId !== ctx.round.id)
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+    .pop()
+
+  const setup = previous?.output as SceneSetup | undefined
+  return setup && !setup.unchanged ? setup : (setup ?? null)
+}
+
 function findPreviousScene(ctx: PipelineContext): { place: string; situation: string; summary: string } | null {
   const ids = sessionRoundIds(ctx)
   const previous = Object.values(ctx.steps)
@@ -289,6 +302,7 @@ async function executeStep(ctx: PipelineContext, step: Step): Promise<Step> {
       const segments = segmentOutput?.segments ?? []
       if (!doc) throw new Error('缺少上游的规范化结果')
 
+      const previousSetup = findPreviousSceneSetup(ctx)
       const { output, result } = await runSceneStage(ctx.client, {
         doc,
         segments,
@@ -299,7 +313,14 @@ async function executeStep(ctx: PipelineContext, step: Step): Promise<Step> {
         knownCast: knownCastOf(ctx),
         previousRecap: buildRecap(ctx),
       })
-      return done(step, output, { model: result?.model, cost: costOf(result, startedAt) })
+      // 场景没变：把上一轮那份原样沿用，只留下 unchanged 标记。
+      // 后续步骤照常拿到完整的场景；页面上靠这个标记决定不再插一条新的场面条
+      // （sticky 的上一条会继续吸着，视觉上就是"沿用"）。
+      const reused =
+        output.unchanged && previousSetup
+          ? { ...previousSetup, unchanged: true, usedModel: output.usedModel }
+          : output
+      return done(step, reused, { model: result?.model, cost: costOf(result, startedAt) })
     }
 
     case 'exposure': {

@@ -902,6 +902,10 @@ pre.code {
 .scene-card:not([open]) .scene-card-head::after {
   content: '▸';
 }
+/* 收起的场面条不该在时间线里占位 —— 展开才是常态 */
+.scene-card:not([open]) {
+  margin-bottom: 8px;
+}
 .scene-body {
   margin-top: 8px;
 }

@@ -108,8 +108,9 @@ function RoundBlock({ round, isLast, demo }: { round: Round; isLast: boolean; de
       {/* 1. 场面 —— 它是整幕共享的**背景**，不属于"这一步发生了什么"。
           所以做成 sticky + 默认收起：滚动时当前这一轮的场面会顶掉上一轮的
           （多个 sticky 元素的天然行为，不需要 JS），时间线里也不再被它打断。 */}
-      {setup ? (
-        <details className="scene-card">
+      {/* 场景没变就不插新的场面条 —— sticky 的上一条会继续吸着，视觉上就是"沿用" */}
+      {setup && !setup.unchanged ? (
+        <details className="scene-card" open>
           <summary className="scene-card-head">
             <span className="scene-label">场面</span>
             {setup.time ? <span className="chip">{setup.time}</span> : null}

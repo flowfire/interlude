@@ -218,6 +218,9 @@ export function normalizeSceneSetup(raw: RawSceneSetup, pcName: string): Omit<Sc
     establishedBeats,
     timeSkip: raw.timeSkip ? String(raw.timeSkip).trim() : undefined,
     interlude: parseInterlude(raw.interlude),
+    unchanged:
+      raw.unchanged === true ||
+      String(raw.unchanged ?? '').trim().toLowerCase() === 'true',
   }
 }
 
@@ -278,6 +281,8 @@ export function buildSceneFromRules(
     opening,
     situation: '',
     pcProfile: project.pcPersona.trim() || '（未说明）',
+    // 没跑成模型时不能声称"没变" —— 我们没有依据
+    unchanged: false,
     present,
     establishedBeats,
     usedModel: false,

@@ -59,6 +59,14 @@ export interface SceneSetup {
   timeSkip?: string
   /** 时间跳跃期间发生了什么（只有真的跳了、且开关打开时才有） */
   interlude?: SceneInterlude
+  /**
+   * 这一轮的场景**没有变**（还是那个地方、那段时间、那些人）。
+   *
+   * 连续几轮待在同一处时，场景构建那一步只需要判一句"没变"就行 ——
+   * 不必重新描写一遍环境。引擎会把上一轮那份原样沿用，
+   * 页面上也不会插入新的场面条（sticky 的上一条会继续吸着）。
+   */
+  unchanged?: boolean
   usedModel: boolean
   fallbackReason?: string
 }
@@ -85,6 +93,7 @@ export const RawSceneSetupSchema = z.object({
   interlude: z.union([z.record(z.string(), z.unknown()), z.null()]).optional(),
   present: looseArray,
   establishedBeats: looseArray,
+  unchanged: z.union([z.boolean(), z.string(), z.null()]).optional(),
 })
 
 export type RawSceneSetup = z.infer<typeof RawSceneSetupSchema>

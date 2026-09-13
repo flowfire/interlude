@@ -561,3 +561,24 @@ describe('角色得有自己的驱动力', () => {
     expect(text).toContain('它们会顺着味道找过来')
   })
 })
+
+describe('场景可以不变', () => {
+  it('提示词要求它先判断变没变，没变就只回一个标记', async () => {
+    const { buildSceneMessages } = await import('@/engine/prompts/scene')
+    const [system] = buildSceneMessages({
+      doc: normalizeInput('我推门进去。'),
+      segments: [],
+      pcName: '我',
+      pcPersona: '测试用',
+      storyTitle: '测试',
+      rating: 'general',
+    })
+
+    expect(system.content).toContain('这一轮的场景变了没有')
+    expect(system.content).toContain('只输出')
+    expect(system.content).toContain('"unchanged": true')
+    // 关键区分：场景没变 ≠ 剧情没进展
+    expect(system.content).toContain('"没变"不等于"没进展"')
+    expect(system.content).toContain('第一轮必须输出完整场景')
+  })
+})

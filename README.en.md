@@ -312,6 +312,14 @@ You write in the first person, but **in every prompt the engine hands to an AI, 
 
 **So write the persona.** With just "me" and nothing else, the AI can only guess.
 
+## Scenes are not rebuilt every round
+
+When several rounds stay in the same place (the same table, the same rain), scene building only has to answer one thing — **unchanged**. If time, place, who is present and the mood are all the same, it returns a single marker, **the engine reuses the previous scene, and no new scene strip is inserted** (the previous one keeps sticking to the top, which reads as "still the same scene").
+
+That saves a generation and removes the repetition of describing the same room every round. **"Unchanged" does not mean "nothing happened"** — the two of them are still at that table, only halfway through the conversation, which is the most common kind of consecutive round.
+
+The scene strip itself changed too: it is **background shared by the whole scene**, not "what happened this step", so it is now a sticky bar — expanded by default, click to collapse; scrolling brings the current round's strip over the previous one.
+
 ## Three mechanisms worth knowing
 
 **① Your lines are locked.** What you wrote as speech appears on stage verbatim; the AI can only add actions and micro-expressions.
