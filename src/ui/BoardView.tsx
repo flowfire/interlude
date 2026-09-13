@@ -46,7 +46,18 @@ function demoParam(): string | null {
   return new URLSearchParams(window.location.search).get('demo')
 }
 
-function RoundBlock({ round, isLast, demo }: { round: Round; isLast: boolean; demo: string | null }) {
+function RoundBlock({
+  round,
+  isLast,
+  demo,
+  stuck,
+}: {
+  round: Round
+  isLast: boolean
+  demo: string | null
+  /** 这一轮的场面卡是不是正贴在顶上（由 BoardView 统一算，见那边的注释） */
+  stuck: boolean
+}) {
   const steps = useAppStore((state) => state.steps)
   const rounds = useAppStore((state) => state.rounds)
   const busy = useAppStore((state) => state.busy)
@@ -76,26 +87,7 @@ function RoundBlock({ round, isLast, demo }: { round: Round; isLast: boolean; de
   const sceneImage = sceneImages[round.id] ?? ''
   const sceneImageBusy = useAppStore((state) => state.sceneImageBusy) === round.id
   const [imageError, setImageError] = useState('')
-  // 卡片吸顶了没有 —— 哨兵滚出视口就说明它已经贴到顶上
-  const [stuck, setStuck] = useState(false)
-  const sentinelRef = useRef<HTMLDivElement | null>(null)
 
-  useEffect(() => {
-    const node = sentinelRef.current
-    if (!node || typeof IntersectionObserver === 'undefined') return
-    const observer = new IntersectionObserver(([entry]) => setStuck(!entry.isIntersecting), {
-      threshold: 0,
-    })
-    observer.observe(node)
-    return () => observer.disconnect()
-  }, [])
-
-  // 只报告"我在不在吸顶"，图由顶层统一决定（因为"一张都没吸顶"时另有规则）
-  useEffect(() => {
-    const store = useAppStore.getState()
-    if (stuck) store.setStuckRoundId(round.id)
-    else if (store.stuckRoundId === round.id) store.setStuckRoundId(null)
-  }, [stuck, round.id])
 
   // 卡片开合：**有图就默认收起** —— 有图就能脑补环境了，描述不必再占着。
   // 初值直接看有没有图（sceneImages 是从 localStorage 同步读出来的，
@@ -164,10 +156,9 @@ function RoundBlock({ round, isLast, demo }: { round: Round; isLast: boolean; de
           （多个 sticky 元素的天然行为，不需要 JS），时间线里也不再被它打断。 */}
       {/* 场景没变就不插新的场面条 —— sticky 的上一条会继续吸着，视觉上就是"沿用" */}
       {setup && !setup.unchanged ? (
-        <>
-          {/* 哨兵：它一滚出视口，就说明下面这张卡片已经吸到顶上了 */}
-          <div ref={sentinelRef} className="scene-sentinel" aria-hidden />
         <details
+          data-scene-card
+          data-round-id={round.id}
           className={`scene-card${stuck ? ' stuck' : ''}`}
           open={sceneOpen}
           onToggle={(event) => setSceneOpen((event.currentTarget as HTMLDetailsElement).open)}
@@ -274,7 +265,6 @@ function RoundBlock({ round, isLast, demo }: { round: Round; isLast: boolean; de
             </div>
           </div>
           </details>
-        </>
       ) : null}
 
       {/* 2. 你的输入 */}
@@ -525,6 +515,7 @@ export default function BoardView() {
     .sort((a, b) => a.index - b.index)
 
   const bottomRef = useRef<HTMLDivElement>(null)
+  const stuckRoundId = useAppStore((state) => state.stuckRoundId)
   const lastCount = useRef(rounds.length)
 
   // 新的一轮出现时滑到它那里
@@ -556,7 +547,13 @@ export default function BoardView() {
         <span className="hint">{rounds.length} 轮</span>
       </div>
       {rounds.map((round, index) => (
-        <RoundBlock key={round.id} round={round} isLast={index === rounds.length - 1} demo={demoParam()} />
+        <RoundBlock
+          key={round.id}
+          round={round}
+          isLast={index === rounds.length - 1}
+          demo={demoParam()}
+          stuck={stuckRoundId === round.id}
+        />
       ))}
       <div ref={bottomRef} />
     </div>

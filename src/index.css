@@ -785,9 +785,11 @@ pre.code {
 }
 
 .round-block {
-  /* 屏幕外的轮次交给浏览器跳过渲染，长剧情也不卡 */
-  content-visibility: auto;
-  contain-intrinsic-size: auto 620px;
+  /* 这里**不能**用 content-visibility: auto（也别再加回来）。
+     它给元素加了 paint containment，里面 `position: sticky` 的场面卡就再也
+     贴不到滚动容器顶部 —— 实测：加上它 stuckRoundId 恒为 null、背景永远停在
+     第一张；去掉之后立刻正常。
+     代价是屏幕外的轮次也照常渲染，功能优先。 */
   scroll-margin-top: 12px;
 }
 
@@ -956,12 +958,6 @@ pre.code {
 /* 收起的场面条不该在时间线里占位 —— 展开才是常态 */
 .scene-card:not([open]) {
   margin-bottom: 8px;
-}
-/* 哨兵只有 1px —— 它滚出视口就是"这张卡片吸顶了"的信号，
-   吸顶时会把它的图交给整个界面的背景（见 .app::before） */
-.scene-sentinel {
-  height: 1px;
-  margin-bottom: -1px;
 }
 /* 摘要行里的生图按钮 —— 不占新的一行，所以卡片高度不变 */
 .scene-image-tip {
