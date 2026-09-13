@@ -165,7 +165,14 @@ Open http://127.0.0.1:5273/ and fill in your model endpoint under "Settings" in 
 
 Any **OpenAI-compatible** endpoint works: DeepSeek, OpenAI, Kimi, Ollama, and the various proxies.
 
-**On DeepSeek, the simple steps turn thinking mode off automatically.** Thinking is on by default there, and **segmentation** plus **information distribution** — working out "is this line dialogue or action" and "who has their back to whom" — do not need it. The engine attaches `{"thinking": {"type": "disabled"}}` on those requests, which is noticeably faster. The director, the characters and scene building keep it on. You can turn the optimisation off in settings (the option only appears when the model name starts with `deepseek-`; other providers use different fields and the engine does not guess).
+**On DeepSeek, thinking mode can be turned off in two tiers.** Thinking is on by default there, and settings shows two options (only when the model name starts with `deepseek-`; other providers use different fields and the engine does not guess):
+
+| Option | Default | Which steps |
+|---|---|---|
+| **Simple steps do not think** | on | Segmentation and information distribution — "is this line dialogue or action", "who has their back to whom" — no chain-of-thought needed, and it is noticeably faster |
+| **Complex steps do not think either** | off | The director, the characters and scene building too. Faster and cheaper, but those steps are exactly the ones that look better when the model thinks — output may come out flatter |
+
+When on, the engine attaches `{"thinking": {"type": "disabled"}}` to the corresponding requests.
 
 One aside: under thinking mode DeepSeek ignores `temperature` — that is their rule, not the engine's.
 

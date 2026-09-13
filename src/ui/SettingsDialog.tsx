@@ -15,15 +15,29 @@ export default function SettingsDialog() {
   const [testing, setTesting] = useState(false)
   const [testResult, setTestResult] = useState<string | null>(null)
 
+  /**
+   * 测连通性，不看模型说了什么。
+   *
+   * 有两点是踩过坑的：
+   * · **关掉思考模式**：DeepSeek 默认开着思考，思维链会把 max_tokens 吃光，
+   *   回来的 content 是空的 —— 看着像失败，其实是配额被思考占满了。
+   * · **不校验内容**：模型爱回什么回什么，只要 HTTP 通了、有东西回来就算成功。
+   */
   const handleTest = async () => {
     setTesting(true)
     setTestResult(null)
     try {
-      const result = await llmClient.chat([{ role: 'user', content: '回复两个字：可用' }], {
-        maxTokens: 16,
+      const result = await llmClient.chat([{ role: 'user', content: '只回复两个字：可用' }], {
+        maxTokens: 64,
         temperature: 0,
+        thinking: false,
       })
-      setTestResult(`✅ 连接成功（${result.model}，${result.ms}ms）：${result.content.trim().slice(0, 80)}`)
+      const content = result.content.trim()
+      setTestResult(
+        content
+          ? `✅ 连接成功（${result.model}，${result.ms}ms）：${content.slice(0, 60)}`
+          : `✅ 连接成功（${result.model}，${result.ms}ms），但这次没返回内容 —— 不影响使用，引擎不靠这一步的内容。`,
+      )
     } catch (error) {
       const advice = explainLlmError(error)
       setTestResult(`❌ ${formatAdvice(advice)}`)
@@ -142,31 +156,52 @@ export default function SettingsDialog() {
               />
               使用 response_format: json_object
             </label>
-            <span className="hint">部分中转站不支持这个参数，引擎遇到 400 会自动降级重试，也可以在这里直接关掉。</span>
+            <span className="hint">
+              让模型输出<strong>严格的 JSON</strong>：不加 ``` 围栏、不在前后夹解释文字。
+              引擎自己也能容错解析（会从一堆废话里把 JSON 抠出来），所以这个参数是
+              "让模型少犯错"，不是"不开就不行"。部分中转不支持它（会返回 400），
+              引擎会自动降级重试一次，也可以在这里直接关掉。
+            </span>
           </div>
 
           {isDeepSeekModel(llm.model) ? (
+            <>
+              <div className="field">
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <input
+                    type="checkbox"
+                    checked={llm.deepseekNoThinkingSimple}
+                    onChange={(event) => setLlm({ deepseekNoThinkingSimple: event.target.checked })}
+                  />
+                  简单步骤不思考
+                </label>
+                <span className="hint">
+                  <strong>拆解</strong>和<strong>信息分发</strong>这两步（判断"这句是台词还是动作"
+                  "谁背对着谁"）用不上思维链，关掉明显变快。DeepSeek 的思考模式默认是开的，
+                  所以引擎会在这些请求里带上 <code>{'{"thinking": {"type": "disabled"}}'}</code>。
+                </span>
+              </div>
+
+              <div className="field">
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <input
+                    type="checkbox"
+                    checked={llm.deepseekNoThinkingAll}
+                    onChange={(event) => setLlm({ deepseekNoThinkingAll: event.target.checked })}
+                  />
+                  复杂步骤也不思考
+                </label>
+                <span className="hint">
+                  连<strong>导演、角色、场景构建</strong>这些也一起关掉。会更快也更便宜，
+                  但那些步骤本来就靠模型"想一想"才好看 —— 写出来可能更平、更套路。默认关着。
+                </span>
+              </div>
+            </>
+          ) : (
             <div className="field">
-              <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <input
-                  type="checkbox"
-                  checked={llm.deepseekNoThinking}
-                  onChange={(event) => setLlm({ deepseekNoThinking: event.target.checked })}
-                />
-                简单步骤关掉思考模式
-              </label>
-              <span className="hint">
-                DeepSeek 的思考模式默认是开的，而<strong>拆解</strong>和<strong>信息分发</strong>
-                这两步（判断"这句是台词还是动作""谁背对着谁"）用不上它 ——
-                关掉会明显变快。引擎会在这些步骤的发出去的请求里带上
-                {' '}
-                <code>{'{"thinking": {"type": "disabled"}}'}</code>
-                ，导演、角色、场景构建这些需要发挥的步骤照常开着。
-                <br />
-                正在用其它模型，所以这一项不显示。
-              </span>
+              <span className="hint">当前模型不是 DeepSeek，所以没有思考模式的开关。</span>
             </div>
-          ) : null}
+          )}
 
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             <button className="btn" disabled={testing} onClick={handleTest}>

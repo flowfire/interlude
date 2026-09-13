@@ -13,13 +13,17 @@ export interface LlmSettings {
   /** 是否请求 response_format: json_object（部分厂商不支持） */
   useJsonResponseFormat: boolean
   /**
-   * 简单步骤（拆解、信息分发）关掉思考模式 —— **只对 DeepSeek 生效**。
+   * **简单步骤**（拆解、信息分发）关掉思考模式 —— 只对 DeepSeek 生效。
    *
-   * DeepSeek 的思考模式默认是开的，而"这句是台词还是动作""谁背对着谁"
-   * 这类判断并不需要它；关掉能明显变快。其它服务商的字段各家不同，
-   * 引擎不猜也不碰。
+   * "这句是台词还是动作""谁背对着谁"这类判断用不上思维链，关掉明显变快。
    */
-  deepseekNoThinking: boolean
+  deepseekNoThinkingSimple: boolean
+  /**
+   * **复杂步骤**（导演、角色、场景构建……）也关掉思考模式 —— 只对 DeepSeek 生效。
+   *
+   * 会更快也更便宜，但那些步骤本来就靠模型"想一想"才好看，所以默认关着。
+   */
+  deepseekNoThinkingAll: boolean
 }
 
 /**
@@ -66,7 +70,8 @@ export const DEFAULT_LLM_SETTINGS: LlmSettings = {
   timeoutMs: 120000,
   maxRetries: 2,
   useJsonResponseFormat: true,
-  deepseekNoThinking: true,
+  deepseekNoThinkingSimple: true,
+  deepseekNoThinkingAll: false,
 }
 
 export const DEFAULT_PROJECT_SETTINGS: ProjectSettings = {

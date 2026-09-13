@@ -96,10 +96,13 @@ export class LlmClient {
       if (options.maxTokens) body.max_tokens = options.maxTokens
       if (useJsonFormat) body.response_format = { type: 'json_object' }
 
-      // 简单步骤关掉思考模式 —— 只对 DeepSeek 做，因为只有它这个开关是确定的：
-      // 它的思考模式默认开着，而"这句是台词还是动作"并不需要它。
-      if (options.thinking === false && settings.deepseekNoThinking && isDeepSeekModel(body.model as string)) {
-        body.thinking = { type: 'disabled' }
+      // 关掉思考模式 —— 只对 DeepSeek 做，因为只有它这个开关是确定的。
+      // 简单步骤（标了 thinking === false 的）和复杂步骤各有一个开关：
+      // 前者默认关思考（省时间），后者默认开着（那些步骤靠"想"才好看）。
+      if (isDeepSeekModel(body.model as string)) {
+        const noThinking =
+          options.thinking === false ? settings.deepseekNoThinkingSimple : settings.deepseekNoThinkingAll
+        if (noThinking) body.thinking = { type: 'disabled' }
       }
 
       try {

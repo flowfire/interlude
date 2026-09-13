@@ -87,13 +87,40 @@ describe('DeepSeek：简单步骤关掉思考模式', () => {
     expect(bodies[0].thinking).toBeUndefined()
   })
 
-  it('用户把这一项关掉时，DeepSeek 也不加', async () => {
+  it('用户把简单步骤那一项关掉时，DeepSeek 也不加', async () => {
     const bodies = captureBody()
-    await clientWith({ deepseekNoThinking: false }).chatJson([{ role: 'user', content: 'hi' }], {
+    await clientWith({ deepseekNoThinkingSimple: false }).chatJson([{ role: 'user', content: 'hi' }], {
       label: 'segment',
       thinking: false,
       parse: (raw) => raw,
     })
+
+    expect(bodies[0].thinking).toBeUndefined()
+  })
+
+  it('两个开关各管各的：打开「复杂步骤也不思考」只影响复杂步骤', async () => {
+    const bodies = captureBody()
+    const client = clientWith({ deepseekNoThinkingAll: true })
+
+    // 简单步骤本来就不思考
+    await client.chatJson([{ role: 'user', content: 'hi' }], {
+      label: 'segment',
+      thinking: false,
+      parse: (raw) => raw,
+    })
+    // 复杂步骤这下也关掉
+    await client.chatJson([{ role: 'user', content: 'hi' }], { label: 'situation', parse: (raw) => raw })
+
+    expect(bodies[0].thinking).toEqual({ type: 'disabled' })
+    expect(bodies[1].thinking).toEqual({ type: 'disabled' })
+  })
+
+  it('「复杂步骤也不思考」关着时，导演照常开着思考', async () => {
+    const bodies = captureBody()
+    await clientWith({ deepseekNoThinkingAll: false }).chatJson(
+      [{ role: 'user', content: 'hi' }],
+      { label: 'roleplay:林砚', parse: (raw) => raw },
+    )
 
     expect(bodies[0].thinking).toBeUndefined()
   })
