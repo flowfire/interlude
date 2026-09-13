@@ -82,7 +82,14 @@ function RoundBlock({ round, isLast, demo }: { round: Round; isLast: boolean; de
     <section className="round-block" id={`round-${round.id}`}>
       <div className="round-divider">
         <span className="round-index">第 {round.index} 轮</span>
-        {round.rating === 'r18' ? <span className="chip chip-r18">R18</span> : null}
+        {round.rating === 'r18' ? (
+          <span
+            className={`chip chip-r18${round.direct ? ' chip-r18-direct' : ''}`}
+            title={round.direct ? '成人向 · 快速入戏' : '成人向'}
+          >
+            R18{round.direct ? ' · 快速入戏' : ''}
+          </span>
+        ) : null}
         {round.status === 'running' ? <span className="chip chip-warn">生成中</span> : null}
         {round.status === 'error' ? <span className="chip chip-error">有步骤失败</span> : null}
         <div className="round-line" />

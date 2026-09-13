@@ -297,6 +297,13 @@ textarea {
   background: rgba(192, 80, 77, 0.14);
   border-color: rgba(192, 80, 77, 0.35);
 }
+/* 快速入戏的轮次和普通成人向分开：回看时一眼能认出哪几轮是直给 */
+.chip-r18-direct {
+  color: #ffb3a7;
+  background: rgba(214, 62, 58, 0.26);
+  border-color: rgba(214, 62, 58, 0.6);
+  font-weight: 600;
+}
 
 .kind-scene {
   color: var(--green);

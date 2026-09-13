@@ -226,7 +226,7 @@ For the director the third line carries extra weight: **the physical boundary be
 
 Scene building and the "exteriorisation" step get the same signal: the atmosphere may be more private and charged, and the visible traces may be more direct (breathing, warmth, where a gaze lingers). But **how much leaks is still decided by the persona** — someone who keeps things in still keeps things in; ticking R18 does not put it on their face.
 
-Rounds with R18 on get a red marker on the divider in the main board, so you can see at a glance which ones they were when reading back.
+Rounds with R18 on get a red marker on the divider in the main board, so you can see at a glance which ones they were when reading back. Rounds with **straight into the scene** ticked get a brighter one and say so — so you can tell the direct ones apart from the merely adult ones.
 
 To change a round's rating: click "edit the source", where the same checkbox lives. **Even if the text is untouched and you only flip the checkbox, that counts as a change**, and "save and regenerate" will replay that round under the new rating (later rounds are discarded as usual, undo available).
 
