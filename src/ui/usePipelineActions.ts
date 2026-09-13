@@ -19,9 +19,40 @@ import type { SceneSetup } from '@/types/scene'
 import type { Segment } from '@/types/segment'
 import type { Step } from '@/types/step'
 
-/** 这一轮的步骤是不是跑全了 —— 判据是有没有走到「编排」 */
+/** 一轮里只该出现一次的那几个阶段 */
+const SINGLETON_STAGES = [
+  'normalize',
+  'segment',
+  'scene',
+  'exposure',
+  'cast',
+  'situation',
+  'perceive',
+  'compose',
+  'commit',
+] as const
+
+/**
+ * 这一轮的步骤是不是"跑全了、而且干净"。
+ *
+ * 两个条件缺一不可：
+ *
+ * 1. **走到了「编排」** —— 停在局面推进那种半截轮次，是没跑完；
+ * 2. **单例阶段没有重复** —— 这一条是为**脏数据**留的。
+ *    用户遇到过"第 8 轮 17 步"：两套「规范化/拆解/场景构建/…」叠在一起。
+ *    如果只判第 1 条，那种轮次因为有 compose 会被当成"完整"，
+ *    于是走 `rerunFrom`（它只重跑依赖图里的步骤）——**重复的那套不在图里，
+ *    永远清不掉**。必须让它也走整轮重跑，才能真正清干净。
+ *
+ * （`context` / `roleplay` 每个角色一个，不是单例，不参与这条判断。）
+ */
 export function roundIsComplete(steps: Record<string, Step>, roundId: string): boolean {
-  return Object.values(steps).some((item) => item.roundId === roundId && item.stage === 'compose')
+  const own = Object.values(steps).filter((item) => item.roundId === roundId)
+  if (!own.some((item) => item.stage === 'compose')) return false
+  for (const stage of SINGLETON_STAGES) {
+    if (own.filter((item) => item.stage === stage).length > 1) return false
+  }
+  return true
 }
 
 function fail(error: unknown, roundId?: string) {

@@ -5093,3 +5093,50 @@ let steps: StepIndex = Object.fromEntries(
 
 **新增测试**：故意**不**清理、带着旧步骤直接调 `runFullRound`，
 断言阶段不重复 —— 钉住"不依赖调用方"这一点。
+
+---
+
+### 第九十九轮变更：脏数据 —— 有重复的轮次不算「完整」
+
+**用户继续追问**：
+
+> 没有哦，还是没有清空哦。
+> 你要考虑一下：假如我之前就有脏数据存在（额外的步骤）会怎么样呢？
+
+**这一句直接把漏洞点出来了。** 我上一轮的去重是放在"**走整轮重跑**"那条路上的，
+而走哪条路取决于 `roundIsComplete`：
+
+```ts
+if (!firstStep || !roundIsComplete(ctx.steps, roundId)) {
+  clearRoundSteps(roundId); await runRoundFor(roundId); return   // ← 清
+}
+await rerunFrom(ctx, firstStep.id)                               // ← 不清
+```
+
+而那时的 `roundIsComplete` **只检查"有没有 compose"**。用户的第 8 轮如果有
+compose（重复的那一套里就有一个），它就被判成**完整** → 走 `rerunFrom` →
+`rerunFrom` **只重跑依赖图里的步骤**，而**重复的那套根本不在新依赖图里** →
+永远清不掉。**用户反复点重跑，看着它跑完，重复的还在。**
+
+**改法（两层）**：
+
+**① `roundIsComplete` 加一条：单例阶段不许有重复。**
+
+`normalize / segment / scene / exposure / cast / situation / perceive /
+compose / commit` 每个只该出现一次；出现两次就说明是脏数据，判为"不完整"，
+于是自然走整轮重跑那条会清理的路。
+（`context` / `roleplay` 是每个角色一个，不参与这条判断。）
+
+**② 加载工作区时主动清理。**
+
+- **孤儿步骤**（`roundId` 指向已经不存在的轮次）直接丢掉；
+- **重复的单例阶段**每组只留 `updatedAt` 最新的那一份。
+
+这样用户**只要刷新页面**，历史脏数据就没了 —— 不用先想明白该点哪个按钮。
+
+**测试**：`replay.spec` 加两条 ——
+"有重复就不算完整"、以及"加载工作区时重复的单例阶段会被去重（留最新那份）"。
+
+**这一轮的教训**：我把"清理"绑在了一条**有条件的分支**上，而那个条件本身
+可能被脏数据满足。**判断"这一轮能不能自愈"时，必须把脏数据本身算进去** ——
+否则就会出现"条件说它很健康，实际上它烂着"。

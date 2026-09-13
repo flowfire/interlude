@@ -120,6 +120,57 @@ export interface AppState extends WorkspaceSnapshot {
   resetWorkspace: () => void
 }
 
+/** 一轮里只该出现一次的那几个阶段（`context` / `roleplay` 是每角色一个，不算） */
+const SINGLETON_STAGES = new Set([
+  'normalize',
+  'segment',
+  'scene',
+  'exposure',
+  'cast',
+  'situation',
+  'perceive',
+  'compose',
+  'commit',
+])
+
+/**
+ * 去掉同一轮里**重复的单例阶段**，每组只留最新那一份。
+ *
+ * 这是给脏数据准备的：用户在"整轮重跑"期间遇到过第 8 轮堆出 17 步
+ * （两套「规范化/拆解/场景构建/…」）。旧的那套已经没有用了 ——
+ * 它既不会被重跑（不在新依赖图里），也不会被显示成有用的东西，
+ * 留着只会让进度表越看越糊涂。保留最新一份，因为那才是最近一次跑出来的。
+ */
+function dedupeRoundSteps(steps: StepIndex): { steps: StepIndex; removed: number } {
+  const best = new Map<string, Step>()
+  const out: StepIndex = {}
+  let removed = 0
+
+  for (const [id, step] of Object.entries(steps)) {
+    if (!SINGLETON_STAGES.has(step.stage)) {
+      out[id] = step
+      continue
+    }
+    const key = `${step.roundId}:${step.stage}`
+    const previous = best.get(key)
+    if (!previous) {
+      best.set(key, step)
+      out[id] = step
+      continue
+    }
+    // 留 updatedAt 更新的那一份
+    const keepNew = step.updatedAt > previous.updatedAt
+    if (keepNew) {
+      delete out[previous.id]
+      best.set(key, step)
+      out[id] = step
+    }
+    removed += 1
+  }
+
+  return { steps: out, removed }
+}
+
 function deriveRoundStatus(steps: StepIndex, roundId: string): Round['status'] {
   const own = Object.values(steps).filter((step) => step.roundId === roundId)
   if (!own.length) return 'draft'
@@ -440,11 +491,22 @@ export const useAppStore = create<AppState>((set, get) => ({
     set(() => {
       const sessions = snapshot.sessions ?? []
       const rounds = snapshot.rounds ?? []
+
+      // 清掉**孤儿步骤** —— `roundId` 指向一个已经不存在的轮次。
+      // 它们不会被任何一轮显示出来，但会一直留在 store 里、跟着存进 localStorage，
+      // 让"这一轮到底有几套步骤"变得越来越难看清。
+      const roundIds = new Set(rounds.map((round) => round.id))
+      const alive: StepIndex = {}
+      for (const [id, step] of Object.entries(snapshot.steps ?? {})) {
+        if (roundIds.has(step.roundId)) alive[id] = step
+      }
+      const { steps } = dedupeRoundSteps(alive)
+
       return {
         sessions,
         rounds,
-        steps: snapshot.steps ?? {},
-        ledger: snapshot.ledger ?? [],
+        steps,
+        ledger: (snapshot.ledger ?? []).filter((entry) => roundIds.has(entry.roundId)),
         activeSessionId: sessions.length ? sessions[sessions.length - 1].id : null,
       }
     }),

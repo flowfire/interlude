@@ -268,3 +268,47 @@ describe('整轮跑自己负责去重', () => {
     expect(new Set(stages).size, `阶段有重复：${stages.join(',')}`).toBe(stages.length)
   })
 })
+
+describe('脏数据：同一轮里堆了两套步骤', () => {
+  it('这种轮次会被判为「不完整」，从而走整轮重跑把它清掉', async () => {
+    const { r2 } = await seedThreeRounds()
+    const { roundIsComplete } = await import('@/ui/usePipelineActions')
+
+    // 人为把前面的单例阶段再复制一份（模拟"整轮重跑没清干净"留下的残留）
+    const store = useAppStore.getState()
+    const dup: Record<string, (typeof store.steps)[string]> = {}
+    let n = 0
+    for (const step of Object.values(store.steps)) {
+      if (step.roundId === r2.id && step.stage === 'normalize') {
+        dup[`dup_${n++}`] = { ...step, id: `dup_${n}` }
+      }
+    }
+    useAppStore.setState({ steps: { ...store.steps, ...dup } })
+
+    const after = useAppStore.getState().steps
+    expect(roundIsComplete(after, r2.id), '有重复就不该算完整').toBe(false)
+  })
+
+  it('加载工作区时，重复的单例阶段会自动去重（留最新那份）', async () => {
+    const { r2 } = await seedThreeRounds()
+    const store = useAppStore.getState()
+    const dup = Object.values(store.steps)
+      .filter((step) => step.roundId === r2.id && step.stage === 'segment')
+      .map((step) => ({ ...step, id: 'seg_dup', updatedAt: '2000-01-01T00:00:00.000Z' }))
+
+    const snapshot = {
+      sessions: store.sessions,
+      rounds: store.rounds,
+      steps: { ...store.steps, ...Object.fromEntries(dup.map((step) => [step.id, step])) },
+      ledger: store.ledger,
+    }
+    useAppStore.getState().loadSnapshot(snapshot as never)
+
+    const segments = Object.values(useAppStore.getState().steps).filter(
+      (step) => step.roundId === r2.id && step.stage === 'segment',
+    )
+    expect(segments).toHaveLength(1)
+    // 留的是更新的那一份
+    expect(segments[0].id).not.toBe('seg_dup')
+  })
+})
