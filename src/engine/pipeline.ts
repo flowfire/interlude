@@ -631,7 +631,25 @@ export interface FullRoundResult {
  *   S0 规范化 → S1 拆解 → S2 场景构建 → S3 阵容 → 每角色各自的上下文与反应 → S7 编排。
  * 每个角色一条独立分支，重跑时可以只重算受影响的那条。
  */
+/**
+ * 跑完整轮。
+ *
+ * 外面这层只做一件事：**把中途抛出的异常打出来**。
+ * 第五十三轮（原文：第九十二轮）用户遇到"这一轮只跑到「局面推进」就没了"，
+ * 而界面上看不到任何理由 —— 因为 `emit()` 已经把前六步写进 store，
+ * 异常却只走到 catch 里，没有堆栈可看。调试这类"跑到一半停了"，
+ * 控制台里那行 `[interlude]` 就是全部线索。
+ */
 export async function runFullRound(ctx: PipelineContext): Promise<FullRoundResult> {
+  try {
+    return await runFullRoundInner(ctx)
+  } catch (error) {
+    console.error('[interlude] runFullRound 中途抛异常（这一轮就停在下面这一步之后）：', error)
+    throw error
+  }
+}
+
+async function runFullRoundInner(ctx: PipelineContext): Promise<FullRoundResult> {
   let steps: StepIndex = { ...ctx.steps }
   const ledger = ctx.ledger
   const emit = () => ctx.onUpdate?.(steps, ledger)
@@ -706,6 +724,7 @@ export async function runFullRound(ctx: PipelineContext): Promise<FullRoundResul
 
   const castOutput = steps[castStep.id]?.output as CastStageOutput | undefined
   const castActors = castOutput?.characters ?? []
+  console.log('[interlude] 阵容解析完成，认出角色：', castActors.map((card) => card?.name ?? '(无名)'))
 
   // S3c 局面推进：一次调用，让「世界」自己往前走一步，并由它决定这一轮谁先动。
   // 它排在信息分发之前，所以这一轮新发生的事也会被分发出去。
@@ -723,6 +742,7 @@ export async function runFullRound(ctx: PipelineContext): Promise<FullRoundResul
   // 出场顺序由「局面」决定；它没给或者给漏了，就退回阵容顺序补齐
   const situationOutput = steps[situationStep.id]?.output as SituationState | undefined
   const actors = orderActors(castActors, situationOutput?.order ?? [])
+  console.log('[interlude] 局面推进完成，出场顺序：', actors.map((card) => card?.name ?? '(无名)'))
 
   // 信息分发：一次调用，把这一轮转化成「每个人各自接收到的版本」
   const perceiveStep = createStep<PerceptionOutcome>({
@@ -738,6 +758,7 @@ export async function runFullRound(ctx: PipelineContext): Promise<FullRoundResul
   const contextSteps: Step[] = []
   const roleplaySteps: Step[] = []
   for (const card of actors) {
+    console.log('[interlude] 正在创建角色步骤：', card?.name)
     const contextStep = createStep<ContextBundle>({
       roundId: ctx.round.id,
       stage: 'context',
@@ -785,6 +806,7 @@ export async function runFullRound(ctx: PipelineContext): Promise<FullRoundResul
   }
 
   // S7 编排
+  console.log('[interlude] 角色步骤创建完毕，共', contextSteps.length, '个')
   const composeStep = createStep({
     roundId: ctx.round.id,
     stage: 'compose',
@@ -815,6 +837,14 @@ export async function runFullRound(ctx: PipelineContext): Promise<FullRoundResul
   result = await runSteps({ ...ctx, steps, ledger }, [commitStep.id])
   steps = result.steps
   emit()
+
+  const composed = steps[composeStep.id]?.output as ComposedScene | undefined
+  console.log(
+    '[interlude] 这一轮跑完了。角色反应数：',
+    composed?.reactions?.length ?? 0,
+    '／角色步骤数：',
+    roleplaySteps.length,
+  )
 
   return {
     steps,
