@@ -214,7 +214,7 @@ describe('R18 分级', () => {
     expect(on).toContain('都不算理由')
     // events 也不许写跟性无关的东西
     expect(on).toContain('不要拿一场跟性无关的冲突来"推进剧情"')
-    expect(on).toContain('做不到就在 holdUp 里承认卡住了')
+    expect(on).toContain('holdUp 里必须写"具体的下一步"')
     // 光给词表不够，得给密度示范
     expect(on).toContain('性器官要写出来')
     expect(on).toContain('不许跳步')
@@ -226,7 +226,10 @@ describe('R18 分级', () => {
     // 含糊说法只允许出现在"不许用这些"的反例清单里
     expect((directHint.match(/融为一体/g) ?? []).length).toBe(1)
     expect(directHint).toContain('不许用这些糊过去')
-    expect(on).toContain('这一轮直接开始做爱')
+    expect(on).toContain('把两个人之间的物理距离拉到最近')
+    // 场景不配合时有办法：把它改造成通向性的场面
+    expect(on).toContain('怎么把「看起来不相干」的场景改造成通向性的场面')
+    expect(on).toContain('一个陌生人站在门口')
     // 用户勾这个是为了保留期待感，不是为了让导演去猜他的口味
     expect(on).toContain('具体怎么做由你决定')
     expect(on).toContain('不要停下来揣测')

@@ -241,11 +241,14 @@ describe('局面推进：世界自己会往前走', () => {
     expect(system(4, false)).toContain('你已经超期了')
     expect(system(5, false)).toContain('没有第三条路')
 
-    // 快速入戏：标准更硬，第一轮就要到位
-    expect(system(1, true)).toContain('这一轮直接开始做爱')
-    expect(system(1, true)).toContain('不是铺垫，不是前戏')
-    expect(system(2, true)).toContain('必须已经在做，或者已经做完')
-    expect(system(3, true)).toContain('还在铺垫，就是失败')
+    // 快速入戏：第一轮要么直接进入，要么把场面改造成「只剩一步」——
+    // 但不能交出一份跟性无关的正常剧情（命令必须够得着，否则整条会被无视）
+    expect(system(1, true)).toContain('把两个人之间的物理距离拉到最近')
+    expect(system(1, true)).toContain('只剩一步')
+    expect(system(1, true)).toContain('不许交出一份跟性无关的正常剧情')
+    // 第二轮起就没有借口了
+    expect(system(2, true)).toContain('必须进入性行为，或者已经在做')
+    expect(system(2, true)).toContain('没有理由再绕')
   })
 
   it('成人向拖了几轮会写进导演的成绩单，轮数越多越难看', () => {
