@@ -290,13 +290,21 @@ export async function runCastStage(
     // 界面上看起来就是"剧情断在局面那里"。
     const fallback = created.length ? created : buildCastFromPresent(fresh)
 
+    // 兜底也救不回来时，把**是哪一种空**写清楚 —— 这两种情况在界面上长得一样，
+    // 但一个说明"这一轮真的没别人"，另一个说明"阵容解析空转了"，得能分辨。
+    const fallbackReason = created.length
+      ? undefined
+      : fresh.length
+        ? `模型没有给出角色，已按在场名单（${fresh.length} 人）兜底`
+        : '模型没有给出角色，场景的在场名单也是空的'
+
     return {
       output: {
         characters: [...known, ...fallback],
         usedModel: true,
         reusedCount: known.length,
         researchedCount: fallback.filter((card) => card.source === 'wiki').length,
-        ...(created.length ? {} : { fallbackReason: '模型没有给出任何角色，按在场名单兜底' }),
+        ...(fallbackReason ? { fallbackReason } : {}),
       },
       result,
     }

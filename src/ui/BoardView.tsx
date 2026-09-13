@@ -477,6 +477,14 @@ function RoundBlock({
       ) : null}
 
       {/* 3. 各角色的反应 */}
+      {!reactions.length && composeData && round.status === 'done' ? (
+        // 这一轮跑完了，却一个角色都没有。可能是真的没人出场（独角戏），
+        // 也可能是阵容解析空转了 —— 两种情况在数据上长得一样，界面上必须
+        // 说一声，否则看起来就像"剧情断在局面这里"。
+        <div className="round-empty-reactions">
+          （这一轮没有角色出场 —— 阵容解析没有认出任何人。）
+        </div>
+      ) : null}
       {reactions.length ? (
         <div className="reactions">
           {reactions.map((reaction, index) => (

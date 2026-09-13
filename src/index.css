@@ -1325,6 +1325,13 @@ pre.code {
   background: rgba(217, 160, 91, 0.22);
   border-color: var(--accent);
 }
+.round-empty-reactions {
+  margin: 2px 0 10px 12px;
+  padding: 6px 10px;
+  border-left: 2px solid var(--line);
+  color: var(--dim);
+  font-size: 12.5px;
+}
 .reactions {
   display: flex;
   flex-direction: column;
