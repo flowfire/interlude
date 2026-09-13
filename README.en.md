@@ -202,33 +202,44 @@ That is the built-in demo: it uses a scripted set of model responses and **actua
 
 ---
 
-## Want to go adult? Per round, opt in
+## Adult mode
 
-There is an **"R18 mode"** checkbox next to the input box. **It stays checked** (across reloads) — it is visible enough not to be forgotten, while the rating itself lives on each round, so you can turn it on or off for a single round at any time.
+R18 is not "flip a switch and the model talks dirty". **Every stage** of the engine has a corresponding treatment:
 
-Once R18 is on, a second checkbox appears next to it: **"straight into the scene"**:
+| Stage | What it does under the adult rating |
+|---|---|
+| **Scene building** | The atmosphere may be more private and charged (light, distance, warmth, the texture of a silence), without changing anyone's situation or relationship |
+| **Your exteriorisation** | The traces your inner state leaves can be more direct — breathing, warmth, where a gaze lingers. But **how much leaks is still decided by the persona**; someone who keeps things in still keeps things in |
+| **Information distribution** | Everyone present is more likely to notice the details on you: breathing, warmth, where your hands are, where your eyes go. Spatial reasoning is unchanged — back turned, in another room, still missed |
+| **Director** | May assign actions with physical distance, testing and provocation in them, and may make the setting private and slow the pace |
+| **Characters** | May write sexual physical responses, and put explicit desire into their lines |
 
-- **The shortest road, without breaking the scene**: what it does is **not skip the process but compress it into one step** — the causal chain has to hold, but the stride can be enormous. A fight just ended, the adrenaline has not worn off, one look and one movement carries them across. What is explicitly banned is the broken-chain version: "one second the two of them are still squared off, the next they have already crossed that line." The test is "where are they by the end of this round" — if it is only a bit more charged than last round, it did not happen.
-- **Blunt language**: the prompt sets the register to use and the evasions to avoid. **Fading to black is what ruins the scene.**
-- **Characters loosen up in the grey areas**: when the persona leaves you unsure whether they would do a thing, the engine leans **toward the adult reading** — within what is plausible, it picks the more willing version. **Hard limits are not in that category**: what they definitively would not do, they still will not do.
-- **You do not have to specify what happens**: ticking this means "get me there fast", not "take my order". You do not need to name the details in advance — finding out when you arrive is the point of the switch. If you *do* write a direction into your input, that obviously takes precedence.
-- **Your details are much easier to notice**: everyone present gets a lower threshold for noticing — your breathing, your warmth, where your hands are, where your eyes go. Spatial reasoning is unchanged (back turned, in another room — still missed).
+**It is counted per round.** The "R18 mode" checkbox in the composer stays checked across reloads, but the rating itself lives on the **round** — so you can turn it on for this round and off for the next, independently. When reading back, the rounds that had it on carry a red marker on the divider.
 
-**None of the three lines are relaxed**: the *floor* of the personality does not move (what moves is the grey area), the relationship does not teleport to "married for years", and the boundaries of the character you play are not anyone else's to decide.
+### Three lines
 
-When it is on, the engine tells **both the director and the characters** they may move in that direction. The director's remit is wider — it can assign actions with physical distance, testing and suggestion in them, make the setting private, and slow the pace down. But the same three lines are written into its prompt as inviolable:
+Whichever round it is, three lines are written into the prompt as inviolable:
 
 1. **The personality does not change.** A restrained person is still restrained in that scene — only what they restrain changes. Someone who jokes around still jokes around. Nobody becomes a different person because the scene allows it.
 2. **Any advance has to be something *they* would do.** If the relationship is not there yet, it does not jump there — hesitation stays hesitation, testing stays testing.
 3. **Do not skip to the end.** The pace comes from the relationship and the moment, not from the rating.
 
-For the director the third line carries extra weight: **the physical boundary belongs to the player, not to the director** — it may decide what other characters do, but never anything on your behalf.
+There is one more rule that is not a "line" but a **red line**, and it never moves at any rating: **the boundaries of the character you play are not anyone else's to decide.** The director may decide what other characters do, but never anything on your behalf.
 
-Scene building and the "exteriorisation" step get the same signal: the atmosphere may be more private and charged, and the visible traces may be more direct (breathing, warmth, where a gaze lingers). But **how much leaks is still decided by the persona** — someone who keeps things in still keeps things in; ticking R18 does not put it on their face.
+### Straight into the scene: one layer on top
 
-Rounds with R18 on get a red marker on the divider in the main board, so you can see at a glance which ones they were when reading back. Rounds with **straight into the scene** ticked get a brighter one and say so — so you can tell the direct ones apart from the merely adult ones.
+Once R18 is on, a second checkbox appears next to it:
 
-To change a round's rating: click "edit the source", where the same checkbox lives. **Even if the text is untouched and you only flip the checkbox, that counts as a change**, and "save and regenerate" will replay that round under the new rating (later rounds are discarded as usual, undo available).
+- **The shortest road, without breaking the scene**: what it does is **not skip the process but compress it into one step** — the causal chain has to hold, but the stride can be enormous. A fight just ended, the adrenaline has not worn off, one look and one movement carries them across. What is explicitly banned is the broken-chain version: "one second the two of them are still squared off, the next they have already crossed that line." The test is "where are they by the end of this round" — if it is only a bit more charged than last round, it did not happen.
+- **Blunt language**: the prompt sets the register to use and the evasions to avoid. **Fading to black is what ruins the scene.**
+- **Characters loosen up in the grey areas**: when the persona leaves you unsure whether they would do a thing, the engine leans **toward the adult reading** — within what is plausible, it picks the more willing version. **Hard limits are not in that category**: what they definitively would not do, they still will not do.
+- **You do not have to specify what happens**: ticking this means "get me there fast", not "take my order". You do not need to name the details in advance — finding out when you arrive is the point of the switch. If you *do* write a direction into your input, that obviously takes precedence.
+
+The three lines shift slightly on top of it: the **floor** of the personality does not move (what moves is the grey area), and the relationship can advance far faster than usual but does not teleport to "married for years". The red line is still the red line.
+
+### Changing a round's rating
+
+Click "edit the source" — the same pair of checkboxes is there. **Even if the text is untouched and you only flip a checkbox, that counts as a change**, and "save and regenerate" will replay that round under the new setting (later rounds are discarded as usual, undo available).
 
 ---
 
