@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { SEGMENT_KIND_HINT, SEGMENT_KIND_LABEL } from '@/types/segment'
 import { buildContextBundle } from '@/engine/stages/s4-context'
+import { normalizeInput } from '@/engine/stages/s0-normalize'
+import { buildSegmentsFromRules } from '@/engine/stages/s1-segment'
 import type { CharacterCard } from '@/types/character'
 
 /**
@@ -40,6 +42,17 @@ describe('元指令', () => {
     expect(SEGMENT_KIND_HINT.directive).toContain('只发给导演')
     // 场外是"被提及但没演出的事"，两回事
     expect(SEGMENT_KIND_HINT.offscreen).toContain('发生在别处')
+  })
+
+  it('规则降级（没跑模型）时也认得出它 —— 不能只靠提示词', () => {
+    const kindOf = (text: string) => buildSegmentsFromRules(normalizeInput(text), '我').segments[0].kind
+
+    expect(kindOf('（让导演安排一场雨）')).toBe('directive')
+    expect(kindOf('（我希望接下来有人来找我）')).toBe('directive')
+
+    // 反过来：正常演出不能误判
+    expect(kindOf('我让他留下来。')).not.toBe('directive')
+    expect(kindOf('（我有点犹豫）')).toBe('inner')
   })
 
   it('不会进角色的上下文 —— 那是指示，不是他知道的事', () => {

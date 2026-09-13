@@ -36,6 +36,15 @@ const MODIFIER = '(?:冷冷地|淡淡地|低声|轻声|笑着|皱着眉|叹了�
 const QUOTE_SPAN_RE = /[\u300c\u201c"][^\u300d\u201d"]*[\u300d\u201d"]/g
 const INNER_RE = /(心想|暗想|心道|心里想|心中想|内心深处|暗自|默默想|琢磨|寻思|思忖|盘算|回忆起|回想起|记得|意识到|忽然明白)/
 /** 括号里写的往往是舞台指示或状态；带情绪的算心理活动 */
+/**
+ * 对引擎下指令的说法。
+ *
+ * 写得保守一点：只认那些**明确是在跟引擎说话**的措辞，
+ * 免得把「我让他留下来」这种正常演出也误判。
+ */
+const DIRECTIVE_RE =
+  /(让导演|叫导演|希望接下来|希望下一轮|希望剧情|这一轮不要|这一轮别|这轮不要|我想看到|我希望剧情|安排一下剧情|安排一场|剧情应该)/
+
 const PAREN_RE = /[（(]([^）)]+)[）)]/
 const EMOTION_RE =
   /(尴尬|窘迫|紧张|忐忑|害怕|恐惧|高兴|开心|难过|伤心|心虚|后悔|不安|兴奋|生气|愤怒|愧疚|失落|委屈|焦虑|烦躁|无奈|得意|心酸|害羞|嫉妒|厌烦|安心|失望|期待|犹豫|纠结|慌|别扭|抱歉|感激|庆幸)/
@@ -163,6 +172,19 @@ function annotate(text: string): { kind: SegmentKind; confidence: number; notes:
   const notes: string[] = []
   let kind: SegmentKind = 'narration'
   let confidence = 0.3
+
+  // **先判断是不是在对引擎下指令** —— 这一类优先于其他所有判断。
+  // 「（让导演安排一场雨）」里提到了"雨"，但重点不是天气，是"让……"这个动作；
+  // 按后面的规则它会被判成 narration 甚至 scene，然后当成事实发给角色。
+  if (DIRECTIVE_RE.test(text)) {
+    return {
+      kind: 'directive',
+      confidence: 0.66,
+      notes: ['像是在对引擎下指令，不是演出内容'],
+      speaker: null,
+      addressee: [],
+    }
+  }
 
   // 「（我有一点尴尬）」这种括号里的情绪状态，算心理活动
   const paren = PAREN_RE.exec(text)
