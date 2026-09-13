@@ -4,8 +4,12 @@
   --panel: #161a21;
   /* 半透明版本：让当前场面的图能从底下透出来。弹窗不用它 —— 那里要清晰。 */
   --panel-glass: rgba(22, 26, 33, 0.82);
-  --panel-2: #1c212b;
-  --panel-3: #232936;
+  /* 卡片层：同样留一点透明度，不然背景图只在缝里露一条边。
+     比外框稍实一点，保证正文的对比度。 */
+  --panel-2: rgba(28, 33, 43, 0.68);
+  --panel-3: rgba(35, 41, 54, 0.74);
+  /* 更深的一层（步骤详情、上下文浮层这类） */
+  --panel-deep: rgba(18, 21, 27, 0.66);
   --border: #2b3240;
   --border-soft: #212734;
   --text: #e7eaf0;
@@ -488,7 +492,7 @@ textarea {
 .step-body {
   padding: 10px 12px;
   border-top: 1px solid var(--border-soft);
-  background: #12151b;
+  background: var(--panel-deep);
 }
 .step-body h4 {
   margin: 0 0 6px;
@@ -1421,7 +1425,7 @@ pre.code {
 
 /* ---------- 上下文浮层 ---------- */
 .context-view {
-  background: #12151b;
+  background: var(--panel-deep);
   border: 1px solid var(--border-soft);
   border-radius: var(--radius-sm);
   padding: 12px 14px;
