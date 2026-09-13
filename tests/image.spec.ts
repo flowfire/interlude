@@ -52,6 +52,11 @@ describe('场面生图', () => {
       const body = JSON.parse(String(calls[0].init.body))
       expect(body.model).toBe('image-01')
       expect(body.response_format).toBe('url')
+      // 只要够用的分辨率 —— MiniMax 要求两边都在 512~2048 且能被 8 整除
+      expect(body.width).toBe(1024)
+      expect(body.height).toBe(576)
+      expect(body.width % 8).toBe(0)
+      expect(body.height % 8).toBe(0)
       expect((calls[0].init.headers as Record<string, string>).Authorization).toBe('Bearer secret')
     } finally {
       globalThis.fetch = original

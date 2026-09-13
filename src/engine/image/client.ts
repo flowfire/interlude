@@ -12,8 +12,10 @@ export class ImageError extends Error {}
 export interface GenerateImageInput {
   prompt: string
   settings: ImageSettings
-  /** 画面比例，默认 16:9（场面图是横的） */
-  aspectRatio?: string
+  /** 画面宽度（px）。默认 1024 —— MiniMax 要求 512~2048 且能被 8 整除 */
+  width?: number
+  /** 画面高度（px）。默认 576，和宽度凑成 16:9 */
+  height?: number
   signal?: AbortSignal
 }
 
@@ -56,7 +58,10 @@ export async function generateSceneImage(input: GenerateImageInput): Promise<str
       body: JSON.stringify({
         model: preset.model,
         prompt,
-        aspect_ratio: input.aspectRatio ?? '16:9',
+        // 只够当背景用就行：这张图会被铺满屏幕、压到 18% 透明度再上一层模糊，
+        // 高清纯属浪费带宽和等待时间。MiniMax 要求两边都在 512~2048 且能被 8 整除。
+        width: input.width ?? 1024,
+        height: input.height ?? 576,
         response_format: 'url',
         n: 1,
         prompt_optimizer: true,

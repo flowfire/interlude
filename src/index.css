@@ -2,6 +2,8 @@
 :root {
   --bg: #0e1014;
   --panel: #161a21;
+  /* 半透明版本：让当前场面的图能从底下透出来。弹窗不用它 —— 那里要清晰。 */
+  --panel-glass: rgba(22, 26, 33, 0.82);
   --panel-2: #1c212b;
   --panel-3: #232936;
   --border: #2b3240;
@@ -86,12 +88,16 @@ textarea {
   background-image: var(--app-scene-image);
   background-size: cover;
   background-position: center;
+  /* 模糊 + 轻微放大：图本来就只要了够用的分辨率，糊一下反而更像氛围，
+     也顺手盖掉放大后的颗粒。scale 是为了不让模糊把边缘晕出白边。 */
+  filter: blur(7px);
+  transform: scale(1.06);
   opacity: 0;
   transition: opacity 0.6s ease;
   pointer-events: none;
 }
 .app.has-scene-image::before {
-  opacity: 0.18;
+  opacity: 0.22;
 }
 .app > * {
   position: relative;
@@ -103,7 +109,8 @@ textarea {
   align-items: center;
   gap: 14px;
   padding: 10px 18px;
-  background: var(--panel);
+  background: var(--panel-glass);
+  backdrop-filter: blur(3px);
   border-bottom: 1px solid var(--border);
   flex: 0 0 auto;
 }
@@ -155,14 +162,16 @@ textarea {
 
 .side-col {
   border-left: 1px solid var(--border);
-  background: var(--panel);
+  background: var(--panel-glass);
+  backdrop-filter: blur(3px);
   overflow-y: auto;
   min-height: 0;
 }
 
 .left-col {
   border-right: 1px solid var(--border);
-  background: var(--panel);
+  background: var(--panel-glass);
+  backdrop-filter: blur(3px);
   overflow-y: auto;
   min-height: 0;
 }
@@ -822,7 +831,8 @@ pre.code {
 .composer {
   flex: 0 0 auto;
   border-top: 1px solid var(--border);
-  background: var(--panel);
+  background: var(--panel-glass);
+  backdrop-filter: blur(3px);
   padding: 10px 20px 14px;
 }
 .persona-row {
