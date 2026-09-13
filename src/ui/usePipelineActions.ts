@@ -38,6 +38,12 @@ function describeRunning(steps: Record<string, Step>): string {
  * 客户端据此自动退出成人向模式 —— 免得用户勾了一次就一路挂着，
  * 陷进没完没了的 R18。关掉之后他随时可以再勾。
  */
+function r18SuggestedIn(steps: Record<string, Step>): boolean {
+  const step = Object.values(steps).find((item) => item.stage === 'situation')
+  const state = step?.output as SituationState | undefined
+  return Boolean(state?.suggestR18)
+}
+
 function r18EndedIn(steps: Record<string, Step>): boolean {
   const step = Object.values(steps).find((item) => item.stage === 'situation')
   const state = step?.output as SituationState | undefined
@@ -117,6 +123,15 @@ export async function runRoundFor(roundId: string): Promise<void> {
     if (result.error) {
       useAppStore.getState().setError(result.error)
       return
+    }
+
+    // 导演认为该进入成人向了 —— 替用户勾上。
+    // 唯一的闸是设置里那个总开关：没允许的话这个能力根本不存在。
+    // 用户可以随时取消，导演下一轮也可以再提出 —— 两边都不用记账，
+    // 决定权始终是"那个勾此刻有没有勾上"。
+    const state = useAppStore.getState()
+    if (r18SuggestedIn(result.steps) && state.project.allowR18 && state.composer.rating !== 'r18') {
+      state.setComposer({ rating: 'r18' })
     }
 
     void autoGenerateSceneImage(roundId)

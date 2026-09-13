@@ -101,6 +101,14 @@ export interface SituationState {
   /** 成人向已经连着几轮了 —— 就是压在导演身上的那个数字，页面上会显示 */
   r18Streak: number
   /**
+   * 导演认为**接下来该进入成人向**了（气氛到了、再纯情下去不合适）。
+   *
+   * 客户端看到它会替用户把 R18 勾上，但有两道闸：
+   * 设置里没允许成人向、或者用户此前手动取消过 —— 那它就只能继续在纯情里转。
+   * 这是"该往那走"的信号，不是"可以写黄"的许可。
+   */
+  suggestR18: boolean
+  /**
    * 导演给自己这一轮打的「性内容分」。
    *
    * 0 = 完全没有性内容，也没有往那去的倾向；50 = 有实质的身体接触；
@@ -165,6 +173,7 @@ export const RawSituationSchema = z.object({
   reason: z.union([z.string(), z.number(), z.null()]).optional(),
   sexScore: z.union([z.number(), z.string(), z.null()]).optional(),
   holdUp: z.union([z.string(), z.number(), z.null()]).optional(),
+  suggestR18: z.union([z.boolean(), z.string(), z.null()]).optional(),
   routes: z.union([z.array(z.unknown()), z.string(), z.null()]).optional(),
   pace: z.union([z.string(), z.number(), z.null()]).optional(),
   r18Ended: z.union([z.boolean(), z.string(), z.null()]).optional(),

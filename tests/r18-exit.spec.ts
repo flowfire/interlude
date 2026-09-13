@@ -48,6 +48,7 @@ vi.mock('@/engine/llm/instance', () => {
         holdUp: '',
         routes: [],
         r18Streak: 1,
+        suggestR18: false,
         sexScore: 0,
         prevSexScore: 0,
         pace: 'settle',

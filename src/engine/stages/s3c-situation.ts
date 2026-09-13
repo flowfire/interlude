@@ -199,6 +199,7 @@ export async function runSituationStage(
       reason?: unknown
       sexScore?: unknown
       holdUp?: unknown
+      suggestR18?: unknown
       routes?: unknown
       pace?: unknown
       r18Ended?: unknown
@@ -216,6 +217,9 @@ export async function runSituationStage(
         holdUp: asText(parsed.holdUp).trim(),
         routes: normalizeRoutes(parsed.routes),
         r18Streak: Math.max(1, r18Streak ?? 1),
+        suggestR18:
+          parsed.suggestR18 === true ||
+          String(parsed.suggestR18 ?? '').trim().toLowerCase() === 'true',
         sexScore: normalizeScore(parsed.sexScore),
         prevSexScore: recentScores?.length ? recentScores[recentScores.length - 1] : 0,
         pace: normalizePace(parsed.pace),
@@ -240,6 +244,7 @@ export async function runSituationStage(
         holdUp: '',
         routes: [],
         r18Streak: Math.max(1, r18Streak ?? 1),
+        suggestR18: false,
         sexScore: 0,
         prevSexScore: recentScores?.length ? recentScores[recentScores.length - 1] : 0,
         pace: previous?.pace ?? 'build',

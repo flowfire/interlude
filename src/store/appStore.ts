@@ -51,7 +51,7 @@ export interface AppState extends WorkspaceSnapshot {
   saveUndo: (label: string) => void
   undoLast: () => void
 
-  /** 输入区那两个勾选（R18 模式 / 快速入戏）—— 导演可以替用户把它关掉 */
+  /** 输入区那两个勾选（R18 模式 / 快速入戏）—— 导演可以替用户把它打开或关掉 */
   composer: ComposerState
   /** 从别处往输入框里塞一段文字（比如导演推荐的方向） */
   draftInjection: { text: string; id: number } | null

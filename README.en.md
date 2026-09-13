@@ -236,6 +236,12 @@ R18 is not "flip a switch and the model talks dirty". **Every stage** of the eng
 | **Director** | May assign actions with physical distance, testing and provocation in them, and may make the setting private and slow the pace |
 | **Characters** | May write sexual physical responses, and put explicit desire into their lines |
 
+**The director can ask for adult mode too.** If it judges that the story has arrived somewhere and staying innocent no longer fits, it makes that request and the client **ticks the box for you** — the rounds after that can go there.
+
+**You can untick it every round.** Unticking means you do not want to go there yet; the director plays that round straight, and may ask again next round if it still thinks it is time. **Neither side keeps score — the deciding factor is simply whether the box is ticked at that moment.** Which also means: if it is not ticked, the director cannot produce adult content however much it wants to.
+
+(The one exception is the master switch in settings: with "allow adult mode" off, the request does not exist at all.)
+
 **"R18 mode" is permission, not a requirement.** It means: **when the story arrives there, let it happen** — do not dodge it, do not pull the camera back, do not fade out with "the next morning". If you do not lead, the director will not push; but the moment you bring the story there, it has to catch it. And in those scenes **the prose should be blunt, direct and crude** — euphemism is the mood killer.
 
 Every stage of the engine has a matching treatment:
