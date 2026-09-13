@@ -152,16 +152,20 @@ describe('R18 分级', () => {
     expect(off).not.toContain('快速入戏')
 
     const on = buildRoleplayMessages({ ...base, rating: 'r18', direct: true })[1].content
-    expect(on).toContain('快速入戏 —— 直接演那件事')
+    expect(on).toContain('快速入戏 —— 直接演性爱，不要绕')
     expect(on).toContain('别再拖了')
     // 导演铺了台阶，演员别自己踩刹车
     expect(on).toContain('导演已经替你把台阶铺好了')
     // 身体上的进展要具体，不是含糊过去
     expect(on).toContain('身体上的进展要写具体')
-    expect(on).toContain('硬了、湿了')
+    expect(on).toContain('谁先硬的、谁先湿的')
     // 露骨的词要明确告知，让模型知道该用
     expect(on).toContain('操、肏、屌、逼')
     expect(on).toContain('不要用"那里""下面""那个地方"回避')
+    // 指令自己的措辞也不能回避 —— 它会原样传导成导演的偏好
+    expect(on).not.toContain('那件事')
+    // 用户要的是期待感，不需要提前指定
+    expect(on).toContain('具体怎么演由你决定')
     // 性格的模糊地带往成人向解释，但写死的底线不在此列
     expect(on).toContain('性格上的模糊地带，往成人向解释')
     expect(on).toContain('写死的底线')
@@ -184,21 +188,29 @@ describe('R18 分级', () => {
     }
 
     const on = buildSituationMessages({ ...base, rating: 'r18', direct: true })[0].content
-    expect(on).toContain('快速入戏 —— 用最短的路把那件事送到')
+    expect(on).toContain('快速入戏 —— 用最短的路让他们做爱')
     expect(on).toContain('别再一轮一轮磨了')
     // act 要写明确的性进展，而不是含糊带过
-    expect(on).toContain('明确的性进展')
+    expect(on).toContain('明确的性行为')
     expect(on).toContain('谁对谁做了什么')
     // 用词直白（用户要求：有必要就必须明确告知）
     expect(on).toContain('操、肏、屌、逼')
     expect(on).toContain('不要用"两人纠缠"')
+    // 「那件事」只允许出现在"不要用这类含糊说法"的反例里 —— 指令自己不能回避。
+    // 另一个出现在 directions 的示例句中（「放了三天的那件事」），与性无关。
+    const directHint = on.slice(on.indexOf('【快速入戏'))
+    expect((directHint.match(/那件事/g) ?? []).length).toBe(1)
+    expect(on).toContain('就得开始操')
+    // 用户勾这个是为了保留期待感，不是为了让导演去猜他的口味
+    expect(on).toContain('具体怎么操由你决定')
+    expect(on).toContain('不要停下来揣测')
     // 压缩的是过程，不是逻辑：既不能跳戏，也不能拖
     expect(on).toContain('把过程压缩成一步')
     expect(on).toContain('这是跳戏')
     expect(on).toContain('跨度极大，但每一步都接得上')
     expect(on).toContain('别再一轮一轮磨了')
     // 判定标准要能量化，否则导演不知道做到没有
-    expect(on).toContain('这一轮结束时他们到了哪一步')
+    expect(on).toContain('这一轮结束时他们到哪一步了')
     // 红线不松
     expect(on).toContain('用户扮演的角色一个字都不能替他写')
 

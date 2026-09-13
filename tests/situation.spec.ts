@@ -179,7 +179,7 @@ describe('局面推进：世界自己会往前走', () => {
     const [r18] = buildSituationMessages({ ...base, rating: 'r18' })
     expect(r18.content).toContain('【本轮分级：成人向】')
     // 落到导演的职责上：他能安排的是场面与剧情
-    expect(r18.content).toContain('指派带有身体距离、试探、暗示意味的动作')
+    expect(r18.content).toContain('摸、亲、脱、按，都可以直接写')
     // 三条底线一条不少
     expect(r18.content).toContain('人设不变')
     expect(r18.content).toContain('推进必须符合关系阶段')
