@@ -865,12 +865,45 @@ pre.code {
 }
 
 /* ---------- 场面卡片 ---------- */
+/* 场面是**整幕的背景**，不属于时间线里"这一步发生了什么"。
+   做成 sticky + 默认收起：滚动时当前这一轮的场面条会顶掉上一轮的
+   （sticky 的天然行为，不需要 JS），时间线也就不再被一大块背景打断。 */
 .scene-card {
-  padding: 12px 14px;
-  border-left: 3px solid var(--green);
-  background: rgba(94, 176, 168, 0.06);
-  border-radius: var(--radius-sm);
+  position: sticky;
+  top: -1px;
+  z-index: 6;
   margin-bottom: 14px;
+  padding: 8px 12px;
+  border-left: 3px solid var(--green);
+  background: color-mix(in srgb, var(--panel) 92%, rgba(94, 176, 168, 0.5));
+  border-radius: var(--radius-sm);
+  backdrop-filter: blur(6px);
+}
+.scene-card[open] {
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28);
+}
+.scene-card-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  cursor: pointer;
+  list-style: none;
+}
+.scene-card-head::-webkit-details-marker {
+  display: none;
+}
+.scene-card-head::after {
+  content: '▾';
+  margin-left: auto;
+  color: var(--text-faint);
+  font-size: 11px;
+}
+.scene-card:not([open]) .scene-card-head::after {
+  content: '▸';
+}
+.scene-body {
+  margin-top: 8px;
 }
 .scene-card-head {
   display: flex;

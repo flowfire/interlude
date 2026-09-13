@@ -105,67 +105,74 @@ function RoundBlock({ round, isLast, demo }: { round: Round; isLast: boolean; de
         </button>
       </div>
 
-      {/* 1. 场面 */}
+      {/* 1. 场面 —— 它是整幕共享的**背景**，不属于"这一步发生了什么"。
+          所以做成 sticky + 默认收起：滚动时当前这一轮的场面会顶掉上一轮的
+          （多个 sticky 元素的天然行为，不需要 JS），时间线里也不再被它打断。 */}
       {setup ? (
-        <div className="scene-card">
-          <div className="scene-card-head">
+        <details className="scene-card">
+          <summary className="scene-card-head">
             <span className="scene-label">场面</span>
             {setup.time ? <span className="chip">{setup.time}</span> : null}
             {setup.place ? <span className="chip">{setup.place}</span> : null}
             {setup.atmosphere ? <span className="chip">{setup.atmosphere}</span> : null}
+            {setup.present.length ? (
+              <span className="chip">在场 {setup.present.map((item) => item.name).join('、')}</span>
+            ) : null}
             <span className={`chip ${setup.inputMode === 'outline' ? 'chip-warn' : ''}`}>
               {SCENE_MODE_LABEL[setup.inputMode]}
             </span>
             {!setup.usedModel ? <span className="chip">规则降级</span> : null}
-          </div>
+          </summary>
 
-          {setup.opening.length ? (
-            setup.opening.map((line, index) => (
-              <div key={index} className="scene-line">
-                {line}
-              </div>
-            ))
-          ) : (
-            <div className="hint">（素材里没有环境描写）</div>
-          )}
-
-          {setup.situation ? <div className="scene-situation">▸ {setup.situation}</div> : null}
-
-          {setup.interlude ? (
-            <div className="scene-interlude">
-              {setup.interlude.summary ? <div>〔这之前〕{setup.interlude.summary}</div> : null}
-              {setup.interlude.each.map((item) => (
-                <div key={item.who} className="scene-interlude-each">
-                  {item.who}：{item.what}
+          <div className="scene-body">
+            {setup.opening.length ? (
+              setup.opening.map((line, index) => (
+                <div key={index} className="scene-line">
+                  {line}
                 </div>
-              ))}
-            </div>
-          ) : null}
+              ))
+            ) : (
+              <div className="hint">（素材里没有环境描写）</div>
+            )}
 
-          {situationData?.state.pressure ? (
-            <div className="scene-pressure">
-              <span className="hint">局面：</span>
-              {situationData.state.pressure}
-            </div>
-          ) : null}
+            {setup.situation ? <div className="scene-situation">▸ {setup.situation}</div> : null}
 
-          {setup.present.length ? (
-            <div className="scene-cast">
-              <span className="hint">在场：</span>
-              {setup.present.map((item) => (
-                <span key={item.name} className="chip">
-                  {item.name}
-                  {item.kind === 'extra' ? '（路人）' : ''}
-                  {item.active ? '' : '（背景）'}
-                </span>
-              ))}
-            </div>
-          ) : null}
+            {setup.interlude ? (
+              <div className="scene-interlude">
+                {setup.interlude.summary ? <div>〔这之前〕{setup.interlude.summary}</div> : null}
+                {setup.interlude.each.map((item) => (
+                  <div key={item.who} className="scene-interlude-each">
+                    {item.who}：{item.what}
+                  </div>
+                ))}
+              </div>
+            ) : null}
 
-          {!setup.usedModel ? (
-            <div className="scene-fallback">未调用模型：{setup.fallbackReason || '原因未知'}</div>
-          ) : null}
-        </div>
+            {situationData?.state.pressure ? (
+              <div className="scene-pressure">
+                <span className="hint">局面：</span>
+                {situationData.state.pressure}
+              </div>
+            ) : null}
+
+            {setup.present.length ? (
+              <div className="scene-cast">
+                <span className="hint">在场：</span>
+                {setup.present.map((item) => (
+                  <span key={item.name} className="chip">
+                    {item.name}
+                    {item.kind === 'extra' ? '（路人）' : ''}
+                    {item.active ? '' : '（背景）'}
+                  </span>
+                ))}
+              </div>
+            ) : null}
+
+            {!setup.usedModel ? (
+              <div className="scene-fallback">未调用模型：{setup.fallbackReason || '原因未知'}</div>
+            ) : null}
+          </div>
+        </details>
       ) : null}
 
       {/* 2. 你的输入 */}
