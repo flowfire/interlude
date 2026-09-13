@@ -20,6 +20,7 @@ const situation: SituationState = {
     { kind: 'ambient', text: '左侧灌木丛里传来一声很低的喉音' },
     { kind: 'scene', text: '最前面那两头伏低了身子' },
   ],
+  reason: '',
   pace: 'escalate',
   r18Ended: false,
   directions: [],

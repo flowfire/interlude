@@ -73,6 +73,15 @@ export interface SituationState {
   pressure: string
   /** 如果没有任何人干预，接下来会发生什么 */
   escalation: string
+  /**
+   * 为什么是**此刻**。
+   *
+   * 成人向推进时导演必须先交代这个：这个理由得建立在这一轮之前
+   * **已经发生过的事**上，而不是"他们彼此吸引，终于忍不住了"这种
+   * 放在哪一轮都成立的空话。找不到理由，就说明前面该铺的没铺，
+   * 这一轮要先把那个契机补上。
+   */
+  reason: string
   /** 这一轮在节奏上的位置 */
   pace: SituationPace
   /**
@@ -105,6 +114,7 @@ export interface SituationState {
 }
 
 export const RawSituationSchema = z.object({
+  reason: z.union([z.string(), z.number(), z.null()]).optional(),
   pace: z.union([z.string(), z.number(), z.null()]).optional(),
   r18Ended: z.union([z.boolean(), z.string(), z.null()]).optional(),
   pressure: z.union([z.string(), z.number(), z.null()]).optional(),

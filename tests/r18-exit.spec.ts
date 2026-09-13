@@ -43,6 +43,7 @@ vi.mock('@/engine/llm/instance', () => {
     }
     if (label === 'situation') {
       return {
+        reason: '',
         pace: 'settle',
         r18Ended: h.r18Ended,
         pressure: '',

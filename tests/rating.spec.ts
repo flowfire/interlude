@@ -156,12 +156,18 @@ describe('R18 分级', () => {
     expect(on).toContain('别再拖了')
     // 导演铺了台阶，演员别自己踩刹车
     expect(on).toContain('导演已经替你把台阶铺好了')
-    // 身体上的进展要具体，不是含糊过去
-    expect(on).toContain('身体上的进展要写具体')
-    expect(on).toContain('谁先硬的、谁先湿的')
+    // 写到什么程度必须说清楚：光给词表不够，得给密度示范
+    expect(on).toContain('性器官要写出来')
+    expect(on).toContain('不要跳步')
+    expect(on).toContain('回避就是没完成工作')
+    expect(on).toContain('照着这个密度写')
+    expect(on).toContain('写的是套话，不是这两个人')
+    // 不许用含糊说法糊过去（只允许出现在反例清单里）
+    expect(on).toContain('不许用这些糊过去')
+    expect((on.match(/融为一体/g) ?? []).length).toBe(1)
     // 露骨的词要明确告知，让模型知道该用
     expect(on).toContain('操、肏、屌、逼')
-    expect(on).toContain('不要用"那里""下面""那个地方"回避')
+    expect(on).toContain('回避本身就是出戏')
     // 指令自己的措辞也不能回避 —— 它会原样传导成导演的偏好
     expect(on).not.toContain('那件事')
     // 用户要的是期待感，不需要提前指定
@@ -195,11 +201,22 @@ describe('R18 分级', () => {
     expect(on).toContain('谁对谁做了什么')
     // 用词直白（用户要求：有必要就必须明确告知）
     expect(on).toContain('操、肏、屌、逼')
-    expect(on).toContain('不要用"两人纠缠"')
-    // 「那件事」只允许出现在"不要用这类含糊说法"的反例里 —— 指令自己不能回避。
-    // 另一个出现在 directions 的示例句中（「放了三天的那件事」），与性无关。
+    expect(on).toContain('不许用这些糊过去')
+    // 理由必须建立在已经发生过的事上，不是随便挑一个转折点
+    expect(on).toContain('为什么是此刻')
+    expect(on).toContain('放在**任何一轮**都成立，所以它不是理由')
+    expect(on).toContain('让它成为理由 —— 然后再进')
+    // 光给词表不够，得给密度示范
+    expect(on).toContain('性器官要写出来')
+    expect(on).toContain('不要跳步')
+    expect(on).toContain('一段合格的 act 长这样')
+    expect(on).toContain('回避就是没完成工作')
+    // 快速入戏那一段里，「那件事」这类回避指代一次都不许出现
     const directHint = on.slice(on.indexOf('【快速入戏'))
-    expect((directHint.match(/那件事/g) ?? []).length).toBe(1)
+    expect(directHint).not.toContain('那件事')
+    // 含糊说法只允许出现在"不许用这些"的反例清单里
+    expect((directHint.match(/融为一体/g) ?? []).length).toBe(1)
+    expect(directHint).toContain('不许用这些糊过去')
     expect(on).toContain('就得开始操')
     // 用户勾这个是为了保留期待感，不是为了让导演去猜他的口味
     expect(on).toContain('具体怎么操由你决定')

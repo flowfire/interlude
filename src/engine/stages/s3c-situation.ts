@@ -161,6 +161,7 @@ export async function runSituationStage(
     })
 
     const parsed = data as {
+      reason?: unknown
       pace?: unknown
       r18Ended?: unknown
       pressure?: unknown
@@ -172,6 +173,7 @@ export async function runSituationStage(
     }
     return {
       output: {
+        reason: asText(parsed.reason).trim(),
         pace: normalizePace(parsed.pace),
         r18Ended:
           parsed.r18Ended === true ||
@@ -189,6 +191,7 @@ export async function runSituationStage(
   } catch (error) {
     return {
       output: {
+        reason: '',
         pace: previous?.pace ?? 'build',
         r18Ended: false,
         pressure: previous?.pressure ?? '',

@@ -275,6 +275,7 @@ const ROUND2_ROLEPLAY_LINYAN = {
 }
 
 const ROUND1_SITUATION = {
+  reason: '',
   pressure: '林砚等了三天，他今天是有话要说的；柜台后面的阿七并不只是个擦杯子的伙计。',
   escalation: '如果你一直站着不坐下，林砚会先开口——他等不下去了。',
   events: [
@@ -285,6 +286,7 @@ const ROUND1_SITUATION = {
 }
 
 const ROUND2_SITUATION = {
+  reason: '',
   pressure: '林砚那盏茶已经见底了，他今天不是来叙旧的；阿七擦杯子的手停在了半空。',
   escalation: '你再不把话说完，林砚就会替你说破。',
   events: [

@@ -939,6 +939,12 @@ pre.code {
   color: #cbb894;
   font-style: italic;
 }
+.situation-reason {
+  margin-top: 6px;
+  color: #d8c9a8;
+  font-size: 12.5px;
+  font-style: italic;
+}
 .situation-order {
   margin-top: 6px;
   color: #c9a86a;
