@@ -101,6 +101,13 @@ export interface AppState extends WorkspaceSnapshot {
   /** 作废某一轮之后的所有轮次（同一对话内）—— 时间线从那里重新开始 */
   truncateAfterRound: (roundId: string) => void
   /** 清掉某一轮的所有步骤与账本 —— 改了原文之后整棵步骤树要重建（角色可能变了） */
+  /**
+   * 清掉某一轮的所有步骤。
+   *
+   * 用在"这一轮要整个重新生成"的场合（编辑后重跑、重演、补跑断掉的轮次）。
+   * 注意它**连锁定的一起清** —— 整轮重跑会重新走每个阶段，留着旧步骤
+   * 只会在旁边多出一份重复的。
+   */
   clearRoundSteps: (roundId: string) => void
 
   mergeSteps: (incoming: StepIndex, ledger?: LedgerEntry[]) => void

@@ -267,12 +267,14 @@ export async function rerunStep(stepId: string): Promise<void> {
     //
     // 这种情况直接重跑整轮，否则用户会反复点重跑、结果毫无变化。
     if (!roundIsComplete(ctx.steps, step.roundId)) {
+      // 同样全清 —— 否则整轮重跑会在旧步骤旁边再建一套
+      useAppStore.getState().clearRoundSteps(step.roundId)
       useAppStore.setState({
         busy: true,
         error: null,
         statusText: '这一轮上次没有跑完，正在重新跑完整的一轮…',
       })
-      const result = await runFullRound(ctx)
+      const result = await runFullRound(makeContext(step.roundId))
       useAppStore.getState().mergeSteps(result.steps, result.ledger)
       if (result.error) useAppStore.getState().setError(result.error)
       return
@@ -314,7 +316,16 @@ export async function replayFromRound(roundId: string): Promise<void> {
     // 没有步骤、或者这一轮**上次没跑完**（缺 perceive 之后那几步）——
     // 这两种都得跑完整的一轮。`rerunFrom` 只会重跑已存在的下游，
     // 不存在的会被跳过，所以它补不齐断掉的轮次：用户反复重演也没用。
+    //
+    // 只有在走这条路时才需要**先清掉旧的半截步骤** —— 整轮重跑是"重新建一套"，
+    // 不清就会在旧步骤旁边再建一遍（进度表里出现两遍，用户看到 17 步）。
+    // 完整的那条路交给 `rerunFrom`，它按依赖图重跑、会复用锁定的步骤，
+    // 所以那里**不能**清。
     if (!firstStep || !roundIsComplete(ctx.steps, roundId)) {
+      // 这里**全清**（连锁定的也清）：整轮重跑会重新调用每个阶段，
+      // 留着锁定的旧步骤只会在它旁边多出一份重复的。
+      // 半截的轮次本来就没有可留恋的东西 —— 它缺了一整段。
+      useAppStore.getState().clearRoundSteps(roundId)
       await runRoundFor(roundId)
       return
     }
