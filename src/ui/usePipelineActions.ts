@@ -154,8 +154,25 @@ export async function runRoundFor(roundId: string): Promise<void> {
     const sceneSetup = sceneStep?.output as SceneSetup | undefined
 
     if (!scene?.reactions.length) {
+      // 先分辨是"根本没有角色反应"还是"反应跑出来了但没进编排" ——
+      // 这两种在界面上都是"没有角色说话"，但病根完全不同。
+      const roleplaySteps = Object.values(result.steps).filter(
+        (step) => step.roundId === roundId && step.stage === 'roleplay',
+      )
+      const beatsTotal = roleplaySteps.reduce((sum, step) => {
+        const beats = (step.output as { beats?: unknown[] } | null)?.beats
+        return sum + (Array.isArray(beats) ? beats.length : 0)
+      }, 0)
+
       const presentNames = (sceneSetup?.present ?? []).map((item) => item.name)
-      if (!presentNames.length) {
+      if (roleplaySteps.length) {
+        useAppStore
+          .getState()
+          .setError(
+            `生成了 ${roleplaySteps.length} 个角色反应（共 ${beatsTotal} 条演出），但它们没有进入编排结果。` +
+              '\n\n这通常意味着「编排」那一步拿到的上游不对 —— 请把右栏「编排」的产物发我。',
+          )
+      } else if (!presentNames.length) {
         // 场景构建降级是「在场 0 人」最常见的病根，直接点出来，别让人去猜
         const degraded = sceneSetup && sceneSetup.usedModel === false
         const diagnose = degraded
