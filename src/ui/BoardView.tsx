@@ -231,7 +231,7 @@ function RoundBlock({ round, isLast, demo }: { round: Round; isLast: boolean; de
               {ratingDraft === 'r18' ? (
                 <label
                   className={`r18-toggle ${directDraft ? 'on' : ''}`}
-                  title="勾上之后导演会更急着把场面推向那件事，用词也更直白"
+                  title="这一轮直接进入性描写，不再铺垫。人物模糊地带倾向成人向，写死的底线不变"
                 >
                   <input
                     type="checkbox"

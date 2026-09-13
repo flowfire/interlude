@@ -208,11 +208,12 @@ There is an **"R18 mode"** checkbox next to the input box. **It stays checked** 
 
 Once R18 is on, a second checkbox appears next to it: **"straight into the scene"**:
 
-- **The director stops stalling**: it goes straight to escalation or climax instead of building, and can assign physical progress directly.
-- **The narration and the dialogue get blunter**: no more hiding behind metaphor and trailing off.
+- **Straight in, no build-up**: the director sends the pace to escalation or climax, and assigns physical progress explicitly rather than "the mood turned charged". If the relationship is not there yet, it has to give a workable reason to get there (drink, a long absence, having just survived something) — not just jump.
+- **Blunt language**: the prompt names the words to use and the evasions to avoid ("down there", "that place"). Fading to black is what ruins the scene.
+- **Characters loosen up in the grey areas**: when the persona leaves you unsure whether they would do a thing, the engine leans **toward the adult reading** — within what is plausible, it picks the more willing version. **Hard limits are not in that category**: what they definitively would not do, they still will not do.
 - **Your details are much easier to notice**: everyone present gets a lower threshold for noticing — your breathing, your warmth, where your hands are, where your eyes go. Spatial reasoning is unchanged (back turned, in another room — still missed).
 
-**None of the three lines are relaxed**: the personality does not change, the relationship stage is not skipped, and the boundaries of the character you play are not anyone else's to decide. Someone who does not swear does not suddenly start swearing because you ticked a box — their bluntness is their own.
+**None of the three lines are relaxed**: the *floor* of the personality does not move (what moves is the grey area), the relationship does not teleport to "married for years", and the boundaries of the character you play are not anyone else's to decide.
 
 When it is on, the engine tells **both the director and the characters** they may move in that direction. The director's remit is wider — it can assign actions with physical distance, testing and suggestion in them, make the setting private, and slow the pace down. But the same three lines are written into its prompt as inviolable:
 

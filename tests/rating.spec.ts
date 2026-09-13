@@ -149,19 +149,26 @@ describe('R18 分级', () => {
 
     const off = buildRoleplayMessages({ ...base, rating: 'r18' })[1].content
     expect(off).toContain('成人向')
-    expect(off).not.toContain('【快速入戏】')
+    expect(off).not.toContain('快速入戏')
 
     const on = buildRoleplayMessages({ ...base, rating: 'r18', direct: true })[1].content
-    expect(on).toContain('【快速入戏】')
-    expect(on).toContain('不想绕圈子')
-    expect(on).toContain('脏话、粗话都可以用')
-
+    expect(on).toContain('快速入戏 —— 直接演那件事')
+    expect(on).toContain('别再拖了')
+    // 身体上的进展要具体，不是含糊过去
+    expect(on).toContain('身体上的进展要写具体')
+    expect(on).toContain('硬了、湿了')
+    // 露骨的词要明确告知，让模型知道该用
+    expect(on).toContain('操、肏、屌、逼')
+    expect(on).toContain('不要用"那里""下面""那个地方"回避')
+    // 性格的模糊地带往成人向解释，但写死的底线不在此列
+    expect(on).toContain('性格上的模糊地带，往成人向解释')
+    expect(on).toContain('写死的底线')
     // 底线一条没松
     expect(on).toContain('三条底线一条没松')
 
     // 没勾 R18 时它不该出现
     const general = buildRoleplayMessages({ ...base, rating: 'general', direct: true })[1].content
-    expect(general).not.toContain('【快速入戏】')
+    expect(general).not.toContain('快速入戏')
   })
 
   it('导演也会收到「快速入戏」，落在节奏与用词上', () => {
@@ -175,12 +182,21 @@ describe('R18 分级', () => {
     }
 
     const on = buildSituationMessages({ ...base, rating: 'r18', direct: true })[0].content
-    expect(on).toContain('【快速入戏】')
+    expect(on).toContain('快速入戏 —— 用户要的是直接进入')
     expect(on).toContain('pace 直接给 escalate 或 climax')
+    // act 要写明确的性进展，而不是含糊带过
+    expect(on).toContain('明确的性进展')
+    expect(on).toContain('谁对谁做了什么')
+    // 用词直白（用户要求：有必要就必须明确告知）
+    expect(on).toContain('操、肏、屌、逼')
+    expect(on).toContain('不要用"两人纠缠"')
+    // 关系没到就给它一个由头，别硬跳
+    expect(on).toContain('给它一个说得通的由头')
+    // 红线不松
     expect(on).toContain('用户扮演的角色一个字都不能替他写')
 
     const off = buildSituationMessages({ ...base, rating: 'r18' })[0].content
-    expect(off).not.toContain('【快速入戏】')
+    expect(off).not.toContain('快速入戏')
   })
 
   it('成人向那一轮，用户身上的细节更容易被注意到', () => {
