@@ -23,6 +23,10 @@ export interface SituationStageInput {
   rating?: ContentRating
   /** 「快速入戏」 */
   direct?: boolean
+  /** 成人向已经连着几轮了（给导演的成绩单） */
+  r18Streak?: number
+  /** 其中多少轮还勾了快速入戏 */
+  directStreak?: number
   previousRecap?: string
   previous?: { pressure: string; escalation: string; pace?: SituationPace } | null
 }
@@ -116,8 +120,21 @@ export async function runSituationStage(
   client: LlmClient,
   input: SituationStageInput,
 ): Promise<{ output: SituationState; result: ChatResult | null }> {
-  const { doc, segments, sceneSetup, cards, pcName, storyTitle, idle, rating, direct, previousRecap, previous } =
-    input
+  const {
+    doc,
+    segments,
+    sceneSetup,
+    cards,
+    pcName,
+    storyTitle,
+    idle,
+    rating,
+    direct,
+    r18Streak,
+    directStreak,
+    previousRecap,
+    previous,
+  } = input
 
   const messages = buildSituationMessages({
     storyTitle,
@@ -125,6 +142,8 @@ export async function runSituationStage(
     idle,
     rating,
     direct,
+    r18Streak,
+    directStreak,
     doc,
     segments,
     sceneSetup,

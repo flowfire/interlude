@@ -21,6 +21,10 @@ export interface SituationPromptInput {
   rating?: ContentRating
   /** 「快速入戏」 */
   direct?: boolean
+  /** 成人向已经连着几轮了（含当前轮） */
+  r18Streak?: number
+  /** 其中多少轮还勾了快速入戏 */
+  directStreak?: number
   doc: NormalizedDoc
   segments: Segment[]
   sceneSetup: SceneSetup
@@ -124,6 +128,37 @@ const R18_ENDING_HINT = `
 - **也不要永远不结束**：连着好几轮都在写同一件事，那不是沉浸，是卡住了。
 - 结束之后，这一轮剩下的部分就该往别的方向走 —— 两个人接下来怎么办，
   才是这场戏真正剩下的东西。
+`
+
+/**
+ * 成人向的「成绩单」。
+ *
+ * 从用户开始勾选算起，这个模式已经连着几轮了。轮数越多，
+ * 说明导演磨得越久 —— 用户勾成人向不是为了看你铺垫。
+ * 界面上不显示，只压在导演身上。
+ */
+const R18_STREAK_HINT = `
+【已经第 __R18_STREAK__ 轮了 —— 这是你的成绩单】
+成人向模式从用户勾选算起，已经连着 __R18_STREAK__ 轮（其中 __DIRECT_STREAK__ 轮
+勾了快速入戏）。**这个数字越大，你越该紧张。**
+
+先看一眼往事：**这件事开始了没有？到哪一步了？**
+
+**还没开始：**
+- 第 1 轮：正常，可以从容安排。
+- 第 2~3 轮：该有实质进展了，不能还停在"气氛"上。这一轮必须往前跨。
+- 第 4 轮及以上：**已经拖过头了。** 这一轮要么让它真正发生，
+  要么在 r18Ended 里宣告收尾 —— 不能既没发生、又不结束地一直挂着。
+
+**已经开始了：**
+- 那就按它的自然节奏往下走，别硬拖着不收。
+- 做完了就宣告 r18Ended，让这一幕过去。
+
+**如果勾了快速入戏，标准更严：**
+- 第 1 轮：这一轮就该到位（或者已经在做了）。
+- 第 2 轮及以上：已经不是"该到"，而是"该做完"或"该收尾"了。
+
+「用户勾成人向不是为了看你铺垫」—— 这句话在轮数变大之后就不是提醒，是判词。
 `
 
 const SYSTEM = `你是「幕间」的**导演** —— 这一场戏归你。
@@ -370,10 +405,18 @@ ${segmentLines || '（这一轮用户没有写具体内容）'}
 
 请写出这一轮的局面：节奏、压力、下一步、这一轮实际发生的事，以及**谁先动谁后动**。`
 
+  const r18Streak = Math.max(1, input.r18Streak ?? 1)
+  const directStreak = Math.max(0, input.directStreak ?? 0)
   const hints = [
     rating === 'r18' ? R18_DIRECTOR_HINT : '',
     rating === 'r18' ? R18_ENDING_HINT : '',
     rating === 'r18' && direct ? R18_DIRECT_HINT : '',
+    rating === 'r18'
+      ? R18_STREAK_HINT.replaceAll('__R18_STREAK__', String(r18Streak)).replaceAll(
+          '__DIRECT_STREAK__',
+          String(directStreak),
+        )
+      : '',
   ]
     .filter(Boolean)
     .join('\n')

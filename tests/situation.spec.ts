@@ -213,6 +213,29 @@ describe('局面推进：世界自己会往前走', () => {
     expect(system.content).toContain('用户扮演的角色永远不在名单里')
   })
 
+  it('成人向拖了几轮会写进导演的成绩单，轮数越多越难看', () => {
+    const base = {
+      storyTitle: '测试',
+      pcName: '我',
+      doc: normalizeInput('我把门关上了。'),
+      segments: [],
+      sceneSetup: setup,
+      drives: [],
+      rating: 'r18' as const,
+    }
+
+    const first = buildSituationMessages({ ...base, r18Streak: 1, directStreak: 0 })[0].content
+    expect(first).toContain('已经第 1 轮了')
+    expect(first).toContain('第 1 轮：正常，可以从容安排')
+
+    const late = buildSituationMessages({ ...base, r18Streak: 5, directStreak: 3 })[0].content
+    expect(late).toContain('已经第 5 轮了')
+    expect(late).toContain('已经拖过头了')
+    expect(late).toContain('第 2 轮及以上：已经不是"该到"')
+    // 成绩单里也点明了要先判断「开始了没有」
+    expect(late).toContain('这件事开始了没有')
+  })
+
   it('导演知道最近几轮的节奏，用来判断该不该收场', () => {
     const messages = buildSituationMessages({
       storyTitle: '测试',

@@ -8,7 +8,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
  * 陷进没完没了的 R18。关掉之后他随时可以再勾回来。
  */
 
-const h = vi.hoisted(() => ({ r18Ended: false }))
+const h = vi.hoisted(() => ({ r18Ended: false, situationPrompts: [] as string[] }))
 
 vi.mock('@/engine/llm/instance', () => {
   function build(label: string): unknown {
@@ -74,8 +74,12 @@ vi.mock('@/engine/llm/instance', () => {
       chat: async () => {
         throw new Error('未使用')
       },
-      chatJson: async (_messages: unknown, options: { label?: string; parse: (raw: unknown) => unknown }) => {
+      chatJson: async (
+        messages: { role: string; content: string }[],
+        options: { label?: string; parse: (raw: unknown) => unknown },
+      ) => {
         const label = options.label ?? ''
+        if (label === 'situation') h.situationPrompts.push(messages.map((m) => m.content).join('\n'))
         return {
           data: options.parse(build(label)),
           result: {
@@ -94,18 +98,26 @@ vi.mock('@/engine/llm/instance', () => {
 const { useAppStore } = await import('@/store/appStore')
 const { runRoundFor } = await import('@/ui/usePipelineActions')
 
-async function runOneRound() {
-  const store = useAppStore.getState()
-  store.resetWorkspace()
+async function freshWorkspace() {
+  useAppStore.getState().resetWorkspace()
   useAppStore.getState().setProject({ researchEnabled: false })
-  const round = useAppStore.getState().newRound('我把门关上了。', 'r18', false, true)
+}
+
+async function runR18Round(input: string, direct = true) {
+  const round = useAppStore.getState().newRound(input, 'r18', false, direct)
   await runRoundFor(round.id)
   return round
+}
+
+async function runOneRound() {
+  await freshWorkspace()
+  return runR18Round('我把门关上了。')
 }
 
 describe('导演可以宣告成人向收尾', () => {
   beforeEach(() => {
     h.r18Ended = false
+    h.situationPrompts.length = 0
     useAppStore.getState().setComposer({ rating: 'general', direct: false })
   })
 
@@ -124,6 +136,23 @@ describe('导演可以宣告成人向收尾', () => {
 
     // 两个勾都落回默认 —— 快速入戏只在成人向那一轮有意义，不能单独留着
     expect(useAppStore.getState().composer).toEqual({ rating: 'general', direct: false })
+  })
+
+  it('连着几轮成人向，成绩单上的轮数会累加', async () => {
+    await freshWorkspace()
+    await runR18Round('第一轮：我把门关上了。')
+    expect(h.situationPrompts.at(-1)).toContain('已经第 1 轮了')
+
+    await runR18Round('第二轮：我坐下了。')
+    console.log('HINT >>>', (h.situationPrompts.at(-1) ?? '').match(/已经第 \d+ 轮了/)?.[0])
+    expect(h.situationPrompts.at(-1)).toContain('已经第 2 轮了')
+    expect(h.situationPrompts.at(-1)).toContain('其中 2 轮')
+
+    // 中间断一轮普通分级，计数就该断
+    const plain = useAppStore.getState().newRound('第三轮：我只是坐着。', 'general')
+    await runRoundFor(plain.id)
+    await runR18Round('第四轮：我又把门关上了。')
+    expect(h.situationPrompts.at(-1)).toContain('已经第 1 轮了')
   })
 
   it('退出去之后用户还能再勾回来', () => {

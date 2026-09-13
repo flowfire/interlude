@@ -163,6 +163,28 @@ function buildRecap(ctx: PipelineContext): string {
  *
  * 「压力」是跨轮累积的东西：上一轮埋下的隐患，这一轮该兑现一部分。
  */
+/**
+ * 成人向已经连着几轮了 —— 这是给导演看的一份「成绩单」。
+ *
+ * 从当前轮往前数，连续多少轮是 r18（其中多少轮还勾了快速入戏）。
+ * 轮数越多，说明导演磨得越久：用户勾成人向不是为了看你铺垫。
+ * 界面上不显示，只用来给导演压力。
+ */
+function r18StreakOf(ctx: PipelineContext): { r18Streak: number; directStreak: number } {
+  const list = (ctx.rounds?.length ? ctx.rounds : [ctx.round])
+    .filter((round) => round.sessionId === ctx.round.sessionId && round.index <= ctx.round.index)
+    .sort((a, b) => b.index - a.index)
+
+  let r18Streak = 0
+  let directStreak = 0
+  for (const round of list) {
+    if ((round.rating ?? 'general') !== 'r18') break
+    r18Streak += 1
+    if (round.direct) directStreak += 1
+  }
+  return { r18Streak, directStreak }
+}
+
 function previousSituation(
   ctx: PipelineContext,
 ): { pressure: string; escalation: string; pace: SituationPace; recentPaces: SituationPace[] } | null {
@@ -331,6 +353,7 @@ async function executeStep(ctx: PipelineContext, step: Step): Promise<Step> {
         direct: Boolean(ctx.round.direct),
         previousRecap: buildRecap(ctx),
         previous: previousSituation(ctx),
+        ...r18StreakOf(ctx),
       })
       return done(step, output, { model: result?.model, cost: costOf(result, startedAt) })
     }

@@ -214,8 +214,10 @@ describe('R18 分级', () => {
     // 红线不松
     expect(on).toContain('用户扮演的角色一个字都不能替他写')
 
+    // 非快速入戏的成人向轮次里没有那一段指令。注意计数器说明里会提到
+    // 「其中 N 轮勾了快速入戏」，所以只断言指令段本身不在。
     const off = buildSituationMessages({ ...base, rating: 'r18' })[0].content
-    expect(off).not.toContain('快速入戏')
+    expect(off).not.toContain('【快速入戏')
   })
 
   it('成人向那一轮，用户身上的细节更容易被注意到', () => {
