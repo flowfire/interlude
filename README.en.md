@@ -224,27 +224,9 @@ That is the built-in demo: it uses a scripted set of model responses and **actua
 
 ## Adult mode
 
-**Open the master switch first**: Settings → project → "allow adult mode". It is **off by default**; only once it is on does the "R18 mode" checkbox appear in the composer. With it off, nothing adult-related shows up anywhere in the UI.
+**Open the master switch first**: Settings → project → "allow adult mode". It is **off by default**; only once it is on does the "R18 mode" checkbox appear in the composer.
 
-R18 is not "flip a switch and the model talks dirty". **Every stage** of the engine has a corresponding treatment:
-
-| Stage | What it does under the adult rating |
-|---|---|
-| **Scene building** | The atmosphere may be more private and charged (light, distance, warmth, the texture of a silence), without changing anyone's situation or relationship |
-| **Your exteriorisation** | The traces your inner state leaves can be more direct — breathing, warmth, where a gaze lingers. But **how much leaks is still decided by the persona**; someone who keeps things in still keeps things in |
-| **Information distribution** | Everyone present is more likely to notice the details on you: breathing, warmth, where your hands are, where your eyes go. Spatial reasoning is unchanged — back turned, in another room, still missed |
-| **Director** | May assign actions with physical distance, testing and provocation in them, and may make the setting private and slow the pace |
-| **Characters** | May write sexual physical responses, and put explicit desire into their lines |
-
-**The director can ask for adult mode too.** If it judges that the story has arrived somewhere and staying innocent no longer fits, it makes that request and the client **ticks the box for you** — the rounds after that can go there.
-
-**You can untick it every round.** Unticking means you do not want to go there yet; the director plays that round straight, and may ask again next round if it still thinks it is time. **Neither side keeps score — the deciding factor is simply whether the box is ticked at that moment.** Which also means: if it is not ticked, the director cannot produce adult content however much it wants to.
-
-(The one exception is the master switch in settings: with "allow adult mode" off, the request does not exist at all.)
-
-**"R18 mode" is permission, not a requirement.** It means: **when the story arrives there, let it happen** — do not dodge it, do not pull the camera back, do not fade out with "the next morning". If you do not lead, the director will not push; but the moment you bring the story there, it has to catch it. And in those scenes **the prose should be blunt, direct and crude** — euphemism is the mood killer.
-
-Every stage of the engine has a matching treatment:
+R18 is not "flip a switch and the model talks dirty". **Every stage** of the engine has a matching treatment:
 
 | Stage | What it does under the adult rating |
 |---|---|
@@ -254,86 +236,50 @@ Every stage of the engine has a matching treatment:
 | **Director** | May assign actions with physical distance, testing and provocation in them, and may make the setting private |
 | **Characters** | May write sexual physical responses, and put explicit desire into their lines |
 
-**It is counted per round.** The "R18 mode" checkbox in the composer stays checked across reloads, but the rating itself lives on the **round** — so you can turn it on for this round and off for the next, independently. When reading back, the rounds that had it on carry a red marker on the divider.
+**It is permission, not a requirement.** When the story arrives there, let it happen — do not dodge it, do not pull the camera back, do not fade out with "the next morning". If you do not lead, the director will not push; but the moment you bring the story there, it has to catch it. And in those scenes **the prose should be blunt, direct and crude** — euphemism is the mood killer.
+
+**The rating lives on the round.** The checkbox stays ticked across reloads, but each round carries its own rating, so you can turn it on for one and off for the next. Rounds that had it on carry a red marker on the divider.
+
+**The director can ask for it too.** When it judges that the story has arrived somewhere, it makes the request and the client **ticks the box for you**. You can untick it at any time — that means you do not want to go there yet, and the director plays that round straight; it may ask again next round. **Neither side keeps score: the deciding factor is whether the box is ticked at that moment.**
 
 ### Three lines
 
 Whichever round it is, three lines are written into the prompt as inviolable:
 
-1. **The personality does not change.** A restrained person is still restrained in that scene — only what they restrain changes. Someone who jokes around still jokes around. Nobody becomes a different person because the scene allows it.
-2. **Any advance has to be something *they* would do.** If the relationship is not there yet, it does not jump there — hesitation stays hesitation, testing stays testing.
+1. **The personality does not change.** A restrained person is still restrained in that scene — only what they restrain changes.
+2. **Any advance has to be something *they* would do.** If the relationship is not there yet, it does not jump there.
 3. **Do not skip to the end.** The pace comes from the relationship and the moment, not from the rating.
 
-There is one more rule that is not a "line" but a **red line**, and it never moves at any rating: **the boundaries of the character you play are not anyone else's to decide.** The director may decide what other characters do, but never anything on your behalf.
+There is one more rule that is not a "line" but a **red line**, and it never moves at any rating: **the boundaries of the character you play are not anyone else's to decide.**
 
 ### Straight into the scene: the director now has an *obligation* to lead
 
-Once R18 is on, a second checkbox appears next to it. The most fundamental difference from plain adult mode:
+Once R18 is on, a second checkbox appears next to it. The difference is one sentence:
 
 > **Plain mode is "give him what he asks for"; this is "you are responsible for getting him there".**
 
-Without waiting for you to speak or to move, **the director is obliged to push the story towards sex**. It can make a character move first, make the situation shift, put you somewhere you have to face it — what you do not write, it arranges.
-
-It also has a **hard rule**: **this round's sex score must be higher than the previous one, or the round counts as a failure.**
+Without waiting for you to speak or move, the director pushes the story that way; what you do not write, it arranges. It also has a hard rule: **this round's score must be higher than the previous one, or the round counts as a failure.**
 
 | Score | Meaning |
 |---|---|
-| **0** | No sexual content and no lean towards it |
-| **20** | A lean (a gaze held too long, a hooked line, wrong distance) but nothing physical |
-| **50** | Real physical contact (kissing, touching, undressing) |
+| **0** | Not a trace of it |
+| **20** | A lean (a gaze held too long, a hooked line, wrong distance), nothing physical yet |
+| **40** | Bodies meet — kissing, holding, touching through clothes |
+| **60** | Clothes off, skin out |
+| **80** | Past foreplay |
 | **100** | It has started |
-| **Above 100 is progress, not degree** | From that round on, +10 per round (110, 120…) |
+| **Above 100 is progress** | From that round on, +10 per round |
 
-The engine plays **its own last four scores** back to it (`10 → 10 → 15`) and calls it out: "see that — several rounds and it barely moved. That is not slow burn, that is stalling." **An order can be disobeyed; a ledger you wrote yourself is harder to argue with.** A round whose score did not rise is **marked as failed on the board** — with **one exception: the first round**. There the baseline is 0 anyway, and the round itself may quite reasonably be 0 (the scene has only just opened); scoring 0 against 0 would be a false charge, so the first round is never judged.
+The engine plays **its own last four scores** back to it (`10 → 10 → 15`) and calls it out: "several rounds and it barely moved — that is not slow burn, that is stalling." **An order can be disobeyed; a ledger you wrote yourself is harder to argue with.** Claiming 0 while writing undressing would not add up against the scene.
 
-**It can offer you a few roads at any time.** In this mode the suggested directions are not a fallback for "I cannot push" but a **regular way of leading**.
-
-**It can offer you a few roads at any time**, placed at the end of the round:
+It also **offers you a few roads at any time**, at the end of each round:
 
 > ▸ **Get closer under cover of the medicine kit** — I step aside from the doorway: "Come in, sit down first." Then I turn to dig out the kit.
-> ▸ **Tell him to get out of the wet clothes** — "Those need to come off." I pull an old shirt from the cupboard and hand it over, then stay right where I am.
+> ▸ **Tell him to get out of the wet clothes** — "Those need to come off." I pull an old shirt from the cupboard and hand it over.
 
-Clicking one drops it into the input box, ready to send. Two properties: each is **your next step** (not a plot direction for you to translate), and **all of them lead there — only the route differs** (care, testing, saying it outright; none ends in "nothing happens").
+Clicking one drops it into the input box. Each is **your next step** (not a plot direction for you to translate), and **all of them lead there — only the route differs** (care, testing, saying it outright; none ends in "nothing happens").
 
-**It also writes the relationship-building for you.** You do not want to write that stretch step by step, so it has to fill in *why the two of them ended up together* with a proper background passage, shown on the board (expanded by default). **It may not get away with one line** — "you have been together three months" is zero information and is explicitly listed as unacceptable. It has to say how they got there (which incident, which sentence, who backed down first) and what unspoken understanding or old debt sits between them.
-
-**On length**: it is explicitly told **not to skimp** — *what the user minds is never length, it is emptiness*. The only constraint is that every sentence carries information (a concrete action, a time, a loaded detail). "The days passed and they grew closer" does not count.
-
-**But nothing about the sex itself gets skipped.** The background may carry *how far the relationship has got*, never *what they did last night* — writing the act into the background throws away the entire point of the switch. One sentence to judge by: **the background carries "why they can"; the performance carries "how they do it".**
-
-**When it genuinely cannot push, it asks you.** Some setups cannot go there yet — first meeting, opposed identities, a life-or-death moment. It will not force it (that breaks the scene) and will not pretend nothing happened either; it **puts a few directions on the card for you to pick**:
-
-> ▸ **Let him recover at your place** — he is hurt too badly to leave, so he has to come in. You will be under one roof for days; distance stops being the problem, his willingness is.
-> ▸ **Invite him in and get the story out** — he will tell part of it and hide the rest, and the parts you already know are exactly the parts he does not want known.
-> ▸ **Do not let him in, see what he does** — he stands there a while, and then you find him collapsed in the yard.
-
-**Click one and it drops into the input box** (you can edit it), then you carry on. The choice stays yours.
-
-**It has to account for not moving forward.** Every round the director asks itself "did anything new happen between their bodies this round". If not, it has to say on the card where it got stuck — specifically, and empty phrases like "the time is not right" are explicitly called out as not counting. **The board carries a collapsed "why this round did not go further" you can open.**
-
-**The director closes it out for you.** When it is time, it can declare the scene finished in that round — and the client **unticks the box automatically**, back to normal. Tick it again whenever you want.
-
-### Changing a round's rating
-
-Click "edit the source" — the same pair of checkboxes is there. **Even if the text is untouched and you only flip a checkbox, that counts as a change**, and "save and regenerate" will replay that round under the new setting (later rounds are discarded as usual, undo available).
-
----
-
-## About "you"
-
-You write in the first person, but **in every prompt the engine hands to an AI, you are "you"** — the director included. They will not refer to you as "he" or "she" (that is third person, and reads as though a fourth person were in the room).
-
-**The persona you write is authoritative.** It goes verbatim into the director's prompt and into every character's prompt, and anything that contradicts it loses. This one came from a real bug: the engine used to pass down only your *current appearance* (standing in the doorway, umbrella in hand) and **dropped gender, age and occupation** — so a male protagonist would get called "she".
-
-**So write the persona.** With just "me" and nothing else, the AI can only guess.
-
-## Scenes are not rebuilt every round
-
-When several rounds stay in the same place (the same table, the same rain), scene building only has to answer one thing — **unchanged**. If time, place, who is present and the mood are all the same, it returns a single marker, and **the engine reuses the previous scene**.
-
-The UI follows the same rule: **one card per scene, not per round.** Rounds that reuse the previous scene join the same group and share its card — so scrolling through them leaves that card **perfectly still on top**; only a genuinely new scene pushes a new one up. (The card sits right after the divider of the round it belongs to.)
-
-That saves a generation and removes the repetition of describing the same room every round. **"Unchanged" does not mean "nothing happened"** — the two of them are still at that table, only halfway through the conversation, which is the most common kind of consecutive round.
+It also **writes the gap for you** — what happened between the last round and this one — because you do not want to write that stretch step by step. It is explicitly told **not to skimp**: *what the user minds is never length, it is emptiness.*
 
 ## Three mechanisms worth knowing
 

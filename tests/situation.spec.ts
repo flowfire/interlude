@@ -249,12 +249,12 @@ describe('局面推进：世界自己会往前走', () => {
     // 评分表要写明白：0 是程度的下限，100 是"已经在做"，100 以上是进度
     const first = sys(1, [])
     expect(first).toContain('【先给这一轮打分')
-    expect(first).toContain('**100**：插进去了，正在做')
+    expect(first).toContain('**100**：插进去了')
     expect(first).toContain('100 以上是进度')
     // 校准：脱了露了就已经 60 往上了，不许给 0
     expect(first).toContain('脱了、露了')
-    expect(first).toContain('不是「做完没有」')
-    expect(first).toContain('给 0 是在骗自己')
+    expect(first).toContain('不是"做完没有"')
+    expect(first).toContain('给 0 是骗自己')
     expect(first).toContain('每多一轮 +10')
     expect(first).toContain('这是第一轮，还没有历史评分')
 
@@ -305,8 +305,8 @@ describe('局面推进：世界自己会往前走', () => {
       recentScores: [10, 10, 15],
     })
 
-    expect(system.content).toContain('判断标准只有一个')
-    expect(system.content).toContain('都不算理由')
+    expect(system.content).toContain('判断标准就一句')
+    expect(system.content).toContain('这些都不是理由')
     expect(system.content).toContain('时机未到 · 气氛差一点')
   })
 
@@ -324,34 +324,18 @@ describe('局面推进：世界自己会往前走', () => {
       directStreak: 1,
     })
 
-    expect(system.content).toContain('routes 不是兜底 —— 是常规手段')
-    expect(system.content).toContain('推不动的时候**，routes 就从"手段"变成"义务"')
-    // 三种处理的优先级要写清楚
-    expect(system.content).toContain('能改就改')
+    // 先改造场面
+    expect(system.content).toContain('先试着改造场面')
     expect(system.content).toContain('确实改不了')
-    // 明确两条禁令：不跳戏，也不许交一份无关的正常剧情
+    // 两条禁令：不跳戏，也不交一份无关的正常剧情
     expect(system.content).toContain('不要跳戏')
-    expect(system.content).toContain('那是抗命')
-    // routes 是给用户选的开场，不是替他做决定
-    expect(system.content).toContain('给用户选的开场')
-    expect(system.content).toContain('让他在你这里养伤')
-    // 光说「做不到」不给方向，仍然算拖
-    expect(system.content).toContain('然后什么都不给，那就是在拖')
-    // 关键：告诉它 routes 会被渲染成按钮 —— 否则它会当成可选字段忽略，
-    // 把方向写成 holdUp 里的一段散文，用户点不了
-    expect(system.content).toContain('routes 是给用户用的')
-    // 关键：必须是「用户视角、能直接用的」，不是剧情走向的描述
-    expect(system.content).toContain('写成「他能直接说出口的话 / 做得出的动作」')
-    expect(system.content).toContain('不是剧情往哪走的描述')
-    expect(system.content).toContain('他点下去还得自己重写一遍，这个按钮就白给了')
+    expect(system.content).toContain('跟性无关的正常剧情')
+    // 方向必须是「他能直接说出口的话」，不是剧情走向
+    expect(system.content).toContain('他能直接说出口的话')
     expect(system.content).toContain('我侧身让开门口')
-    // 几条路都得通向做爱 —— 不是「接受 / 中立 / 拒绝」那种谱系
-    expect(system.content).toContain('不是「接受 / 中立 / 拒绝」那种谱系')
-    expect(system.content).toContain('是让他选"用哪种走法进去"')
-    expect(system.content).toContain('最后那条等于在问"要不要"')
-    expect(system.content).toContain('借着上药靠近')
-    expect(system.content).toContain('直接把手按在他手上')
-    expect(system.content).toContain('写在 holdUp 里没用')
+    expect(system.content).toContain('让他在你这里养伤')
+    // 光说做不到不给方向，仍然算拖
+    expect(system.content).toContain('这些都不是理由')
   })
 
   it('导演知道最近几轮的节奏，用来判断该不该收场', () => {

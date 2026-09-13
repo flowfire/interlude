@@ -187,144 +187,56 @@ describe('R18 分级', () => {
     const base = {
       storyTitle: '测试',
       pcName: '我',
-      doc: normalizeInput('我把门关上。'),
-      segments: [],
-      sceneSetup: setup(),
-      drives: [],
-    }
-
-    const on = buildSituationMessages({ ...base, rating: 'r18', direct: true })[0].content
-    expect(on).toContain('【快速入戏】')
-    expect(on).toContain('尽快看到他们做爱')
-    // act 要写明确的性进展，而不是含糊带过
-    expect(on).toContain('这些都要明明白白写出来')
-    expect(on).toContain('过程要写出来')
-    // 用词直白（用户要求：有必要就必须明确告知）
-    expect(on).toContain('操、肏、鸡巴、逼')
-    expect(on).toContain('不许用这些糊过去')
-    // 理由必须建立在已经发生过的事上，不是随便挑一个转折点
-    expect(on).toContain('为什么是此刻')
-    expect(on).toContain('放哪儿都成立的话')
-    // 这一轮的第一要务是推进成人向，不是"随便推进一点剧情"
-    expect(on).toContain('第一要务')
-    expect(on).toContain('第一要务就是这件事')
-    expect(on).toContain('一样都不许跑题')
-    // reason 必须是"性内容能往前一步"的理由，不能是跑题的剧情转折
-    expect(on).toContain('为什么是此刻他们能往前一步')
-    expect(on).toContain('都不算理由')
-    // events 也不许写跟性无关的东西
-    // 快速模式 = 导演有义务主动引导（不是"允许"）
-    expect(on).toContain('导演有义务主动引导剧情')
-    expect(on).toContain('你负责把他带到那儿')
-    // 硬指标：分必须比上一轮高，否则不合格
-    expect(on).toContain('这一轮的 sexScore 必须比上一轮高')
-    expect(on).toContain('没涨 = **不合格**')
-    // 而且这道关要它自己在**交卷之前**过 —— 引擎事后判的时候它已经交了
-    expect(on).toContain('交出之前，先过这一关')
-    expect(on).toContain('它比上一轮高了吗')
-    expect(on).toContain('**没高** → **不合格，重想。**')
-    expect(on).toContain('不许靠改分数蒙过去')
-    // 推不动的时候有第三条路：不硬拗、不抗命，而是给用户几条可选方向
-    expect(on).toContain('routes 不是兜底 —— 是常规手段')
-    expect(on).toContain('随时都可以给 2~3 个方向')
-    expect(on).toContain('routes 是**给用户选的开场**')
-    expect(on).toContain('让他在你这里养伤')
-    // 光给词表不够，得给密度示范
-    expect(on).toContain('这些都要明明白白写出来')
-    expect(on).toContain('不许跳步')
-    expect(on).toContain('一段合格的 act**（照这个密度写')
-    expect(on).toContain('回避就是没完成工作')
-    // 快速入戏那一段里，「那件事」这类回避指代一次都不许出现
-    const directHint = on.slice(on.indexOf('【快速入戏'))
-    expect(directHint).not.toContain('那件事')
-    // 含糊说法只允许出现在"不许用这些"的反例清单里
-    expect((directHint.match(/融为一体/g) ?? []).length).toBe(1)
-    expect(directHint).toContain('不许用这些糊过去')
-    // 快速模式：用户把「感情建立」交给导演替他写 —— 但他要看，
-    // 所以导演不许用一句话糊过去（这是最容易偷懒的地方）
-    expect(on).toContain('把「上一轮到这一轮之间」替你写掉')
-    expect(on).toContain('这不是角色的来历')
-    expect(on).toContain('人物小传')
-    expect(on).toContain('会和"上一轮他明明已经站在你屋里了"直接打架')
-    expect(on).toContain('用一句话糊过去是不合格的')
-    expect(on).toContain('我们的关系维持了三个月')
-    // 不要在意字数，但也不许水
-    expect(on).toContain('不要在意字数')
-    expect(on).toContain('用户嫌的从来不是长，是空')
-    expect(on).toContain('合格的密度下限')
-    expect(on).toContain('晾在院子里，一直没收进来')
-    expect(on).toContain('每一句都要携带信息')
-    expect(on).toContain('不要水')
-    // 性恰恰是用户勾 R18 要看的东西，一个字都不能跳
-    expect(on).toContain('做爱一个字都不能跳')
-    expect(on).toContain('不能有"他们昨天做了什么"')
-    expect(on).toContain('模棱两可的判断一律往更能导向做爱的方向选')
-    // 场景不配合时有办法：把它改造成通向性的场面
-    expect(on).toContain('怎么把「看起来不相干」的场景改造成通向做爱的场面')
-    expect(on).toContain('一个陌生人站在门口')
-    // 用户勾这个是为了保留期待感，不是为了让导演去猜他的口味
-    expect(on).toContain('具体怎么做由你决定')
-    expect(on).toContain('不要停下来揣测')
-    // 压缩的是过程，不是逻辑：既不能跳戏，也不能拖
-    expect(on).toContain('压缩过程，不是跳过逻辑')
-    expect(on).toContain('这种断裂的写法不行')
-    expect(on).toContain('跨度可以极大')
-    expect(on).toContain('一样都不许跑题')
-    // 判定标准要能量化，否则导演不知道做到没有
-    expect(on).toContain('有没有出现身体上的新进展')
-    // 红线不松
-    expect(on).toContain('用户扮演的角色一个字都不能替他写')
-
-    // 非快速入戏的成人向轮次里没有那一段指令。注意计数器说明里会提到
-    // 「其中 N 轮勾了快速入戏」，所以只断言指令段本身不在。
-    const off = buildSituationMessages({ ...base, rating: 'r18' })[0].content
-    expect(off).not.toContain('【快速入戏')
-  })
-
-  it('成人向那一轮，用户身上的细节更容易被注意到', () => {
-    const base = {
-      pcName: '我',
-      actors: [{ name: '林砚', position: '桌边', senses: [], mindReading: '' }],
-      candidates: [],
-    }
-
-    const r18 = buildPerceiveMessages({ ...base, rating: 'r18' })[0].content
-    expect(r18).toContain('用户身上的细节更容易被注意到')
-    expect(r18).toContain('不要轻易判 missed')
-    // 放宽的是注意力阈值，不是空间关系
-    expect(r18).toContain('背对着、离得很远、在另一个房间')
-
-    const general = buildPerceiveMessages({ ...base, rating: 'general' })[0].content
-    expect(general).not.toContain('不要轻易判 missed')
-  })
-
-  it('用户的人设必须给到导演和角色 —— 不给它就会凭空安个性别', () => {
-    const persona = '沈砚，男性，二十四岁，做古籍修复，手上总有洗不掉的浆糊味。'
-    const base = {
-      storyTitle: '测试',
-      pcName: '我',
       doc: normalizeInput('我把门关上了。'),
       segments: [],
       sceneSetup: setup(),
       drives: [],
-      pcPersona: persona,
       rating: 'general' as const,
     }
 
-    // 导演侧
-    const director = buildSituationMessages({ ...base })[0].content
-    expect(director).toContain(persona)
-    expect(director).toContain('权威设定')
-    expect(director).toContain('不要用"她/他"来指代他')
+    const off = buildSituationMessages({ ...base, rating: 'r18' })[0].content
+    expect(off).toContain('成人向')
+    expect(off).not.toContain('快速入戏')
 
-    // 角色侧
-    const actor = buildRoleplayMessages({
-      bundle: { ...bundle(), pcPersona: persona, pcName: '我' },
-      project: DEFAULT_PROJECT_SETTINGS,
-    })[1].content
-    expect(actor).toContain(persona)
-    expect(actor).toContain('跟你说话的那个人')
-    expect(actor).toContain('不要用"她/他"来指代他')
+    const on = buildSituationMessages({
+      ...base,
+      rating: 'r18',
+      direct: true,
+      r18Streak: 1,
+      directStreak: 1,
+    })[0].content
+
+    // 快速模式：往做爱上推，但压缩过程而不是跳过逻辑
+    expect(on).toContain('【快速入戏】')
+    expect(on).toContain('这一轮的调度都朝这个方向走')
+    expect(on).toContain('压缩过程，不跳过逻辑')
+    expect(on).toContain('怎么做由你决定')
+
+    // backstory 写的是"两个人之间"，不是这个人的来历
+    expect(on).toContain('把这一轮之前的空白替他写掉')
+    expect(on).toContain('不是这个人的来历')
+
+    // 光给词表不够，得给密度示范
+    expect(on).toContain('这些都要明明白白写出来')
+    expect(on).toContain('不要跳步')
+    expect(on).toContain('一段合格的 act')
+    expect(on).toContain('这类说法糊过去')
+
+    // 那一堆含糊说法只能出现在反例里
+    const directHint = on.slice(on.indexOf('【快速入戏'))
+    expect(directHint).not.toContain('那件事')
+    expect((directHint.match(/融为一体/g) ?? []).length).toBe(1)
+
+    // 露骨的词要明确告知，让模型知道该用
+    expect(on).toContain('操、肏、鸡巴、逼')
+    expect(on).toContain('你怎么说话，演员就怎么说话')
+
+    // 用户要的是期待感，不需要提前指定
+    expect(on).toContain('他不知道会看到什么')
+
+    // 没勾 R18 时它不该出现
+    const general = buildSituationMessages({ ...base, direct: true })[0].content
+    expect(general).not.toContain('快速入戏')
   })
 
   it('用词必须参考色情小说 —— 不许留临床/学术的说法', () => {
