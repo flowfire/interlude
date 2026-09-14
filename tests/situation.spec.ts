@@ -611,12 +611,14 @@ describe('导演必须点名主语（和演员正好相反）', () => {
     rating: 'general' as const,
   }
 
-  it('events 里做事的人要写出来 —— 不能用被动句省掉', () => {
+  it('events 是给用户看的 —— 用户称「你」，其他人用名字', () => {
     const [system] = buildSituationMessages(base)
-    expect(system.content).toContain('主语必须点名')
+    expect(system.content).toContain('events 是**给用户看的**')
+    expect(system.content).toContain('用户扮演的那个人用「你」')
+    expect(system.content).toContain('其他人一律用名字')
+    // 不能让「他按住他」这种句子过关
+    expect(system.content).toContain('他按住他')
     expect(system.content).toContain('不要用被动句把做事的人省掉')
-    // 反面例子要出现，让模型知道什么算不合格
-    expect(system.content).toContain('杯子摔了')
   })
 
   it('directions 里一律用角色名，不许用代词 —— 演员读到的「你」是用户', () => {
@@ -631,11 +633,11 @@ describe('导演必须点名主语（和演员正好相反）', () => {
     expect(system.content).toContain('push 里也一样')
   })
 
-  it('演员那边是相反的规矩：主语可以省，宾语不行', () => {
-    // 这两条是**故意相反**的，写混了任一边都会出问题：
-    // 演员写的是自己，省主语自然；导演写的是场上所有人，不点名就没人知道是谁。
-    // 演员侧的那一半在 rating.spec 里盯着（"演员可以省主语，但宾语必须写清楚"）。
+  it('内部指令（act）是相反的规矩：必须写完整名字', () => {
+    // act 给演员读，而演员读到的每一处「你」都是用户扮演的那个人 ——
+    // 所以那里必须用名字，和 events 那种"给用户看"的写法正好相反。
     const [system] = buildSituationMessages(base)
-    expect(system.content).not.toContain('主语可以省')
+    expect(system.content).toContain('一律用角色名，不要用「你」「他」这类代词')
+    expect(system.content).toContain('每一处「你」都指用户扮演的那个人')
   })
 })

@@ -133,7 +133,10 @@ describe('R18 分级', () => {
       project: DEFAULT_PROJECT_SETTINGS,
       rating: 'general',
     })
-    expect(general[0].content).toContain('主语可以省')
+    // beats 是给用户看的：自己用第三人称（或省主语），pc 用「你」
+    expect(general[0].content).toContain('面对用户讲故事')
+    expect(general[0].content).toContain('用户扮演的那个人用「你」')
+    expect(general[0].content).toContain('克拉克爱你')
     expect(general[0].content).toContain('宾语必须写清楚')
     expect(general[0].content).toContain('他的手')
     // 输出格式的示范也在 SYSTEM 里：那条涉及别人的动作，宾语是明确的
