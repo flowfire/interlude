@@ -139,11 +139,16 @@ textarea {
   outline: none;
 }
 
+/* `transition` 要**常驻**在基础规则上，不能只写在 .peeking 里 ——
+   写在里面的话，鼠标一移走、规则失效，过渡也跟着消失，
+   于是"淡出"有动画而"恢复"是硬切。（第一版就是这个问题。） */
+.app > *:where(:not(.scene-backdrop, .peek-btn)) {
+  transition: opacity 0.4s ease;
+}
 /* 所有内容淡出（按钮自己除外 —— 它得留着，不然鼠标一移上去就没了） */
 .app.peeking > *:where(:not(.scene-backdrop, .peek-btn)) {
   opacity: 0.04;
   pointer-events: none;
-  transition: opacity 0.4s ease;
 }
 /* 背景图：去模糊、去掉放大、全亮 */
 .app.peeking .scene-backdrop.on {

@@ -5653,3 +5653,48 @@ localStorage.removeItem('interlude.debug')     // 关掉
 
 - 普通状态：内容正常、「已生图」是绿的、左下角是一颗暗点；
 - `peeking` 状态：**整屏只剩那张图，模糊没有了，圆边缘清晰可见**。
+
+---
+
+### 第一百一十三轮变更：transition 要写在常驻规则上
+
+**用户发现的**：
+
+> 动画效果有点问题，结束预览背景图（鼠标移走）的时候，覆盖在上面的内容的恢复流程没有动画。
+
+**经典的 CSS 陷阱，而且是我写的**：
+
+```css
+/* 第一版 —— 错的 */
+.app.peeking > *:where(:not(.scene-backdrop, .peek-btn)) {
+  opacity: 0.04;
+  pointer-events: none;
+  transition: opacity 0.4s ease;   /* ← 写在"状态"里 */
+}
+```
+
+- **进入**：规则生效 → `transition` 也在 → 有动画 ✓
+- **退出**：规则失效 → **`transition` 跟着失效** → 硬切 ✗
+
+**`transition` 描述的是"属性变化时怎么办"，所以它必须待在一个
+无论哪个状态都成立的规则里。**
+
+**改法**：拆成两条 —— 基础规则常驻 `transition`，状态规则只管值：
+
+```css
+.app > *:where(:not(.scene-backdrop, .peek-btn)) {
+  transition: opacity 0.4s ease;
+}
+.app.peeking > *:where(:not(.scene-backdrop, .peek-btn)) {
+  opacity: 0.04;
+  pointer-events: none;
+}
+```
+
+**顺带检查了背景层**：它的 `transition` 本来就在 `.scene-backdrop` 基础规则里
+（不是写在 `.on` 或 `.peeking` 里），所以"模糊退掉 / 恢复"两个方向都有动画 ——
+这一处**恰好写对了**，也就没被这个 bug 波及。
+
+**一个还没动的小地方**：背景层的 `opacity` 过渡是 1.1s（那是给"切场景"用的
+缓缓化开），所以「看背景」时它从 0.22 亮到 1 也走这 1.1s，略慢。
+用户没提，先留着 —— 要改的话得给 peeking 单独一个更短的时长。
