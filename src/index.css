@@ -148,10 +148,19 @@ textarea {
   box-shadow: 0 0 0 3px rgba(94, 176, 168, 0.16);
 }
 
-/* `transition` 要**常驻**在基础规则上，不能只写在 .peeking 里 ——
-   写在里面的话，鼠标一移走、规则失效，过渡也跟着消失，
-   于是"淡出"有动画而"恢复"是硬切。（第一版就是这个问题。） */
+/* 内容浮在背景之上。
+   两个例外必须一起排除：
+   · `.scene-backdrop` —— 它是背景本身，要留在 z-index: 0；
+   · `.peek-btn` —— 它靠 `position: fixed` 挂在自己该在的位置。被这条规则
+     改成 `relative` 的话，它会掉回文档流里**占掉 26px**，把下面的 `.layout`
+     挤矮，界面底部就空出一条黑边。
+   用 :where() 把优先级压回 (0,1,0) —— 写成 `.app > *:not(...)` 是 (0,2,0)，
+   会盖过 .modal-mask 自己的 position: fixed，弹窗就不再浮起来了。
+   `transition` 也必须常驻在这里（不能只写在 .peeking 里，否则规则一失效、
+   过渡跟着没了，"恢复"就成了硬切）。 */
 .app > *:where(:not(.scene-backdrop, .peek-btn)) {
+  position: relative;
+  z-index: 1;
   transition: opacity 0.4s ease;
 }
 /* 所有内容淡出（按钮自己除外 —— 它得留着，不然鼠标一移上去就没了） */
@@ -165,14 +174,6 @@ textarea {
   filter: none;
   transform: none;
 }
-/* 内容浮在背景之上；两个背景层自己除外。
-   这里必须用 :where() 把优先级压回 (0,1,0) —— 写成 `.app > *:not(...)` 是
-   (0,2,0)，会盖过 .modal-mask 自己的 position: fixed，弹窗就不再浮起来了。 */
-.app > *:where(:not(.scene-backdrop)) {
-  position: relative;
-  z-index: 1;
-}
-
 .topbar {
   display: flex;
   align-items: center;
