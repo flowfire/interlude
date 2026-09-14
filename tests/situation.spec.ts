@@ -637,7 +637,14 @@ describe('导演必须点名主语（和演员正好相反）', () => {
     // 导演隐晦，演员就会照着隐晦地演 —— 他的用词就是演员的模板。
     const [system] = buildSituationMessages({ ...base, rating: 'r18' })
     expect(system.content).toContain('你交出去的每一个字段都算')
-    expect(system.content).toContain('握住**那根**')
+    // 例子必须是直说的 —— 写「那根」等于在教它回避
+    expect(system.content).toContain('握住他的鸡巴')
+    expect(system.content).toContain('那根')  // 只出现在禁止清单里
+    expect(system.content).toContain('它们和直说一样露骨，却什么都没写出来')
+    // 判据要落在"读者看不看得见"上，而不是"在不在清单里" ——
+    // 否则换个清单外的词（"那根"）就又绕过去了
+    expect(system.content).toContain('读者看不看得见')
+    expect(system.content).toContain('那处')
     expect(system.content).toContain('你的用词就是他的模板')
   })
 
