@@ -149,7 +149,7 @@ describe('输入区的分级勾选', () => {
   it('没开总闸时，输入区看不到任何成人向的东西', () => {
     const html = renderToString(createElement(InputBar))
     expect(html).not.toContain('R18 模式')
-    expect(html).not.toContain('快速入戏')
+    expect(html).not.toContain('「让导演推进」')
   })
 
   // 注意：SSR 下 zustand 读的是 initial state，所以"运行时改 store 再渲染"
@@ -158,7 +158,7 @@ describe('输入区的分级勾选', () => {
     useAppStore.getState().setComposer({ rating: 'r18', direct: true })
     expect(useAppStore.getState().composer).toEqual({ rating: 'r18', direct: true })
 
-    // 关掉 R18 时「快速入戏」必须一起失效 —— 它只在成人向那一轮有意义
+    // 关掉 R18 时「让导演推进」必须一起失效 —— 它只在成人向那一轮有意义
     useAppStore.getState().setComposer({ rating: 'general', direct: false })
     expect(useAppStore.getState().composer).toEqual({ rating: 'general', direct: false })
   })

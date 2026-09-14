@@ -51,7 +51,7 @@ export interface AppState extends WorkspaceSnapshot {
   saveUndo: (label: string) => void
   undoLast: () => void
 
-  /** 输入区那两个勾选（R18 模式 / 快速入戏）—— 导演可以替用户把它打开或关掉 */
+  /** 输入区那两个勾选（R18 模式 / 让导演推进）—— 导演可以替用户把它打开或关掉 */
   composer: ComposerState
   /** 从别处往输入框里塞一段文字（比如导演推荐的方向） */
   draftInjection: { text: string; id: number } | null
@@ -96,7 +96,7 @@ export interface AppState extends WorkspaceSnapshot {
   updateRoundInput: (roundId: string, userInput: string) => void
   /** 改某一轮的分级 */
   setRoundRating: (roundId: string, rating: ContentRating) => void
-  /** 改某一轮的「快速入戏」（只在成人向那一轮有意义） */
+  /** 改某一轮的「让导演推进」（只在成人向那一轮有意义） */
   setRoundDirect: (roundId: string, direct: boolean) => void
   /** 作废某一轮之后的所有轮次（同一对话内）—— 时间线从那里重新开始 */
   truncateAfterRound: (roundId: string) => void

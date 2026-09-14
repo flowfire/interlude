@@ -397,7 +397,7 @@ textarea {
   background: rgba(192, 80, 77, 0.14);
   border-color: rgba(192, 80, 77, 0.35);
 }
-/* 快速入戏的轮次和普通成人向分开：回看时一眼能认出哪几轮是直给 */
+/* 让导演推进的轮次和普通成人向分开：回看时一眼能认出哪几轮是直给 */
 .chip-r18-direct {
   color: #ffb3a7;
   background: rgba(214, 62, 58, 0.26);
@@ -1221,7 +1221,7 @@ pre.code {
   color: #cbb894;
   font-style: italic;
 }
-/* 快速模式下导演替用户交代的那段「他们为什么在一起了」——
+/* 开着「让导演推进」时导演替用户交代的那段「他们为什么在一起了」——
    用户要看的就是它，所以默认展开 */
 .situation-backstory {
   margin-top: 8px;

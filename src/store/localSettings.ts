@@ -20,7 +20,7 @@ const SCENE_IMAGES_KEY = 'interlude.sceneImages'
 export interface ComposerState {
   /** 上次发送时用的分级 —— 延续上一次的勾选，不用每次重勾 */
   rating: ContentRating
-  /** 成人向下的「快速入戏」 */
+  /** 成人向下的「让导演推进」 */
   direct: boolean
 }
 

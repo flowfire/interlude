@@ -37,7 +37,7 @@ export default function InputBar() {
   const liveDirect = liveR18 && direct
 
   const handleR18Change = (value: boolean) => {
-    // 关掉 R18 时「快速入戏」自动失效 —— 它只在成人向那一轮有意义
+    // 关掉 R18 时「让导演推进」自动失效 —— 它只在成人向那一轮有意义
     setComposer({ rating: value ? 'r18' : 'general', direct: value ? direct : false })
   }
 
@@ -157,7 +157,8 @@ export default function InputBar() {
           <label
             className={`r18-toggle ${direct ? 'on' : ''}`}
             title={
-              '快速入戏：这一轮直接进入性描写，不再铺垫。\n' +
+              '让导演推进：把推进的责任交给导演 —— 他会主动带节奏，\n' +
+              '不必你自己一步步铺。\n' +
               '导演会更明确地安排进展，角色也会更放开一些\n' +
               '（模糊地带倾向成人向解释，但写死的人设底线不变）。\n' +
               '勾选会一直保留，直到你取消 R18。'
@@ -169,7 +170,7 @@ export default function InputBar() {
               disabled={busy}
               onChange={(event) => handleDirectChange(event.target.checked)}
             />
-            快速入戏
+            让导演推进
           </label>
         ) : null}
 

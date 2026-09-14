@@ -21,11 +21,11 @@ export interface SituationStageInput {
   idle?: boolean
   /** 这一轮的分级 —— 导演要按它决定场面往哪推 */
   rating?: ContentRating
-  /** 「快速入戏」 */
+  /** 「让导演推进」 */
   direct?: boolean
   /** 成人向已经连着几轮了（给导演的成绩单） */
   r18Streak?: number
-  /** 其中多少轮还勾了快速入戏 */
+  /** 其中多少轮还勾了让导演推进 */
   directStreak?: number
   /** 最近几轮导演自己打的性内容分 */
   recentScores?: number[]

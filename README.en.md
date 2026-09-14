@@ -230,7 +230,7 @@ It is a **separate rating**: on those rounds every stage of the engine adjusts �
 
 **It is permission, not a requirement** — it happens when the story arrives there; if you do not lead, the director does not push. The rating lives on the **round**, so you can turn it on for one and off for the next. **The director can ask for it too**, and you can untick it at any time.
 
-Ticking it also unlocks an optional **"straight into the scene"**: the director switches from "give him what he asks for" to "you are responsible for getting him there", and offers you a few concrete directions to pick from.
+Ticking it also unlocks an optional **"let the director drive"**: the job of moving things forward is handed to the director — he switches from "give him what he asks for" to "you are responsible for getting him there", and offers you a few concrete directions to pick from. **You do not have to lay the groundwork step by step.**
 
 Two lines never move: **the floor of the persona cannot change** (only its grey areas), and **the boundaries of the character you play are not anyone else's to decide.**
 

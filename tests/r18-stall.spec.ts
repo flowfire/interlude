@@ -10,7 +10,7 @@ import { isRoundStalled } from '@/utils/r18'
 
 const r18 = { rating: 'r18' as const, direct: true }
 
-describe('快速模式：没涨算不合格', () => {
+describe('「让导演推进」：没涨算不合格', () => {
   it('第一轮永远不判不合格 —— 基准是 0，怎么算都"没涨"', () => {
     expect(isRoundStalled(r18, { sexScore: 0, prevSexScore: 0, r18Streak: 1 })).toBe(false)
     // 哪怕第一轮就是 0 分（场面刚开场），也不能冤它
@@ -28,7 +28,7 @@ describe('快速模式：没涨算不合格', () => {
     expect(isRoundStalled(r18, { sexScore: 110, prevSexScore: 100, r18Streak: 3 })).toBe(false)
   })
 
-  it('没勾快速模式就不判 —— 普通成人向是「允许」，不要求推进', () => {
+  it('没勾「让导演推进」就不判 —— 普通成人向是「允许」，不要求推进', () => {
     expect(
       isRoundStalled({ rating: 'r18', direct: false }, { sexScore: 0, prevSexScore: 0, r18Streak: 3 }),
     ).toBe(false)

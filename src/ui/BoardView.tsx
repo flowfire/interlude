@@ -212,9 +212,9 @@ function RoundDivider({ round }: { round: Round }) {
       {round.rating === 'r18' ? (
         <span
           className={`chip chip-r18${round.direct ? ' chip-r18-direct' : ''}`}
-          title={round.direct ? '成人向 · 快速入戏' : '成人向'}
+          title={round.direct ? '成人向 · 让导演推进' : '成人向'}
         >
-          R18{round.direct ? ' · 快速入戏' : ''}
+          R18{round.direct ? ' · 让导演推进' : ''}
         </span>
       ) : null}
       {round.status === 'running' ? <span className="chip chip-warn">生成中</span> : null}
@@ -365,7 +365,7 @@ function RoundBlock({
                     disabled={busy}
                     onChange={(event) => setDirectDraft(event.target.checked)}
                   />
-                  快速入戏
+                  让导演推进
                 </label>
               ) : null}
               <span className="hint">
@@ -374,7 +374,7 @@ function RoundBlock({
                   : [
                       inputChanged ? '整轮会重新拆解、重新分发给每个角色' : null,
                       ratingChanged ? `分级改为 ${RATING_LABEL[ratingDraft]}` : null,
-                      directChanged ? `快速入戏：${directDraft ? '开' : '关'}` : null,
+                      directChanged ? `让导演推进：${directDraft ? '开' : '关'}` : null,
                     ]
                       .filter(Boolean)
                       .join(' · ')}
@@ -458,7 +458,7 @@ function RoundBlock({
           {isRoundStalled(round, situationData.state) ? (
             <div className="situation-stalled">
               ⚠ 这一轮的分没有涨（{situationData.state.prevSexScore} → {situationData.state.sexScore}）
-              —— 勾了快速模式却没主动引导，这轮不合格
+              —— 开着「让导演推进」却没主动引导，这轮不合格
             </div>
           ) : null}
 

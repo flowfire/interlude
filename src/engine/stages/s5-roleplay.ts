@@ -67,7 +67,7 @@ export interface RoleplayStageInput {
   project: ProjectSettings
   /** 这一轮的分级 */
   rating?: ContentRating
-  /** 「快速入戏」—— 只在成人向那一轮有意义 */
+  /** 「让导演推进」—— 只在成人向那一轮有意义 */
   direct?: boolean
 }
 

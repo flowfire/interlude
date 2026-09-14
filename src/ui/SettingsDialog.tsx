@@ -282,7 +282,7 @@ export default function SettingsDialog() {
             </label>
             <span className="hint">
               默认关闭。勾上之后，输入区才会出现<strong>「R18 模式」</strong>那个勾选框
-              （以及它下面的「快速入戏」）。不勾这一项，界面上不会出现任何成人向相关的东西。
+              （以及它下面的「让导演推进」）。不勾这一项，界面上不会出现任何成人向相关的东西。
             </span>
           </div>
 

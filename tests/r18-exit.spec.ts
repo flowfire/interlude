@@ -142,7 +142,7 @@ describe('导演可以宣告成人向收尾', () => {
 
     await runOneRound()
 
-    // 两个勾都落回默认 —— 快速入戏只在成人向那一轮有意义，不能单独留着
+    // 两个勾都落回默认 —— 「让导演推进」只在成人向那一轮有意义，不能单独留着
     expect(useAppStore.getState().composer).toEqual({ rating: 'general', direct: false })
   })
 

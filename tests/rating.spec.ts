@@ -143,7 +143,7 @@ describe('R18 分级', () => {
     expect(general[0].content).toContain('按住了他的手腕')
   })
 
-  it('普通成人向（没勾快速入戏）时，演员也知道要写直白', () => {
+  it('普通成人向（没开「让导演推进」）时，演员也知道要写直白', () => {
     // 这条曾经只写在导演那边 —— 导演被告知"文字要直白、该写什么器官就写什么器官"，
     // 而演员这边只有一句"可以让挑逗更直接"，于是普通成人向下演员写得含糊。
     const messages = buildRoleplayMessages({ bundle: bundle(), project: DEFAULT_PROJECT_SETTINGS, rating: 'r18' })
@@ -155,8 +155,8 @@ describe('R18 分级', () => {
     expect(user).toContain('别含糊')
     // 关键：把"推进慢"和"写得虚"分开 —— 否则演员会以为普通模式=含蓄
     expect(user).toContain('慢不等于虚')
-    // 但**不**该把"必须推进"塞进来，那是快速入戏的事
-    expect(user).not.toContain('【快速入戏')
+    // 但**不**该把"必须推进"塞进来，那是「让导演推进」的事
+    expect(user).not.toContain('【让导演推进')
   })
 
   it('不勾选时，提示词里完全没有成人向内容', () => {
@@ -175,7 +175,7 @@ describe('R18 分级', () => {
     expect(r18[0].content).not.toContain('自由度')
   })
 
-  it('「快速入戏」是叠在成人向之上的一层，两条都齐了才生效', () => {
+  it('「让导演推进」是叠在成人向之上的一层，两条都齐了才生效', () => {
     const base = {
       bundle: bundle(),
       project: DEFAULT_PROJECT_SETTINGS,
@@ -183,10 +183,10 @@ describe('R18 分级', () => {
 
     const off = buildRoleplayMessages({ ...base, rating: 'r18' })[1].content
     expect(off).toContain('成人向')
-    expect(off).not.toContain('【快速入戏】')
+    expect(off).not.toContain('【让导演推进】')
 
     const on = buildRoleplayMessages({ ...base, rating: 'r18', direct: true })[1].content
-    expect(on).toContain('快速入戏 —— 直接演性爱，不要绕')
+    expect(on).toContain('让导演推进 —— 直接演性爱，不要绕')
     expect(on).toContain('别再拖了')
     // 导演铺了台阶，演员别自己踩刹车
     expect(on).toContain('导演已经替你把台阶铺好了')
@@ -197,7 +197,7 @@ describe('R18 分级', () => {
     expect(on).toContain('照着这个密度写')
     expect(on).toContain('写的是套话，不是这两个人')
     // 不许用含糊说法糊过去（只允许出现在反例清单里）。
-    // 普通成人向和快速入戏各有一份反例清单，所以最多两处 ——
+    // 普通成人向和「让导演推进」各有一份反例清单，所以最多两处 ——
     // 关键是它们**只能出现在"不许用"的语境里**。
     expect(on).toContain('不许用这些糊过去')
     expect((on.match(/融为一体/g) ?? []).length).toBeLessThanOrEqual(2)
@@ -216,10 +216,10 @@ describe('R18 分级', () => {
 
     // 没勾 R18 时它不该出现
     const general = buildRoleplayMessages({ ...base, rating: 'general', direct: true })[1].content
-    expect(general).not.toContain('【快速入戏】')
+    expect(general).not.toContain('【让导演推进】')
   })
 
-  it('导演也会收到「快速入戏」，落在节奏与用词上', () => {
+  it('导演也会收到「让导演推进」，落在节奏与用词上', () => {
     const base = {
       storyTitle: '测试',
       pcName: '我',
@@ -232,8 +232,8 @@ describe('R18 分级', () => {
 
     const off = buildSituationMessages({ ...base, rating: 'r18' })[0].content
     expect(off).toContain('成人向')
-    // 没勾快速入戏时，只有"什么时候填 routes"那句限定里会提到它
-    expect(off).not.toContain('【快速入戏】')
+    // 没开「让导演推进」时，只有"什么时候填 routes"那句限定里会提到它
+    expect(off).not.toContain('【让导演推进】')
 
     const on = buildSituationMessages({
       ...base,
@@ -243,8 +243,8 @@ describe('R18 分级', () => {
       directStreak: 1,
     })[0].content
 
-    // 快速模式：往做爱上推，但压缩过程而不是跳过逻辑
-    expect(on).toContain('【快速入戏】')
+    // 「让导演推进」：往做爱上推，但压缩过程而不是跳过逻辑
+    expect(on).toContain('【让导演推进】')
     expect(on).toContain('这一轮的调度都朝这个方向走')
     expect(on).toContain('压缩过程，不跳过逻辑')
     expect(on).toContain('怎么做由你决定')
@@ -260,7 +260,7 @@ describe('R18 分级', () => {
     expect(on).toContain('这类说法糊过去')
 
     // 那一堆含糊说法只能出现在反例里
-    const directHint = on.slice(on.indexOf('【快速入戏'))
+    const directHint = on.slice(on.indexOf('【让导演推进'))
     expect(directHint).not.toContain('那件事')
     expect((directHint.match(/融为一体/g) ?? []).length).toBeLessThanOrEqual(2)
 
@@ -273,7 +273,7 @@ describe('R18 分级', () => {
 
     // 没勾 R18 时它不该出现
     const general = buildSituationMessages({ ...base, direct: true })[0].content
-    expect(general).not.toContain('【快速入戏】')
+    expect(general).not.toContain('【让导演推进】')
   })
 
   it('用词必须参考色情小说 —— 不许留临床/学术的说法', () => {
@@ -398,7 +398,7 @@ describe('编辑一轮时，「分级变了」也算改动', () => {
     expect(isRoundDraftDirty(makeRound('abc'), { userInput: '  abc\n', rating: 'general', direct: false })).toBe(false)
   })
 
-  it('只加勾「快速入戏」也算改动', () => {
+  it('只加勾「让导演推进」也算改动', () => {
     expect(
       isRoundDraftDirty(makeRound('abc', 'r18'), { userInput: 'abc', rating: 'r18', direct: false }),
     ).toBe(false)
