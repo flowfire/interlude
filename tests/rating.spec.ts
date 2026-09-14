@@ -152,6 +152,9 @@ describe('R18 分级', () => {
     expect(user).toContain('用词要直白')
     expect(user).toContain('鸡巴')
     expect(user).toContain('阴唇')
+    // 光有"不许用那根"不够 —— 得给出**正面词表**，否则模型没有词可用就会绕
+    expect(user).toContain('该用的词就在这儿，照着用')
+    expect(user).toContain('写到那儿就用它')
     expect(user).toContain('别含糊')
     // 关键：把"推进慢"和"写得虚"分开 —— 否则演员会以为普通模式=含蓄
     expect(user).toContain('慢不等于虚')

@@ -645,6 +645,9 @@ describe('导演必须点名主语（和演员正好相反）', () => {
     // 否则换个清单外的词（"那根"）就又绕过去了
     expect(system.content).toContain('读者看不看得见')
     expect(system.content).toContain('那处')
+    // 正面词表：只列"不许用"的，模型没有词可用就会绕
+    expect(system.content).toContain('该用的词就在这儿，照着用')
+    expect(system.content).toContain('写到那儿就该用它')
     expect(system.content).toContain('你的用词就是他的模板')
   })
 
