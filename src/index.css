@@ -138,6 +138,15 @@ textarea {
   background: rgba(18, 22, 28, 0.75);
   outline: none;
 }
+/* 锁定状态：一眼看出"现在是钉住的"，和只是路过瞄一眼区分开。
+   悬停是临时的（手一松就没了），锁定是持续的 —— 两者长得一样会让人
+   搞不清自己到底锁没锁。 */
+.peek-btn.locked {
+  color: #dff3ee;
+  border-color: rgba(94, 176, 168, 0.85);
+  background: rgba(26, 44, 46, 0.9);
+  box-shadow: 0 0 0 3px rgba(94, 176, 168, 0.16);
+}
 
 /* `transition` 要**常驻**在基础规则上，不能只写在 .peeking 里 ——
    写在里面的话，鼠标一移走、规则失效，过渡也跟着消失，

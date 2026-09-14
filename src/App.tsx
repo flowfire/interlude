@@ -30,8 +30,18 @@ export default function App() {
         .sort((a, b) => a.index - b.index),
     [rounds, sessionId],
   )
-  /** 按住"看背景"时，把界面上所有东西淡出，只看那张图 */
-  const [peeking, setPeeking] = useState(false)
+  /**
+   * 看背景。
+   *
+   * 两种用法叠在一起：
+   * · **悬停** —— 鼠标放上去就看，移开就恢复（临时瞄一眼）
+   * · **锁定** —— 点一下锁住，移开也不恢复，再点一次解锁（想仔细看）
+   *
+   * 所以真正决定"现在是不是在看"的是这两者的并集。
+   */
+  const [peekHover, setPeekHover] = useState(false)
+  const [peekLocked, setPeekLocked] = useState(false)
+  const peeking = peekHover || peekLocked
 
   /** 两层背景的槽位与当前激活的那层 —— 用来做交叉淡入 */
   const [backdrop, setBackdrop] = useState<{ slots: [string, string]; active: 0 | 1 }>({
@@ -178,13 +188,14 @@ export default function App() {
           放在 `.app` 的直接子级、并且不参与"淡出"那条规则 —— 否则它自己
           也会被父级一起淡掉，鼠标一移上去按钮就没了。 */}
       <button
-        className="peek-btn"
-        title="看背景图"
-        aria-label="看背景图"
-        onMouseEnter={() => setPeeking(true)}
-        onMouseLeave={() => setPeeking(false)}
-        onFocus={() => setPeeking(true)}
-        onBlur={() => setPeeking(false)}
+        className={`peek-btn${peekLocked ? ' locked' : ''}`}
+        aria-label={peekLocked ? '退出背景预览' : '看背景图'}
+        aria-pressed={peekLocked}
+        onClick={() => setPeekLocked((value) => !value)}
+        onMouseEnter={() => setPeekHover(true)}
+        onMouseLeave={() => setPeekHover(false)}
+        onFocus={() => setPeekHover(true)}
+        onBlur={() => setPeekHover(false)}
       >
         <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true">
           <path
