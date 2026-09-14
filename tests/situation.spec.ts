@@ -633,6 +633,17 @@ describe('导演必须点名主语（和演员正好相反）', () => {
     expect(system.content).toContain('push 里也一样')
   })
 
+  it('routes 一律用「我」—— 那是用户自己要说出口的话', () => {
+    const [system] = buildSituationMessages(base)
+    expect(system.content).toContain('一律用「我」')
+    // 说清楚为什么：会被原样填进输入框、由用户发出去
+    expect(system.content).toContain('由用户自己发出去')
+    // 和 events 那种"讲给他听"的东西**相反**，这条对比必须写出来
+    expect(system.content).toContain('这和 events 那种"讲给他听"的东西不一样')
+    // 反例里不该再出现「你只能让他进屋」这种混人称
+    expect(system.content).not.toContain('你只能让他进屋')
+  })
+
   it('内部指令（act）是相反的规矩：必须写完整名字', () => {
     // act 给演员读，而演员读到的每一处「你」都是用户扮演的那个人 ——
     // 所以那里必须用名字，和 events 那种"给用户看"的写法正好相反。
