@@ -640,8 +640,8 @@ describe('导演必须点名主语（和演员正好相反）', () => {
     expect(system.content).toContain('由用户自己发出去')
     // 和 events 那种"讲给他听"的东西**相反**，这条对比必须写出来
     expect(system.content).toContain('这和 events 那种"讲给他听"的东西不一样')
-    // 反例里不该再出现「你只能让他进屋」这种混人称
-    expect(system.content).not.toContain('你只能让他进屋')
+    // 反例保持原样 —— 它标着 ✗，里面本来就该是错的写法
+    expect(system.content).toContain('你只能让他进屋')
   })
 
   it('内部指令（act）是相反的规矩：必须写完整名字', () => {
