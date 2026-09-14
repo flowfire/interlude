@@ -619,10 +619,16 @@ describe('导演必须点名主语（和演员正好相反）', () => {
     expect(system.content).toContain('杯子摔了')
   })
 
-  it('directions 里主语和宾语都要落到字面上', () => {
+  it('directions 里一律用角色名，不许用代词 —— 演员读到的「你」是用户', () => {
     const [system] = buildSituationMessages(base)
-    expect(system.content).toContain('主语和宾语都要写清楚')
-    expect(system.content).toContain('把**桌上的信**收起来')
+    expect(system.content).toContain('一律用角色名，不要用「你」「他」这类代词')
+    // 说清楚为什么：act 会原样交给演员，而他的提示词里「你」= 用户扮演的人
+    expect(system.content).toContain('每一处「你」都指用户扮演的那个人')
+    expect(system.content).toContain('按住用户的手')
+    // 正反例都在
+    expect(system.content).toContain('阿七**按住**林砚**的手')
+    // push 也会给演员看，所以同样不能用代词
+    expect(system.content).toContain('push 里也一样')
   })
 
   it('演员那边是相反的规矩：主语可以省，宾语不行', () => {
