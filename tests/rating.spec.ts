@@ -125,6 +125,22 @@ describe('R18 分级', () => {
     expect(user).toContain('不要一步到位')
   })
 
+  it('普通成人向（没勾快速入戏）时，演员也知道要写直白', () => {
+    // 这条曾经只写在导演那边 —— 导演被告知"文字要直白、该写什么器官就写什么器官"，
+    // 而演员这边只有一句"可以让挑逗更直接"，于是普通成人向下演员写得含糊。
+    const messages = buildRoleplayMessages({ bundle: bundle(), project: DEFAULT_PROJECT_SETTINGS, rating: 'r18' })
+    const user = messages[1].content
+
+    expect(user).toContain('用词要直白')
+    expect(user).toContain('鸡巴')
+    expect(user).toContain('阴唇')
+    expect(user).toContain('别含糊')
+    // 关键：把"推进慢"和"写得虚"分开 —— 否则演员会以为普通模式=含蓄
+    expect(user).toContain('慢不等于虚')
+    // 但**不**该把"必须推进"塞进来，那是快速入戏的事
+    expect(user).not.toContain('【快速入戏')
+  })
+
   it('不勾选时，提示词里完全没有成人向内容', () => {
     const messages = buildRoleplayMessages({ bundle: bundle(), project: DEFAULT_PROJECT_SETTINGS, rating: 'general' })
     expect(messages[0].content).not.toContain('成人向')
@@ -162,9 +178,11 @@ describe('R18 分级', () => {
     expect(on).toContain('回避就是没完成工作')
     expect(on).toContain('照着这个密度写')
     expect(on).toContain('写的是套话，不是这两个人')
-    // 不许用含糊说法糊过去（只允许出现在反例清单里）
+    // 不许用含糊说法糊过去（只允许出现在反例清单里）。
+    // 普通成人向和快速入戏各有一份反例清单，所以最多两处 ——
+    // 关键是它们**只能出现在"不许用"的语境里**。
     expect(on).toContain('不许用这些糊过去')
-    expect((on.match(/融为一体/g) ?? []).length).toBe(1)
+    expect((on.match(/融为一体/g) ?? []).length).toBeLessThanOrEqual(2)
     // 露骨的词要明确告知，让模型知道该用
     expect(on).toContain('操、肏、鸡巴、逼')
     expect(on).toContain('回避本身就是出戏')
@@ -226,7 +244,7 @@ describe('R18 分级', () => {
     // 那一堆含糊说法只能出现在反例里
     const directHint = on.slice(on.indexOf('【快速入戏'))
     expect(directHint).not.toContain('那件事')
-    expect((directHint.match(/融为一体/g) ?? []).length).toBe(1)
+    expect((directHint.match(/融为一体/g) ?? []).length).toBeLessThanOrEqual(2)
 
     // 露骨的词要明确告知，让模型知道该用
     expect(on).toContain('操、肏、鸡巴、逼')
