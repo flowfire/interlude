@@ -599,3 +599,37 @@ describe('导演建议开启成人向', () => {
     expect(system.content).not.toContain('【R18】')
   })
 })
+
+describe('导演必须点名主语（和演员正好相反）', () => {
+  const base = {
+    storyTitle: '测试',
+    pcName: '我',
+    doc: normalizeInput('我站在门口。'),
+    segments: [],
+    sceneSetup: setup,
+    drives: [],
+    rating: 'general' as const,
+  }
+
+  it('events 里做事的人要写出来 —— 不能用被动句省掉', () => {
+    const [system] = buildSituationMessages(base)
+    expect(system.content).toContain('主语必须点名')
+    expect(system.content).toContain('不要用被动句把做事的人省掉')
+    // 反面例子要出现，让模型知道什么算不合格
+    expect(system.content).toContain('杯子摔了')
+  })
+
+  it('directions 里主语和宾语都要落到字面上', () => {
+    const [system] = buildSituationMessages(base)
+    expect(system.content).toContain('主语和宾语都要写清楚')
+    expect(system.content).toContain('把**桌上的信**收起来')
+  })
+
+  it('演员那边是相反的规矩：主语可以省，宾语不行', () => {
+    // 这两条是**故意相反**的，写混了任一边都会出问题：
+    // 演员写的是自己，省主语自然；导演写的是场上所有人，不点名就没人知道是谁。
+    // 演员侧的那一半在 rating.spec 里盯着（"演员可以省主语，但宾语必须写清楚"）。
+    const [system] = buildSituationMessages(base)
+    expect(system.content).not.toContain('主语可以省')
+  })
+})
