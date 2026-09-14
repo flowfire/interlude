@@ -633,6 +633,14 @@ describe('导演必须点名主语（和演员正好相反）', () => {
     expect(system.content).toContain('push 里也一样')
   })
 
+  it('成人向下，直白用词的要求覆盖到 act/events 这些字段', () => {
+    // 导演隐晦，演员就会照着隐晦地演 —— 他的用词就是演员的模板。
+    const [system] = buildSituationMessages({ ...base, rating: 'r18' })
+    expect(system.content).toContain('你交出去的每一个字段都算')
+    expect(system.content).toContain('握住**那根**')
+    expect(system.content).toContain('你的用词就是他的模板')
+  })
+
   it('routes 一律用「我」—— 那是用户自己要说出口的话', () => {
     const [system] = buildSituationMessages(base)
     expect(system.content).toContain('一律用「我」')
