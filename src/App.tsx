@@ -30,6 +30,9 @@ export default function App() {
         .sort((a, b) => a.index - b.index),
     [rounds, sessionId],
   )
+  /** 按住"看背景"时，把界面上所有东西淡出，只看那张图 */
+  const [peeking, setPeeking] = useState(false)
+
   /** 两层背景的槽位与当前激活的那层 —— 用来做交叉淡入 */
   const [backdrop, setBackdrop] = useState<{ slots: [string, string]; active: 0 | 1 }>({
     slots: ['', ''],
@@ -129,7 +132,7 @@ export default function App() {
 
 
   return (
-    <div className="app">
+    <div className={`app${peeking ? ' peeking' : ''}`}>
       {/* 背景用**两层交叉淡入**：background-image 本身不能过渡，直接换会是硬切。
           新图先放进备用层、等它加载完再切 active，两张的 opacity 一起过渡，
           看起来就是缓慢地化过去。
@@ -171,6 +174,29 @@ export default function App() {
         </div>
         <StepHistoryPanel />
       </div>
+      {/* 看背景：鼠标移上去，界面上所有东西淡出、背景图去掉模糊全亮。
+          放在 `.app` 的直接子级、并且不参与"淡出"那条规则 —— 否则它自己
+          也会被父级一起淡掉，鼠标一移上去按钮就没了。 */}
+      <button
+        className="peek-btn"
+        title="看背景图"
+        aria-label="看背景图"
+        onMouseEnter={() => setPeeking(true)}
+        onMouseLeave={() => setPeeking(false)}
+        onFocus={() => setPeeking(true)}
+        onBlur={() => setPeeking(false)}
+      >
+        <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true">
+          <path
+            d="M12 5c-5 0-9 4.5-10 7 1 2.5 5 7 10 7s9-4.5 10-7c-1-2.5-5-7-10-7z"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+          />
+          <circle cx="12" cy="12" r="3" fill="currentColor" />
+        </svg>
+      </button>
+
       {settingsOpen ? <SettingsDialog /> : null}
       {inspectorStepId ? <StepInspector /> : null}
     </div>

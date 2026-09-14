@@ -117,15 +117,20 @@ function SceneCard({ sceneRoundId }: { sceneRoundId: string }) {
         {!setup.usedModel ? <span className="chip">规则降级</span> : null}
 
         <span className="scene-image-tip">
+          {/* 三种状态各有各的话：没生成 / 出错 / 已生成。
+              前两种是"要你点"，第三种是"已经有图了，点一下换一张"——
+              所以它平时说状态、鼠标移上去才说"重新生成"。 */}
           <button
-            className={`scene-image-btn${imageError ? ' error' : ''}`}
+            className={`scene-image-btn${imageError ? ' error' : ''}${sceneImage && !imageError ? ' done' : ''}`}
             disabled={busy}
             title={
-              imageError
-                ? undefined
-                : sceneImage
-                  ? '重新生成这个场景的图'
-                  : '按这个场景的描写生成一张图，会铺成整个界面的背景'
+              busy
+                ? '正在生成…'
+                : imageError
+                  ? '重新生成'
+                  : sceneImage
+                    ? '重新生成'
+                    : '生图'
             }
             onClick={(event) => {
               event.preventDefault()
@@ -136,11 +141,14 @@ function SceneCard({ sceneRoundId }: { sceneRoundId: string }) {
             {busy ? (
               '生成中'
             ) : imageError ? (
-              '生图失败'
+              <>
+                <span className="scene-image-btn-idle">生成错误</span>
+                <span className="scene-image-btn-hover">重新生成</span>
+              </>
             ) : sceneImage ? (
               <>
-                <span className="scene-image-btn-idle">生图</span>
-                <span className="scene-image-btn-hover">重新生图</span>
+                <span className="scene-image-btn-idle">已生图</span>
+                <span className="scene-image-btn-hover">重新生成</span>
               </>
             ) : (
               '生图'
