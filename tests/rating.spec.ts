@@ -125,6 +125,21 @@ describe('R18 分级', () => {
     expect(user).toContain('不要一步到位')
   })
 
+  it('演员可以省主语，但宾语必须写清楚', () => {
+    // 场上不止一个人时，"把手按住"读不出按住了谁。
+    // 格式要求是"永远都在"的那部分，所以写在 SYSTEM 里（不吃分级、可以缓存）
+    const general = buildRoleplayMessages({
+      bundle: bundle(),
+      project: DEFAULT_PROJECT_SETTINGS,
+      rating: 'general',
+    })
+    expect(general[0].content).toContain('主语可以省')
+    expect(general[0].content).toContain('宾语必须写清楚')
+    expect(general[0].content).toContain('他的手')
+    // 输出格式的示范也在 SYSTEM 里：那条涉及别人的动作，宾语是明确的
+    expect(general[0].content).toContain('按住了他的手腕')
+  })
+
   it('普通成人向（没勾快速入戏）时，演员也知道要写直白', () => {
     // 这条曾经只写在导演那边 —— 导演被告知"文字要直白、该写什么器官就写什么器官"，
     // 而演员这边只有一句"可以让挑逗更直接"，于是普通成人向下演员写得含糊。
